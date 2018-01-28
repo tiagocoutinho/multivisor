@@ -35,16 +35,24 @@ export default {
   props: ['multivisor', 'data'],
   methods: {
     restart_process: function(process) {
-      this.multivisor.restart_process(process);
+      var supervisor = this.data.supervisors[process.supervisor];
+      this.multivisor.restart_process(process).then(updated_process => {
+          supervisor.processes[process.name] = updated_process;
+      });
     },
     stop_process: function(process) {
-      this.multivisor.stop_process(process);
+      this.multivisor.stop_process(process).then(updated_process => {
+          for(let key in updated_process) {
+            process[key] = updated_process[key];
+          }
+          console.log(process.running);
+      });
     },
     process_info: function(process) {
       var supervisor = this.data.supervisors[process.supervisor];
       this.multivisor.process_info(process)
-        .then(function(new_process) {
-          supervisor.processes[process.name] = new_process;
+        .then(function(updated_process) {
+          supervisor.processes[process.name] = updated_process;
         });
     },
   },

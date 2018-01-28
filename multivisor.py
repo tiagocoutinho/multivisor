@@ -6,14 +6,37 @@ patch_all(thread=False)
 import logging
 import weakref
 import functools
-from xmlrpclib import Server
 from collections import OrderedDict
 from ConfigParser import SafeConfigParser
+from xmlrpclib import ServerProxy as _ServerProxy
 
 from louie import send, connect
 from flask import Flask, render_template, Response, request, json
-from gevent import queue, spawn, sleep, joinall
+from gevent import queue, spawn, sleep, joinall, lock
 from supervisor.states import RUNNING_STATES
+
+
+class ServerProxy(_ServerProxy):
+    class Wrap(object):
+
+        def __init__(self, lock, method):
+            self.__lock = lock
+            self.__method = method
+
+        def __getattr__(self, name):
+            return type(self)(self.__lock, getattr(self.__method, name))
+
+        def __call__(self, *args):
+            with self.__lock:
+                return self.__method(*args)
+
+    def __init__(self, *args, **kwargs):
+        self.__lock = lock.RLock()
+        _ServerProxy.__init__(self, *args, **kwargs)
+
+    def __getattr__(self, name):
+        method = _ServerProxy.__getattr__(self, name)
+        return self.Wrap(self.__lock, method)
 
 
 class Supervisor(dict):
@@ -28,7 +51,7 @@ class Supervisor(dict):
             credentials = '{0}:{1}@'.format(self.username, self.password)
         address = 'http://{0}{1}:{2}/RPC2'.format(credentials, self['host'],
                                                   self['port'])
-        self.server = Server(address)
+        self.server = ServerProxy(address)
 
     def update_info(self):
         supervisor_name = self['name']
@@ -72,6 +95,7 @@ class Process(dict):
     def update_info(self):
         info = self.server.supervisor.getProcessInfo(self.full_name)
         self.update(info)
+        self['running'] = self['state'] in RUNNING_STATES
 
     def restart(self, wait=True):
         self.log.info('Restarting')
@@ -137,6 +161,13 @@ class Multivisor:
         return self.config['supervisors']
 
     def poll_supervisor(self, supervisor):
+        try:
+            self._poll_supervisor(supervisor)
+        except Exception as e:
+            import pdb;pdb.set_trace()
+            logging.warn('failed to poll %s', supervisor['name'])
+
+    def _poll_supervisor(self, supervisor):
         modified = supervisor.update_info()
         if modified:
             logging.info('supervisor %r modified', supervisor['name'])
@@ -191,7 +222,11 @@ def data():
 def restart_process():
     process = app.multivisor.get_process(request.form['supervisor'],
                                          request.form['name'])
-    process.restart(wait=False)
+    wait = request.form.get('wait', True)
+    process.restart(wait=wait)
+    if wait:
+        process.update_info()
+        return json.dumps(process)
     return 'OK'
 
 
@@ -199,7 +234,11 @@ def restart_process():
 def stop_process():
     process = app.multivisor.get_process(request.form['supervisor'],
                                          request.form['name'])
-    process.stop(wait=False)
+    wait = request.form.get('wait', True)
+    process.stop(wait=wait)
+    if wait:
+        process.update_info()
+        return json.dumps(process)
     return 'OK'
 
 

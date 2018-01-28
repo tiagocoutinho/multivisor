@@ -22,6 +22,7 @@ export default {
   methods: {
     update: function() {
       Vue.multivisor.get().then(data => {
+          Vue.multivisor.data = data;
           this.data = data;
       });
     }

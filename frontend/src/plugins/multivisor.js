@@ -11,7 +11,8 @@ const Multivisor = {
     let form = new FormData();
     form.append('supervisor', process.supervisor);
     form.append('name', process.name);
-    return fetch('/restart_process', {method: 'POST', body: form});
+    return fetch('/restart_process', {method: 'POST', body: form}).
+      then(response => response.json());
   },
 
   stop_process(process) {
@@ -20,7 +21,8 @@ const Multivisor = {
     let form = new FormData();
     form.append('supervisor', process.supervisor);
     form.append('name', process.name);
-    return fetch('/stop_process', {method: 'POST', body: form});
+    return fetch('/stop_process', {method: 'POST', body: form}).
+      then(response => response.json());
   },
 
   process_info(process) {
