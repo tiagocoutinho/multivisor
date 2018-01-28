@@ -41,6 +41,15 @@ class ServerProxy(_ServerProxy):
 
 class Supervisor(dict):
 
+    Null = {
+        'identification': None,
+        'api_version': None,
+        'version': None,
+        'supervisor_version': None,
+        'processes': {},
+        'running': False,
+    }
+
     def __init__(self, *args, **kwargs):
         super(Supervisor, self).__init__(*args, **kwargs)
         self.log = logging.getLogger(self['name'])
@@ -53,24 +62,39 @@ class Supervisor(dict):
                                                   self['port'])
         self.server = ServerProxy(address)
 
+    @property
+    def supervisor(self):
+        return self.server.supervisor
+
     def update_info(self):
-        supervisor_name = self['name']
+        try:
+            pid = self.supervisor.getPID()
+        except:
+            pid = None
+        return self._update_info(pid)
+
+    def _update_info(self, pid):
         self.log.debug('updating')
-        server = self.server
-        pid = server.supervisor.getPID()
+        supervisor_name = self['name']
+        supervisor = self.supervisor
         if pid != self.get('pid'):
             self['pid'] = pid
-            self['identification'] = server.supervisor.getIdentification()
-            self['api_version'] = server.supervisor.getAPIVersion()
-            self['version'] = server.supervisor.getVersion()
-            self['supervisor_version'] = server.supervisor.getSupervisorVersion()
+            if pid is None: # server shutdown
+                self.update(self.Null)
+            else:
+                self['running'] = True
+                self['identification'] = supervisor.getIdentification()
+                self['api_version'] = supervisor.getAPIVersion()
+                self['version'] = supervisor.getVersion()
+                self['supervisor_version'] = supervisor.getSupervisorVersion()
             modified = True
         else:
             modified = False
         processes = {}
-        for proc in server.supervisor.getAllProcessInfo():
-            process = Process(self, proc)
-            processes[process['name']] = process
+        if pid is not None:
+            for proc in supervisor.getAllProcessInfo():
+                process = Process(self, proc)
+                processes[process['uid']] = process
         old_processes = self.pop('processes', None)
         self['processes'] = processes
         modified |= processes != old_processes
@@ -81,19 +105,25 @@ class Process(dict):
 
     def __init__(self, supervisor, *args, **kwargs):
         super(Process, self).__init__(*args, **kwargs)
-        self.full_name = self['group'] + ':' + self['name']
-        self.log = supervisor.log.getChild(self.full_name)
+        full_name = self['group'] + ':' + self['name']
+        self.log = supervisor.log.getChild(full_name)
+        self.supervisor = weakref.proxy(supervisor)
+        self['full_name'] = full_name
         self['running'] = self['state'] in RUNNING_STATES
         self['supervisor'] = supervisor['name']
         self['host'] = supervisor['host']
-        self.supervisor = weakref.proxy(supervisor)
+        self['uid'] = full_name + '@' + self['supervisor']
 
     @property
     def server(self):
-        return self.supervisor.server
+        return self.supervisor.server.supervisor
+
+    @property
+    def full_name(self):
+        return self['full_name']
 
     def update_info(self):
-        info = self.server.supervisor.getProcessInfo(self.full_name)
+        info = self.server.getProcessInfo(self.full_name)
         self.update(info)
         self['running'] = self['state'] in RUNNING_STATES
 
@@ -101,11 +131,11 @@ class Process(dict):
         self.log.info('Restarting')
         if self['running']:
             self.stop()
-        self.server.supervisor.startProcess(self.full_name, wait)
+        self.server.startProcess(self.full_name, wait)
 
     def stop(self, wait=True):
         self.log.info('Stopping')
-        self.server.supervisor.stopProcess(self.full_name, wait)
+        self.server.stopProcess(self.full_name, wait)
 
     def __eq__(self, proc):
         p1, p2 = dict(self), dict(proc)
@@ -120,7 +150,7 @@ class Process(dict):
 def load_config(config_file):
     parser = SafeConfigParser()
     parser.read(config_file)
-
+    dft_global = dict(name='multivisor')
     dft_supervisor = dict(event_port=None,
                           username=None,
                           password=None,
@@ -128,7 +158,8 @@ def load_config(config_file):
                           tags=())
 
     supervisors = {}
-    config = dict(parser.items('global'), supervisors=supervisors)
+    config = dict(dft_global, supervisors=supervisors)
+    config.update(parser.items('global'))
     for section in parser.sections():
         if not section.startswith('supervisor:'):
             continue
@@ -150,6 +181,7 @@ class Multivisor:
     def config(self):
         if self._config is None:
             self._config = load_config(self.options.config_file)
+            self.poll_supervisors()
         return self._config
 
     def reload_config(self):
@@ -161,13 +193,6 @@ class Multivisor:
         return self.config['supervisors']
 
     def poll_supervisor(self, supervisor):
-        try:
-            self._poll_supervisor(supervisor)
-        except Exception as e:
-            import pdb;pdb.set_trace()
-            logging.warn('failed to poll %s', supervisor['name'])
-
-    def _poll_supervisor(self, supervisor):
         modified = supervisor.update_info()
         if modified:
             logging.info('supervisor %r modified', supervisor['name'])
@@ -181,8 +206,9 @@ class Multivisor:
     def get_supervisor(self, name):
         return self.supervisors[supervisor]
 
-    def get_process(self, supervisor, name):
-        return self.supervisors[supervisor]['processes'][name]
+    def get_process(self, uid):
+        _, supervisor = uid.split('@', 1)
+        return self.supervisors[supervisor]['processes'][uid]
 
     def run_forever(self):
         while True:
@@ -213,6 +239,12 @@ def reload_config():
     return 'OK'
 
 
+@app.route("/refresh")
+def refresh():
+    app.multivisor.poll_supervisors()
+    return json.dumps(app.multivisor.config)
+
+
 @app.route("/data")
 def data():
     return json.dumps(app.multivisor.config)
@@ -220,8 +252,7 @@ def data():
 
 @app.route("/restart_process", methods=['POST'])
 def restart_process():
-    process = app.multivisor.get_process(request.form['supervisor'],
-                                         request.form['name'])
+    process = app.multivisor.get_process(request.form['uid'])
     wait = request.form.get('wait', True)
     process.restart(wait=wait)
     if wait:
@@ -232,8 +263,7 @@ def restart_process():
 
 @app.route("/stop_process", methods=['POST'])
 def stop_process():
-    process = app.multivisor.get_process(request.form['supervisor'],
-                                         request.form['name'])
+    process = app.multivisor.get_process(request.form['uid'])
     wait = request.form.get('wait', True)
     process.stop(wait=wait)
     if wait:
@@ -242,9 +272,9 @@ def stop_process():
     return 'OK'
 
 
-@app.route("/process/<supervisor>/<process>")
-def process_info(supervisor, process):
-    process = app.multivisor.get_process(supervisor, process)
+@app.route("/process/<uid>")
+def process_info(uid):
+    process = app.multivisor.get_process(uid)
     process.update_info()
     return json.dumps(process)
 

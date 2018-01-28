@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <router-view :multivisor="multivisor" :data="data" />
+    <router-view :multivisor="multivisor"/>
   </div>
 </template>
 
@@ -11,7 +11,6 @@ export default {
   name: 'Multivisor',
   data() {
     return {
-      data: {},
       multivisor: Vue.multivisor,
     }
   },
@@ -20,10 +19,9 @@ export default {
     this.update();
   },
   methods: {
-    update: function() {
+    update() {
       Vue.multivisor.get().then(data => {
           Vue.multivisor.data = data;
-          this.data = data;
       });
     }
   }

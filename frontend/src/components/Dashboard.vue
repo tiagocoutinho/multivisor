@@ -1,17 +1,20 @@
 <template>
   <div>
+    <NavBar :multivisor="multivisor"></NavBar>
     <h1>Dashboard</h1>
-    <GlobalTable :multivisor="multivisor" :data="data"></GlobalTable>
+    <GlobalTable :multivisor="multivisor"></GlobalTable>
   </div>
 </template>
 
 <script>
+import NavBar from './NavBar'
 import GlobalTable from './GlobalTable'
 
 export default {
   name: 'Dashboard',
-  props: ['multivisor', 'data'],
+  props: ['multivisor'],
   components: {
+    NavBar,
     GlobalTable
   },
 }
