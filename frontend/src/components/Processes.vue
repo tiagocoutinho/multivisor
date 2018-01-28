@@ -40,7 +40,7 @@
 <script>
 
 export default {
-  name: 'GlobalTable',
+  name: 'Processes',
   props: ['multivisor'],
   data() {
     return {
@@ -53,15 +53,11 @@ export default {
     },
     restart_process(process) {
       var supervisor = this.get_supervisor(process.supervisor);
-      this.multivisor.restart_process(process).then(updated_process => {
-        supervisor.processes[process.uid] = updated_process;
-      });
+      this.multivisor.restart_process(process);
     },
     stop_process(process) {
       var supervisor = this.get_supervisor(process.supervisor);
-      this.multivisor.stop_process(process).then(updated_process => {
-        supervisor.processes[process.uid] = updated_process;
-      });
+      this.multivisor.stop_process(process);
     },
     process_info(process) {
       var multivisor = this.multivisor;

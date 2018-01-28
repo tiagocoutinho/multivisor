@@ -2,6 +2,41 @@ const Multivisor = {
   data: {
     supervisors: {},
   },
+  log: '',
+
+  stream_to(multivisor) {
+    let event_source = new EventSource('/stream');
+    console.log('subscribing to stream...');
+
+    event_source.onmessage = event => {
+      let data = JSON.parse(event.data);
+      if(data.event === 'supervisor_changed') {
+        let supervisor = data.payload;
+        multivisor.data.supervisors[supervisor.name] = supervisor;
+      }
+      else if (data.event == 'process_changed') {
+        let process = data.payload;
+        let supervisor = multivisor.data.supervisors[process.supervisor];
+        supervisor.processes[process.uid] = process;
+      }
+      else if (data.event == 'log') {
+        multivisor.log = data.payload;
+        console.log('log:' + data.payload.message);
+      }
+      else {
+        console.warn('unknnown event');
+        console.log(event);
+      }
+    };
+
+    event_source.onopen = event => {
+      console.log('stream open');
+    };
+
+    event_source.onerror = event => {
+      console.log('stream closed');
+    };
+  },
 
   get () {
     return fetch('/data')
@@ -17,16 +52,14 @@ const Multivisor = {
     console.log('(re)start process ' + process.uid);
     let form = new FormData();
     form.append('uid', process.uid);
-    return fetch('/restart_process', {method: 'POST', body: form}).
-      then(response => response.json());
+    fetch('/restart_process', {method: 'POST', body: form});
   },
 
   stop_process(process) {
     console.log('stop process ' + process.uid);
     let form = new FormData();
     form.append('uid', process.uid);
-    return fetch('/stop_process', {method: 'POST', body: form}).
-      then(response => response.json());
+    fetch('/stop_process', {method: 'POST', body: form});
   },
 
   process_info(process) {

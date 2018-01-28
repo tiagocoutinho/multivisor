@@ -17,6 +17,8 @@ export default {
   created () {
     console.log('Multivisor App created!');
     this.update();
+    Vue.multivisor.stream_to(Vue.multivisor);
+
   },
   methods: {
     update() {
@@ -24,6 +26,7 @@ export default {
           Vue.multivisor.data = data;
       });
     }
+
   }
 }
 </script>

@@ -1,8 +1,9 @@
 <template>
   <nav>
-    <button v-on:click="refresh()">Refresh</button>
+    <!-- <button v-on:click="refresh()">Refresh</button> -->
     Processes: {{ total_processes }} (Up: {{ total_running_processes }})
     | Supervisors: {{ total_supervisors }} (Up: {{ total_running_supervisors }})
+    | {{ log }}
   </nav>
 </template>
 
@@ -28,6 +29,13 @@ export default {
       return this.processes
         .reduce((acc, process) => process.running ? acc + 1 : acc, 0);
     },
+    log() {
+      let log = this.multivisor.log;
+      if (log) {
+        return log.level + ' at ' + Date(log.time*1000) + ': ' + log.message;
+      }
+      return '';
+    }
   },
   methods: {
     refresh() {
@@ -41,5 +49,5 @@ export default {
 </script>
 
 <style scoped>
-nav {background-color: #AAFFAA;}
+nav {background-color: rgb(211, 236, 205);}
 </style>
