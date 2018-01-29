@@ -321,6 +321,13 @@ def process_info(uid):
     return json.dumps(process)
 
 
+@app.route("/supervisor/<uid>")
+def supervisor_info(uid):
+    supervisor = app.multivisor.get_supervisor(uid)
+    supervisor.refresh()
+    return json.dumps(supervisor)
+
+
 @app.route('/stream')
 def stream():
     def event_stream():
