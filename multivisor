@@ -45,15 +45,17 @@ class Supervisor(dict):
         return ServerProxy(self.address)
 
     def refresh(self):
+        server = self.server
         try:
-            pid = self.server.supervisor.getPID()
+            pid = server.supervisor.getPID()
         except:
             pid = None
-        return self._refresh(pid)
+        return self._refresh(pid, server)
 
-    def _refresh(self, pid):
+    def _refresh(self, pid, server=None):
         self.log.debug('updating')
         supervisor_name = self['name']
+        server = self.server if server is None else server
         supervisor = self.server.supervisor
         if pid != self.get('pid'):
             self['pid'] = pid
@@ -104,8 +106,8 @@ class Process(dict):
     def full_name(self):
         return self['full_name']
 
-    def refresh(self):
-        info = self.server.getProcessInfo(self.full_name)
+    def _refresh(self, server):
+        info = server.getProcessInfo(self.full_name)
         old_self = self.copy()
         self.update(info)
         self['running'] = self['state'] in RUNNING_STATES
@@ -116,26 +118,36 @@ class Process(dict):
                 self.log.info('%s changed from %s to %s', self,
                               old_self['statename'], self['statename'])
 
-    def start(self):
+    def refresh(self):
+        return self._refresh(self.server)
+
+    def _start(self, server):
         self.log.info('Starting %s...', self)
         try:
-            self.server.startProcess(self.full_name)
+            server.startProcess(self.full_name)
         except:
             self.log.error('Error trying to start %s!', self)
-            self.refresh()
+            self.refresh(server)
             return
-        self.refresh()
+        self._refresh(server)
+
+    def start(self):
+        return self._start(self.server)
+
+    def _stop(self, server):
+        self.log.info('Stopping...')
+        server.stopProcess(self.full_name)
+        self._refresh(server)
+
+    def stop(self):
+        return self._stop(self.server)
 
     def restart(self):
         self.log.info('Restarting...')
+        server = self.server
         if self['running']:
-            self.stop()
-        self.start()
-
-    def stop(self):
-        self.log.info('Stopping...')
-        self.server.stopProcess(self.full_name)
-        self.refresh()
+            self._stop(server)
+        self._start(server)
 
     def __str__(self):
         return '{0} on {1}'.format(self.full_name, self['supervisor'])
