@@ -232,6 +232,7 @@ class Multivisor(object):
     def config(self):
         if self._config is None:
             self._config = load_config(self.options.config_file)
+            self.poll_supervisors()
         return self._config
 
     def reload_config(self):
@@ -361,7 +362,6 @@ def main(args=None):
 
     app.multivisor = Multivisor(options)
 
-    app_task = spawn(app.multivisor.run_forever)
 
     from gevent.wsgi import WSGIServer
     http_server = WSGIServer(('', options.port), application=app)
