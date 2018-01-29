@@ -8,7 +8,7 @@ import weakref
 import functools
 from collections import OrderedDict
 from ConfigParser import SafeConfigParser
-from xmlrpclib import ServerProxy as _ServerProxy
+from xmlrpclib import ServerProxy
 
 from louie import send, connect
 from flask import Flask, render_template, Response, request, json
@@ -16,28 +16,6 @@ from gevent import queue, spawn, sleep, joinall, lock
 from supervisor.states import RUNNING_STATES
 
 log = logging.getLogger('multivisor')
-
-class ServerProxy(_ServerProxy):
-    class Wrap(object):
-
-        def __init__(self, lock, method):
-            self.__lock = lock
-            self.__method = method
-
-        def __getattr__(self, name):
-            return type(self)(self.__lock, getattr(self.__method, name))
-
-        def __call__(self, *args):
-            with self.__lock:
-                return self.__method(*args)
-
-    def __init__(self, *args, **kwargs):
-        self.__lock = lock.RLock()
-        _ServerProxy.__init__(self, *args, **kwargs)
-
-    def __getattr__(self, name):
-        method = _ServerProxy.__getattr__(self, name)
-        return self.Wrap(self.__lock, method)
 
 
 class Supervisor(dict):
@@ -59,17 +37,16 @@ class Supervisor(dict):
         credentials = ''
         if self.username and self.password:
             credentials = '{0}:{1}@'.format(self.username, self.password)
-        address = 'http://{0}{1}:{2}/RPC2'.format(credentials, self['host'],
-                                                  self['port'])
-        self.server = ServerProxy(address)
-
+        self.address = 'http://{0}{1}:{2}/RPC2'.format(credentials,
+                                                       self['host'],
+                                                       self['port'])
     @property
-    def supervisor(self):
-        return self.server.supervisor
+    def server(self):
+        return ServerProxy(self.address)
 
     def refresh(self):
         try:
-            pid = self.supervisor.getPID()
+            pid = self.server.supervisor.getPID()
         except:
             pid = None
         return self._refresh(pid)
@@ -77,7 +54,7 @@ class Supervisor(dict):
     def _refresh(self, pid):
         self.log.debug('updating')
         supervisor_name = self['name']
-        supervisor = self.supervisor
+        supervisor = self.server.supervisor
         if pid != self.get('pid'):
             self['pid'] = pid
             if pid is None: # server shutdown
