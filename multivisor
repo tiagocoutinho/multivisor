@@ -248,7 +248,7 @@ class Multivisor(object):
         joinall(tasks)
 
     def get_supervisor(self, name):
-        return self.supervisors[supervisor]
+        return self.supervisors[name]
 
     def get_process(self, uid):
         _, supervisor = uid.split('@', 1)
