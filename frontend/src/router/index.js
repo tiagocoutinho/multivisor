@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 
 const routerOptions = [
-  { path: '/', component: 'Dashboard' },
+  { path: '/', component: 'Page' },
   { path: '/about', component: 'About' }
 ]
 

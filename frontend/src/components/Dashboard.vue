@@ -1,22 +1,23 @@
 <template>
-  <div>
-    <NavBar :multivisor="multivisor"></NavBar>
+  <div id="dashboard">
     <h1>Dashboard</h1>
     <h3>Processes</h3>
     <Processes :multivisor="multivisor"></Processes>
+    <h3>Supervisors</h3>
+    <Supervisors :multivisor="multivisor"></Supervisors>
   </div>
 </template>
 
 <script>
-import NavBar from './NavBar'
 import Processes from './Processes'
+import Supervisors from './Supervisors'
 
 export default {
   name: 'Dashboard',
   props: ['multivisor'],
   components: {
-    NavBar,
     Processes,
+    Supervisors,
   },
 }
 </script>

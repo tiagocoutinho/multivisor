@@ -24,6 +24,7 @@
           <button v-bind:disabled="!process.running"
                   v-on:click="stop_process(process)">Stop</button>
           <button v-on:click="process_info(process)">Info</button>
+          <button v-on:click="log(process)">Log</button>
         </td>
         <td>{{ process.description }}</td>
       </tr>
@@ -64,7 +65,6 @@ export default {
       var supervisor = this.get_supervisor(process.supervisor);
       multivisor.process_info(process)
         .then(function(updated_process) {
-          supervisor.processes[process.name] = updated_process;
           alert(multivisor.process_string(updated_process));
         });
     },

@@ -75,9 +75,12 @@ const Multivisor = {
     return result;
   },
 
-  get_processes(multivisor) {
+  get_processes(multivisor, supervisor) {
     let processes = [];
-    let supervisors = multivisor.data.supervisors;
+    let supervisors = [supervisor];
+    if (supervisor === undefined) {
+      supervisors = multivisor.data.supervisors;
+    }
     for(let sname in supervisors) {
       let supervisor = supervisors[sname];
       for(let pname in supervisor.processes) {
