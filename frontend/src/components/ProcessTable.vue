@@ -3,8 +3,7 @@
   <el-table border :data="processes" style="width: 100%"
             :max-height="table_height"
             @selection-change="selected_processes_changed"
-            :default-sort="{prop: 'supervisor', order: 'ascending'}"
-            >
+            :default-sort="{prop: 'supervisor', order: 'ascending'}">
     <el-table-column type="expand">
       <template slot-scope="props">
         <ProcessDetails :process="props.row"></ProcessDetails>
@@ -21,12 +20,18 @@
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Actions" min-width="180">
+    <el-table-column label="Actions">
       <template slot-scope="scope">
-        <el-button @click="restart_process(scope.row)">(Re)Start</el-button>
-        <el-button :disabled="!scope.row.running"
-                   @click="stop_process(scope.row)">Stop</el-button>
-        <el-button @click="log(scope.row)">Log</el-button>
+        <el-button-group>
+          <el-button @click="restart_process(scope.row)" icon="el-icon-refresh">
+          </el-button>
+          <el-button :disabled="!scope.row.running"
+                     @click="stop_process(scope.row)"
+                     icon="el-icon-close">
+          </el-button>
+          <el-button @click="log(scope.row)" icon="el-icon-tickets">
+          </el-button>
+        </el-button-group>
       </template>
     </el-table-column>
   </el-table>
