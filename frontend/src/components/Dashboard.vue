@@ -1,7 +1,7 @@
 <template>
   <div>
     <ProcessTable :multivisor="multivisor"></ProcessTable>
-    <Supervisors :multivisor="multivisor"></Supervisors>
+    <!--<Supervisors :multivisor="multivisor"></Supervisors>-->
   </div>
 </template>
 
