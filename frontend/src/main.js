@@ -4,7 +4,7 @@ import Vue from 'vue'
 import router from './router'
 
 import { Container, Header, Footer, Main } from 'element-ui'
-import { Button, Table, TableColumn, Tag } from 'element-ui'
+import { Button, Table, TableColumn, Tag, Message, Notification } from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
 import App from './App'
@@ -12,6 +12,7 @@ import Multivisor from './plugins/multivisor'
 
 Vue.config.productionTip = false;
 
+// Choose element-ui mini size
 Vue.prototype.$ELEMENT = { size: 'mini' }
 Vue.use(Container);
 Vue.use(Header);

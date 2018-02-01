@@ -17,7 +17,7 @@ export default {
   created () {
     console.log('Multivisor App created!');
     this.update();
-    Vue.multivisor.stream_to(Vue.multivisor);
+    Vue.multivisor.stream_to(this);
 
   },
   methods: {

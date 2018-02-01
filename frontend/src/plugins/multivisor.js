@@ -1,10 +1,20 @@
+import {Notification} from 'element-ui'
+
+const LOG_LEVEL = {
+  'DEBUG': 'info',
+  'INFO': 'info',
+  'WARNING': 'warning',
+  'ERROR': 'error',
+}
+
 const Multivisor = {
   data: {
     supervisors: {},
   },
   log: '',
 
-  stream_to(multivisor) {
+  stream_to(vue) {
+    let multivisor = vue.multivisor;
     let event_source = new EventSource('/stream');
     console.log('subscribing to stream...');
 
@@ -20,8 +30,16 @@ const Multivisor = {
         supervisor.processes[process.uid] = process;
       }
       else if (data.event == 'log') {
-        multivisor.log = data.payload;
-        console.log('log:' + data.payload.message);
+        let log = data.payload;
+        multivisor.log = log;
+        // the following should be moved to a vue event listener
+        Notification({
+          title: log.message,
+          message: Date(log.time*1000),
+          type: LOG_LEVEL[log.level],
+          position: 'bottom-right',
+        });
+        console.log('server log:' + data.payload.message);
       }
       else {
         console.warn('unknnown event');

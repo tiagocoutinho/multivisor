@@ -51,7 +51,7 @@ export default {
   data() {
     return {
       state_to_tag: {
-        'STOPPED': '',
+        'STOPPED': 'info',
         'STARTING': 'primary',
         'RUNNING': 'success',
         'BACKOFF': 'warning',

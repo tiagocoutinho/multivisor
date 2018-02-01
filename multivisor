@@ -122,7 +122,6 @@ class Process(dict):
         return self._refresh(self.server)
 
     def _start(self, server):
-        self.log.info('Starting %s...', self)
         try:
             server.startProcess(self.full_name)
         except:
@@ -135,7 +134,6 @@ class Process(dict):
         return self._start(self.server)
 
     def _stop(self, server):
-        self.log.info('Stopping...')
         server.stopProcess(self.full_name)
         self._refresh(server)
 
@@ -143,7 +141,6 @@ class Process(dict):
         return self._stop(self.server)
 
     def restart(self):
-        self.log.info('Restarting...')
         server = self.server
         if self['running']:
             self._stop(server)
