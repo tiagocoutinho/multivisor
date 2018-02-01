@@ -37,15 +37,6 @@
 </div>
 </template>
 
-<style>
-.el-table .running {background: #67C23A;}
-.el-table .starting {background: #409EFF;}
-.el-table .stopping {background: #409EFF;}
-.el-table .stopped {background: #909399;}
-.el-table .backlog {background: #909399;}
-.el-table .fatal {background: #F56C6C;}
-</style>
-
 <script>
 import ProcessDetails from './ProcessDetails'
 
