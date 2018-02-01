@@ -24,6 +24,7 @@ export default {
     update() {
       Vue.multivisor.get().then(data => {
           Vue.multivisor.data = data;
+          document.title = data.name;
       });
     }
 

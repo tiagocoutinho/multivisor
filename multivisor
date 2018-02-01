@@ -127,7 +127,7 @@ class Process(dict):
             server.startProcess(self.full_name)
         except:
             self.log.error('Error trying to start %s!', self)
-            self.refresh(server)
+            self._refresh(server)
             return
         self._refresh(server)
 
@@ -150,7 +150,7 @@ class Process(dict):
         self._start(server)
 
     def __str__(self):
-        return '{0} on {1}'.format(self.full_name, self['supervisor'])
+        return '{0} on {1}'.format(self['name'], self['supervisor'])
 
     def __eq__(self, proc):
         p1, p2 = dict(self), dict(proc)
@@ -221,7 +221,6 @@ class Multivisor(object):
     def config(self):
         if self._config is None:
             self._config = load_config(self.options.config_file)
-            self.poll_supervisors()
         return self._config
 
     def reload_config(self):
@@ -330,6 +329,11 @@ def stream():
                     mimetype="text/event-stream")
 
 
+def make_rpcinterface(supervisord, **config):
+    print config
+    return
+
+
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
@@ -351,6 +355,7 @@ def main(args=None):
 
     app.multivisor = Multivisor(options)
 
+    app_task = spawn(app.multivisor.run_forever)
 
     from gevent.wsgi import WSGIServer
     http_server = WSGIServer(('', options.port), application=app)

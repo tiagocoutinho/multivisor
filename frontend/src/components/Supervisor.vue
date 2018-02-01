@@ -17,9 +17,9 @@
         <td>{{ process.group }}</td>
         <td>{{ process.statename }}</td>
         <td>
-          <button v-on:click="restartProcess(process)">(Re)Start</button>
-          <button v-bind:disabled="!process.running"
-                  v-on:click="stopProcess(process)">Stop</button>
+          <button @click="restartProcess(process)">(Re)Start</button>
+          <button :disabled="!process.running"
+                  @click="stopProcess(process)">Stop</button>
           <button>Info</button>
         </td>
       </tr>

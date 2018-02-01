@@ -20,20 +20,18 @@
         <td>{{ process.host }}</td>
         <td>{{ process.statename }}</td>
         <td>
-          <button v-on:click="restart_process(process)">(Re)Start</button>
-          <button v-bind:disabled="!process.running"
-                  v-on:click="stop_process(process)">Stop</button>
-          <button v-on:click="process_info(process)">Info</button>
-          <button v-on:click="log(process)">Log</button>
+          <button @click="restart_process(process)">(Re)Start</button>
+          <button :disabled="!process.running"
+                  @click="stop_process(process)">Stop</button>
+          <button @click="process_info(process)">Info</button>
+          <button @click="log(process)">Log</button>
         </td>
         <td>{{ process.description }}</td>
       </tr>
     </table>
     <div>
-      <button v-on:click="restart_all()">(Re)Start All</button>
-      <button v-on:click="restart_selected()">(Re)Start Selected</button>
-      <button v-on:click="stop_all()">Stop All</button>
-      <button v-on:click="stop_selected()">Stop Selected</button>
+      <button @click="restart_selected()">(Re)Start Selected</button>
+      <button @click="stop_selected()">Stop Selected</button>
     </div>
   </div>
 </template>

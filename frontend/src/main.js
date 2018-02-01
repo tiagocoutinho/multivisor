@@ -1,18 +1,42 @@
 // The Vue build version to load with the `import` command
 // (runtime-only or standalone) has been set in webpack.base.conf with an alias.
 import Vue from 'vue'
-import App from './App'
 import router from './router'
+
+import { Container, Header, Footer, Main } from 'element-ui'
+import { Button, Table, TableColumn, Tag } from 'element-ui'
+import 'element-ui/lib/theme-chalk/index.css'
+
+import App from './App'
 import Multivisor from './plugins/multivisor'
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
 
+Vue.prototype.$ELEMENT = { size: 'mini' }
+Vue.use(Container);
+Vue.use(Header);
+Vue.use(Footer);
+Vue.use(Main);
+Vue.use(Button);
+Vue.use(Table);
+Vue.use(TableColumn);
+Vue.use(Tag);
 Vue.use(Multivisor);
 
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
   router,
-  components: { App },
+  components: {
+    Container,
+    Header,
+    Footer,
+    Main,
+    Button,
+    Table,
+    TableColumn,
+    Tag,
+    App
+  },
   template: '<App/>'
 })
