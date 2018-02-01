@@ -1,12 +1,11 @@
 <template>
-    <el-container>
+    <el-container style="height:100%; width:100%;">
       <el-header>
         <Summary :multivisor="multivisor"></Summary>
       </el-header>
       <el-main>
         <Dashboard :multivisor="multivisor"></Dashboard>
       </el-main>
-      <el-footer height="30">Footer</el-footer>
     </el-container>
 </template>
 

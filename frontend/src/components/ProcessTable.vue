@@ -1,7 +1,7 @@
 <template>
 <div>
   <el-table border :data="processes" style="width: 100%"
-            :max-height="table_height"
+            :max-height="800"
             @selection-change="selected_processes_changed"
             :default-sort="{prop: 'supervisor', order: 'ascending'}">
     <el-table-column type="expand">
@@ -15,23 +15,25 @@
     <el-table-column prop="supervisor" label="Supervisor" sortable show-overflow-tooltip></el-table-column>
     <el-table-column label="Status" sortable>
       <template slot-scope="scope">
-        <el-tag :type="state_to_tag[scope.row.statename]" size="small">
+        <el-tag :type="state_to_tag[scope.row.statename]">
           {{scope.row.statename}}
         </el-tag>
       </template>
     </el-table-column>
     <el-table-column label="Actions">
       <template slot-scope="scope">
-        <el-button-group>
-          <el-button @click="restart_process(scope.row)" icon="el-icon-refresh">
-          </el-button>
-          <el-button :disabled="!scope.row.running"
-                     @click="stop_process(scope.row)"
-                     icon="el-icon-close">
-          </el-button>
-          <el-button @click="log(scope.row)" icon="el-icon-tickets">
-          </el-button>
-        </el-button-group>
+        <el-tooltip class="item" content="Restart/Stop/Log">
+          <el-button-group>
+            <el-button @click="restart_process(scope.row)" icon="el-icon-refresh">
+              </el-button>
+            <el-button :disabled="!scope.row.running"
+                       @click="stop_process(scope.row)"
+                       icon="el-icon-close">
+            </el-button>
+            <el-button @click="log(scope.row)" icon="el-icon-tickets">
+            </el-button>
+          </el-button-group>
+        </el-tooltip>
       </template>
     </el-table-column>
   </el-table>
@@ -65,7 +67,7 @@ export default {
         'FATAL': 'danger',
         'UNKNOWN': 'info'
       },
-      table_height: Math.max(100, window.innerHeight - 80),
+      //table_height: Math.max(100, window.innerHeight - 80),
       selected_processes: {}
     }
   },
@@ -108,7 +110,7 @@ export default {
       alert(Object.keys(this.selected_processes));
     },
     handle_resize(event) {
-      this.table_heigth = Math.max(100, event.currentTarget.innerHeight - 80);
+      //this.table_heigth = Math.max(100, event.currentTarget.innerHeight - 80);
     }
   },
   computed: {
