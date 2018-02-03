@@ -1,8 +1,7 @@
 <template>
-  <el-row>
-    <el-tag size="normal">{{multivisor.data.name}}</el-tag>
-    <el-tag type="info" size="normal">
-      Processes: {{ total_running_processes }}
+  <div>
+    <el-tag type="info">
+      Processes: {{ total_processes }}
       <el-tag type="success" size="mini">
         <i class="el-icon-upload2"></i>{{ total_running_processes }}
       </el-tag>
@@ -10,7 +9,7 @@
         <i class="el-icon-download"></i>{{ total_processes - total_running_processes }}
       </el-tag>
     </el-tag>
-    <el-tag type="info" size="normal">
+    <el-tag type="info">
       Supervisors: {{ total_supervisors }}
       <el-tag type="success" size="mini">
         <i class="el-icon-upload2"></i>{{ total_running_supervisors }}
@@ -19,6 +18,7 @@
         <i class="el-icon-download"></i>{{ total_supervisors - total_running_supervisors }})
       </el-tag>
     </el-tag>
+    <el-tag>{{multivisor.data.name}}</el-tag>
   </div>
 </template>
 

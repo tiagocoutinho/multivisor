@@ -5,7 +5,7 @@ import router from './router'
 
 import { Container, Row, Col, Header, Footer, Main } from 'element-ui'
 import { Table, TableColumn, Button, ButtonGroup } from 'element-ui'
-import { Tooltip, Tag, Message, Notification, Input } from 'element-ui'
+import { Tooltip, Popover, Tag, Message, Notification, Input } from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
 import App from './App'
@@ -14,7 +14,7 @@ import Multivisor from './plugins/multivisor'
 Vue.config.productionTip = false;
 
 // Choose element-ui mini size
-Vue.prototype.$ELEMENT = { size: 'small' }
+//Vue.prototype.$ELEMENT = { size: 'small' }
 Vue.use(Container);
 Vue.use(Row);
 Vue.use(Col);
@@ -24,8 +24,9 @@ Vue.use(Main);
 Vue.use(Button);
 Vue.use(ButtonGroup);
 Vue.use(Tooltip);
-Vue.use(Table);
-Vue.use(TableColumn);
+Vue.use(Popover);
+Vue.use(Table, { size: 'mini' });
+Vue.use(TableColumn, { size: 'mini' });
 Vue.use(Tag);
 Vue.use(Input);
 Vue.use(Multivisor);

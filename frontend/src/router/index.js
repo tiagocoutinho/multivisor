@@ -3,7 +3,6 @@ import Router from 'vue-router'
 
 const routerOptions = [
   { path: '/', component: 'Page' },
-  { path: '/about', component: 'About' }
 ]
 
 const routes = routerOptions.map(route => {

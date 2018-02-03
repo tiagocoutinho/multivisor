@@ -11,6 +11,12 @@ const to_lower = text => {
   return text.toString().toLowerCase()
 }
 
+const supervisor_action = (id, action) => {
+  let form = new FormData();
+  form.append('supervisor', id);
+  return fetch('/' + action + '_supervisor', {method: 'POST', body: form});
+}
+
 const Multivisor = {
   data: {
     supervisors: {},
@@ -43,7 +49,7 @@ const Multivisor = {
           type: LOG_LEVEL[log.level],
           position: 'bottom-right',
         });
-        console.log('server log:' + data.payload.message);
+        //console.log('server log:' + data.payload.message);
       }
       else {
         console.warn('unknnown event');
@@ -70,15 +76,37 @@ const Multivisor = {
       .then(response => response.json());
   },
 
-  restart_process(process) {
+  supervisor_action(id, action) {
     let form = new FormData();
-    form.append('uid', process.uid);
+    form.append('supervisor', id);
+    return fetch('/' + action + '_supervisor', {method: 'POST', body: form});
+  },
+
+  update_supervisor(id) {
+    return supervisor_action(id, 'update')
+  },
+
+  restart_supervisor(id) {
+    return supervisor_action(id, 'restart')
+  },
+
+  reread_supervisor(id) {
+    return supervisor_action(id, 'reread')
+  },
+
+  shutdown_supervisor(id) {
+    return supervisor_action(id, 'shutdown')
+  },
+
+  restart_process(uid) {
+    let form = new FormData();
+    form.append('uid', uid);
     fetch('/restart_process', {method: 'POST', body: form});
   },
 
-  stop_process(process) {
+  stop_process(uid) {
     let form = new FormData();
-    form.append('uid', process.uid);
+    form.append('uid', uid);
     fetch('/stop_process', {method: 'POST', body: form});
   },
 

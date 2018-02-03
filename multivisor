@@ -12,8 +12,10 @@ from xmlrpclib import ServerProxy
 
 from louie import send, connect
 from flask import Flask, render_template, Response, request, json
-from gevent import queue, spawn, sleep, joinall, lock
+from gevent import queue, spawn, sleep, iwait, joinall, lock
 from supervisor.states import RUNNING_STATES
+from supervisor.xmlrpc import Faults
+
 
 log = logging.getLogger('multivisor')
 
@@ -31,7 +33,8 @@ class Supervisor(dict):
 
     def __init__(self, *args, **kwargs):
         super(Supervisor, self).__init__(*args, **kwargs)
-        self.log = log.getChild(self['name'])
+        self.name  = self['name']
+        self.log = log.getChild(self.name)
         self.username = self.pop('username')
         self.password = self.pop('password')
         credentials = ''
@@ -40,12 +43,14 @@ class Supervisor(dict):
         self.address = 'http://{0}{1}:{2}/RPC2'.format(credentials,
                                                        self['host'],
                                                        self['port'])
+        self._static_server = self.server
+
     @property
     def server(self):
         return ServerProxy(self.address)
 
     def refresh(self):
-        server = self.server
+        server = self._static_server
         try:
             pid = server.supervisor.getPID()
         except:
@@ -81,6 +86,84 @@ class Supervisor(dict):
         if modified:
             send('multivisor', self, event='supervisor_changed')
         return modified
+
+    def update_server(self, group_names=()):
+        supervisor = self.server.supervisor
+        try:
+            added, changed, removed = supervisor.reloadConfig()[0]
+        except xmlrpclib.Fault as e:
+            if e.faultCode == Faults.SHUTDOWN_STATE:
+                self.log.debug('%s already shutting down', self.name)
+                return
+            else:
+                self.log.error('Error reading config of %s', self.name)
+                return
+
+        # If any gnames are specified we need to verify that they are
+        # valid in order to print a useful error message.
+        if group_names:
+            groups = set()
+            for info in supervisor.getAllProcessInfo():
+                groups.add(info['group'])
+            # New gnames would not currently exist in this set so
+            # add those as well.
+            groups.update(added)
+
+            for gname in group_names:
+                if gname not in groups:
+                    self.log.debug('unknown group %s', gname)
+
+        for gname in removed:
+            if group_names and gname not in group_names:
+                continue
+            results = supervisor.stopProcessGroup(gname)
+            self.log.debug('stopped process group %s', gname)
+
+            fails = [res for res in results
+                     if res['status'] == Faults.FAILED]
+            if fails:
+                self.log.debug("%s as problems; not removing", gname)
+                continue
+            supervisor.removeProcessGroup(gname)
+            self.log.debug("removed process group %s", gname)
+
+        for gname in changed:
+            if group_names and gname not in group_names:
+                continue
+            supervisor.stopProcessGroup(gname)
+            self.log.debug('stopped process group %s', gname)
+
+            supervisor.removeProcessGroup(gname)
+            supervisor.addProcessGroup(gname)
+            self.log.debug('updated process group %s', gname)
+
+        for gname in added:
+            if group_names and gname not in group_names:
+                continue
+            supervisor.addProcessGroup(gname)
+            self.log.debug('added process group %s', gname)
+
+        self.log.info('Updated %s', self.name)
+
+    def restart(self):
+        result = self.server.supervisor.restart()
+        if result:
+            self.log.info('Restarted %s', self.name)
+        else:
+            self.log.error('Error restarting %s', self.name)
+
+    def reread(self):
+        added, changed, removed = self.server.supervisor.reloadConfig()[0]
+        self.log.info('Reread config of %s ' \
+                      '(%d added; %d changed; %d disappeared)', self.name,
+                      len(added), len(changed), len(removed))
+
+    def shutdown(self):
+        result = self.server.supervisor.shutdown()
+        if result:
+            self.log.info('Shut down %s', self.name)
+        else:
+            self.log.error('Error shutting down %s', self.name)
 
 
 class Process(dict):
@@ -285,6 +368,47 @@ def refresh():
 def data():
     return json.dumps(app.multivisor.config)
 
+
+@app.route("/update_supervisor", methods=['POST'])
+def update_supervisor():
+    names = (unicode.strip(supervisor)
+             for supervisor in request.form['supervisor'].split(','))
+    supervisors = (app.multivisor.get_supervisor(name) for name in names)
+    tasks = [spawn(supervisor.update_server) for supervisor in supervisors]
+    joinall(tasks)
+    return 'OK'
+
+
+@app.route("/restart_supervisor", methods=['POST'])
+def restart_supervisor():
+    names = (unicode.strip(supervisor)
+             for supervisor in request.form['supervisor'].split(','))
+    supervisors = (app.multivisor.get_supervisor(name) for name in names)
+    tasks = [spawn(supervisor.restart) for supervisor in supervisors]
+    joinall(tasks)
+    return 'OK'
+
+
+@app.route("/reread_supervisor", methods=['POST'])
+def reread_supervisor():
+    names = (unicode.strip(supervisor)
+             for supervisor in request.form['supervisor'].split(','))
+    supervisors = (app.multivisor.get_supervisor(name) for name in names)
+    tasks = [spawn(supervisor.reread) for supervisor in supervisors]
+    joinall(tasks)
+    return 'OK'
+
+
+@app.route("/shutdown_supervisor", methods=['POST'])
+def shutdown_supervisor():
+    names = (unicode.strip(supervisor)
+             for supervisor in request.form['supervisor'].split(','))
+    supervisors = (app.multivisor.get_supervisor(name) for name in names)
+    tasks = [spawn(supervisor.shutdown) for supervisor in supervisors]
+    joinall(tasks)
+    return 'OK'
+
+
 @app.route("/restart_process", methods=['POST'])
 def restart_process():
     uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
@@ -292,6 +416,7 @@ def restart_process():
     tasks = [spawn(process.restart) for process in processes]
     joinall(tasks)
     return 'OK'
+
 
 @app.route("/stop_process", methods=['POST'])
 def stop_process():
