@@ -46,8 +46,8 @@
                        @click="stop_process(scope.row)"
                        icon="el-icon-close">
             </el-button>
-            <el-button @click="log(scope.row)" icon="el-icon-tickets">
-            </el-button>
+            <!--<el-button @click="log(scope.row)" icon="el-icon-tickets">
+            </el-button>-->
           </el-button-group>
         </el-tooltip>
       </template>
