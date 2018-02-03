@@ -285,18 +285,20 @@ def refresh():
 def data():
     return json.dumps(app.multivisor.config)
 
-
 @app.route("/restart_process", methods=['POST'])
 def restart_process():
-    process = app.multivisor.get_process(request.form['uid'])
-    spawn(process.restart)
+    uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
+    processes = (app.multivisor.get_process(uid) for uid in uids)
+    tasks = [spawn(process.restart) for process in processes]
+    joinall(tasks)
     return 'OK'
-
 
 @app.route("/stop_process", methods=['POST'])
 def stop_process():
-    process = app.multivisor.get_process(request.form['uid'])
-    spawn(process.stop)
+    uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
+    processes = (app.multivisor.get_process(uid) for uid in uids)
+    tasks = [spawn(process.stop) for process in processes]
+    joinall(tasks)
     return 'OK'
 
 

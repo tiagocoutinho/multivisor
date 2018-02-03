@@ -7,6 +7,10 @@ const LOG_LEVEL = {
   'ERROR': 'error',
 }
 
+const to_lower = text => {
+  return text.toString().toLowerCase()
+}
+
 const Multivisor = {
   data: {
     supervisors: {},
@@ -67,16 +71,28 @@ const Multivisor = {
   },
 
   restart_process(process) {
-    console.log('(re)start process ' + process.uid);
     let form = new FormData();
     form.append('uid', process.uid);
     fetch('/restart_process', {method: 'POST', body: form});
   },
 
   stop_process(process) {
-    console.log('stop process ' + process.uid);
     let form = new FormData();
     form.append('uid', process.uid);
+    fetch('/stop_process', {method: 'POST', body: form});
+  },
+
+  restart_processes(processes) {
+    let form = new FormData();
+    let uids = processes.map(process => process.uid);
+    form.append('uid', uids);
+    fetch('/restart_process', {method: 'POST', body: form});
+  },
+
+  stop_processes(processes) {
+    let form = new FormData();
+    let uids = processes.map(process => process.uid);
+    form.append('uid', uids);
     fetch('/stop_process', {method: 'POST', body: form});
   },
 
@@ -104,6 +120,29 @@ const Multivisor = {
       for(let pname in supervisor.processes) {
         let process = supervisor.processes[pname];
         processes.push(process);
+      }
+    }
+    return processes;
+  },
+
+  get_filtered_processes(multivisor, term, supervisor) {
+    let processes = [];
+    let supervisors = [supervisor];
+    let lterm = term ? to_lower(term): "";
+    if (supervisor === undefined) {
+      supervisors = multivisor.data.supervisors;
+    }
+    for(let sname in supervisors) {
+      let supervisor = supervisors[sname];
+      for(let pname in supervisor.processes) {
+        let process = supervisor.processes[pname];
+        if(!term ||
+           to_lower(process.name).includes(lterm) ||
+           to_lower(process.group).includes(lterm) ||
+           to_lower(process.supervisor).includes(lterm) ||
+           to_lower(process.statename).includes(lterm)) {
+          processes.push(process);
+        }
       }
     }
     return processes;

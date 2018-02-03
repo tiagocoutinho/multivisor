@@ -1,5 +1,20 @@
 <template>
-<div>
+<el-row>
+  <el-row>
+    <el-col :span="16">
+      <el-button :disabled="!selected_processes.length"
+                 @click="restart_selected()">Restart selected
+      </el-button>
+      <el-button :disabled="!selected_processes.length"
+                 @click="stop_selected()">Stop selected
+      </el-button>
+    </el-col>
+    <el-col :span="8">
+      <el-input placeholder="Filter..." v-model="search" clearable>
+      </el-input>
+    </el-col>
+  </el-row>
+  <el-row>
   <el-table border :data="processes" style="width: 100%"
             :max-height="800"
             @selection-change="selected_processes_changed"
@@ -10,7 +25,8 @@
       </template>
     </el-table-column>
     <el-table-column type="selection"></el-table-column>
-    <el-table-column prop="name" label="Name" sortable></el-table-column>
+    <el-table-column prop="name" label="Name" sortable>
+    </el-table-column>
     <el-table-column prop="group" label="Group" sortable show-overflow-tooltip></el-table-column>
     <el-table-column prop="supervisor" label="Supervisor" sortable show-overflow-tooltip></el-table-column>
     <el-table-column label="Status" sortable>
@@ -37,16 +53,13 @@
       </template>
     </el-table-column>
   </el-table>
-  <div>
-    <el-button>Restart selected</el-button>
-    <el-button>Stop selected</el-button>
-  </div>
-</div>
+  </el-row>
+<el-row>
 </template>
 
 <script>
 import ProcessDetails from './ProcessDetails'
-
+import { MessageBox } from 'element-ui'
 export default {
   name: 'ProcessTable',
   props: ['multivisor'],
@@ -67,17 +80,9 @@ export default {
         'FATAL': 'danger',
         'UNKNOWN': 'info'
       },
-      //table_height: Math.max(100, window.innerHeight - 80),
-      selected_processes: {}
+      selected_processes: [],
+      search: null,
     }
-  },
-
-  mounted: function() {
-    window.addEventListener('resize', this.handle_resize);
-  },
-
-  beforeDestroy: function () {
-    window.removeEventListener('resize', this.handle_resize);
   },
 
   methods: {
@@ -107,15 +112,37 @@ export default {
       return this.multivisor.process_string(process);
     },
     restart_selected() {
-      alert(Object.keys(this.selected_processes));
+      let processes = this.selected_processes.slice();
+      MessageBox.confirm('Are you sure you want to restart these processes?',
+                         'Question',
+                         { type: 'warning',
+                           confirmButtonText: 'YES',
+                           cancelButtonText: 'No',
+                           center: true }).then(() => {
+          this.multivisor.restart_processes(processes);
+          this.selected_processes = [];
+      });
     },
-    handle_resize(event) {
-      //this.table_heigth = Math.max(100, event.currentTarget.innerHeight - 80);
+    stop_selected() {
+      let processes = this.selected_processes.slice();
+      MessageBox.confirm('Are you sure you want to restart these processes?',
+                         'Question',
+                         { type: 'warning',
+                           confirmButtonText: 'YES',
+                           cancelButtonText: 'No',
+                           center: true }).then(() => {
+        this.multivisor.stop_processes(processes);
+        this.selected_processes = [];
+      });
+
+    },
+    selected_processes_changed(val) {
+      this.selected_processes = val;
     }
   },
   computed: {
     processes() {
-      return this.multivisor.get_processes(this.multivisor);
+      return this.multivisor.get_filtered_processes(this.multivisor, this.search);
     },
   }
 }
