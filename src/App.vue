@@ -35,7 +35,7 @@
     <v-footer app fixed class="primary">
       <v-layout row>
         <v-flex xs12 class="text-xs-right pr4">
-          <v-icon dark left>work</v-icon>
+          <v-icon dark left>settings</v-icon>
           <span class="green--text">&#11014 {{ nbRunningProcesses }}</span>;
           <span class="red--text">&#11015 {{ nbStoppedProcesses }} </span>
         </v-flex>
@@ -57,8 +57,8 @@
       return {
         drawer: false,
         menuItems: [
-          { icon: 'work', title: 'Processes (15 &#11014; 4 &#11015;)', link: '/processes' },
-          { icon: 'visibility', title: 'Supervisors (15 &#11014; 4 &#11015;)', link: '/supervisors' }
+          { icon: 'settings', title: 'Processes', link: '/processes' },
+          { icon: 'visibility', title: 'Supervisors', link: '/supervisors' }
         ]
       }
     },
