@@ -30,6 +30,6 @@ new Vue({
   store,
   render: h => h(App),
   created () {
-    this.$store.dispatch('load')
+    this.$store.dispatch('init')
   }
 })

@@ -17,10 +17,14 @@ export const store = new Vuex.Store({
     }
   },
   actions: {
-    load ({ commit }) {
+    init ({ commit }) {
       multivisor.load()
         .then((data) => {
           commit('setMultivisor', data)
+          const eventHandler = (event) => {
+            console.log('Received event ' + event.data)
+          }
+          multivisor.streamTo(eventHandler)
         })
     },
     restartProcess (context, uid) {
