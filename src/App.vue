@@ -33,17 +33,17 @@
       </v-container>
     </v-content>
     <v-footer app fixed class="primary">
-      <v-layout row>
-        <v-flex xs12 class="text-xs-right pr4">
-          <v-icon dark left>settings</v-icon>
-          <span class="green--text">&#11014 {{ nbRunningProcesses }}</span>;
-          <span class="red--text">&#11015 {{ nbStoppedProcesses }} </span>
-        </v-flex>
-        <v-flex xs12 class="text-xs-left">
-          <v-icon dark left>visibility</v-icon>
-          <span class="green--text">&#11014 {{ nbRunningSupervisors }}</span>;
-          <span class="red--text" &#11015 {{ nbStoppedSupervisors }}</span>
-        </v-flex>
+      <v-layout wrap align-center>
+        <v-chip color="secondary" text-color="white">
+          <v-icon left dark>settings</v-icon>
+          <v-avatar class="green">{{ nbRunningProcesses }}</v-avatar>
+          <v-avatar class="red">{{ nbStoppedProcesses }}</v-avatar>
+        </v-chip>
+        <v-chip color="secondary" text-color="white">
+          <v-icon left dark>visibility</v-icon>
+          <v-avatar class="green">{{ nbRunningSupervisors }}</v-avatar>
+          <v-avatar class="red">{{ nbStoppedSupervisors }}</v-avatar>
+        </v-chip>
       </v-layout>
     </v-footer>
   </v-app>
@@ -63,8 +63,8 @@
       }
     },
     computed: {
-      ...mapGetters(['nbRunningProcesses', 'nbStoppedProcesses',
-        'nbRunningSupervisors', 'nbStoppedSupervisors']),
+      ...mapGetters(['nbRunningProcesses', 'nbStoppedProcesses', 'totalNbProcesses',
+        'nbRunningSupervisors', 'nbStoppedSupervisors', 'totalNbSupervisors']),
       name () {
         return this.$store.state.multivisor.name
       }
