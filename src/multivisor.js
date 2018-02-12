@@ -21,7 +21,6 @@ export const streamTo = (eventHandler) => {
 
   eventSource.onmessage = event => {
     let data = JSON.parse(event.data)
-    console.log('event ' + data)
     eventHandler(data)
   }
 

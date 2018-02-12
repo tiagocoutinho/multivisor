@@ -47,7 +47,12 @@
           <td @click="props.expanded = !props.expanded"
               style="cursor:pointer">{{ props.item.name }}</td>
           <td class="hidden-sm-only">{{ props.item.supervisor }}</td>
-          <td >{{ props.item.statename }}</td>
+          <td >
+            <v-chip label :color="stateColorMap[props.item.statename]"
+                    text-color="white">
+                    {{ props.item.statename }}
+            </v-chip>
+          </td>
           <td class="justify-center layout px-0">
             <v-btn icon class="mx-0" @click="restartProcess(props.item)">
               <v-icon color="teal">play_arrow</v-icon>
@@ -83,6 +88,16 @@
 export default {
   data () {
     return {
+      stateColorMap: {
+        'STOPPED': 'grey',
+        'STARTING': 'blue',
+        'RUNNING': 'green',
+        'BACKOFF': 'orange',
+        'STOPPING': 'blue',
+        'EXITED': 'orange',
+        'FATAL': 'red',
+        'UNKNOWN': 'black'
+      },
       searchProcesses: '',
       processHeaders: [
         { align: 'left', sortable: true, text: 'Group', value: 'group', tooltip: 'process group', class: 'hidden-xs-only' },

@@ -14,6 +14,13 @@ export const store = new Vuex.Store({
   mutations: {
     setMultivisor (state, multivisor) {
       state.multivisor = multivisor
+    },
+    setProcess (state, process) {
+      let supervisor = state.multivisor.supervisors[process.supervisor]
+      supervisor.processes[process.uid] = process
+    },
+    setSupervisor (state, supervisor) {
+      state.multivisor.supervisors[supervisor.name] = supervisor
     }
   },
   actions: {
@@ -22,7 +29,14 @@ export const store = new Vuex.Store({
         .then((data) => {
           commit('setMultivisor', data)
           const eventHandler = (event) => {
-            console.log('Received event ' + event.data)
+            if (event.event === 'process_changed') {
+              commit('setProcess', event.payload)
+            } else if (event.event === 'supervisor_changed') {
+              commit('setSupervisor', event.payload)
+            } else if (event.event === 'log') {
+              let log = event.payload
+              console.log(log.message)
+            }
           }
           multivisor.streamTo(eventHandler)
         })
