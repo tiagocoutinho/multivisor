@@ -32,17 +32,17 @@
         <router-view></router-view>
       </v-container>
     </v-content>
-    <v-footer app fixed class="primary">
-      <v-layout wrap align-center>
-        <v-chip color="secondary" text-color="white">
-          <v-icon left dark>settings</v-icon>
-          <v-avatar class="green">{{ nbRunningProcesses }}</v-avatar>
-          <v-avatar class="red">{{ nbStoppedProcesses }}</v-avatar>
+    <v-footer app fixed color="primary">
+      <v-layout row justify-center>
+        <v-chip label outline text-color="white">
+          <v-icon left>settings</v-icon>
+          <v-chip label small color="green">{{ nbRunningProcesses }}</v-chip>
+          <v-chip label small color="red">{{ nbStoppedProcesses }}</v-chip>
         </v-chip>
-        <v-chip color="secondary" text-color="white">
-          <v-icon left dark>visibility</v-icon>
-          <v-avatar class="green">{{ nbRunningSupervisors }}</v-avatar>
-          <v-avatar class="red">{{ nbStoppedSupervisors }}</v-avatar>
+        <v-chip label outline text-color="white">
+          <v-icon left>visibility</v-icon>
+          <v-chip label small color="green">{{ nbRunningSupervisors }}</v-chip>
+          <v-chip label small color="red">{{ nbStoppedSupervisors }}</v-chip>
         </v-chip>
       </v-layout>
     </v-footer>

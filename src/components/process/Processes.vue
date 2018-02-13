@@ -2,7 +2,12 @@
   <v-container><v-layout justify-center>
   <v-card>
     <v-card-title>
-      Processes
+      <v-btn color="green" @click="restartSelected()">
+        <v-icon color="white">play_arrow</v-icon>
+      </v-btn>
+      <v-btn color="red" @click="stopSelected()">
+        <v-icon color="white">stop</v-icon>
+      </v-btn>
       <v-spacer></v-spacer>
       <v-text-field
         append-icon="search"
@@ -46,7 +51,7 @@
               class="hidden-xs-only" >{{ props.item.group }}</td>
           <td @click="props.expanded = !props.expanded"
               style="cursor:pointer">{{ props.item.name }}</td>
-          <td class="hidden-sm-only">{{ props.item.supervisor }}</td>
+          <td class="hidden-sm-and-down">{{ props.item.supervisor }}</td>
           <td >
             <v-chip label :color="stateColorMap[props.item.statename]"
                     text-color="white">
@@ -54,11 +59,11 @@
             </v-chip>
           </td>
           <td class="justify-center layout px-0">
-            <v-btn icon class="mx-0" @click="restartProcess(props.item)">
-              <v-icon color="teal">play_arrow</v-icon>
+            <v-btn icon small @click="restartProcess(props.item)">
+              <v-icon color="green">play_arrow</v-icon>
             </v-btn>
-            <v-btn icon class="mx-0" @click="stopProcess(props.item)">
-              <v-icon color="pink">stop</v-icon>
+            <v-btn icon small @click="stopProcess(props.item)">
+              <v-icon color="red">stop</v-icon>
             </v-btn>
           </td>
         </tr>
