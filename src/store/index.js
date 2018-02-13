@@ -9,7 +9,8 @@ export const store = new Vuex.Store({
     user: {
       id: 'admin',
       role: 'administrator'
-    }
+    },
+    log: []
   },
   mutations: {
     setMultivisor (state, multivisor) {
@@ -21,6 +22,9 @@ export const store = new Vuex.Store({
     },
     setSupervisor (state, supervisor) {
       state.multivisor.supervisors[supervisor.name] = supervisor
+    },
+    appendLogMessage (state, log) {
+      state.log.push(log)
     }
   },
   actions: {
@@ -34,8 +38,7 @@ export const store = new Vuex.Store({
             } else if (event.event === 'supervisor_changed') {
               commit('setSupervisor', event.payload)
             } else if (event.event === 'log') {
-              let log = event.payload
-              console.log(log.message)
+              commit('appendLogMessage', event.payload)
             }
           }
           multivisor.streamTo(eventHandler)

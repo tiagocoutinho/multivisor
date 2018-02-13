@@ -34,18 +34,40 @@
     </v-content>
     <v-footer app fixed color="primary">
       <v-layout row justify-center>
-        <v-chip label outline text-color="white">
-          <v-icon left>settings</v-icon>
-          <v-chip label small color="green">{{ nbRunningProcesses }}</v-chip>
-          <v-chip label small color="red">{{ nbStoppedProcesses }}</v-chip>
-        </v-chip>
-        <v-chip label outline text-color="white">
-          <v-icon left>visibility</v-icon>
-          <v-chip label small color="green">{{ nbRunningSupervisors }}</v-chip>
-          <v-chip label small color="red">{{ nbStoppedSupervisors }}</v-chip>
-        </v-chip>
+        <v-flex xs2>
+          <v-chip label color="green" text-color="white">
+            <v-avatar>
+              <v-icon class="green darken-2">settings</v-icon>
+            </v-avatar>
+            {{ nbRunningProcesses }}
+          </v-chip>
+          <v-chip label color="red" text-color="white">
+            <v-avatar>
+              <v-icon class="red darken-2">settings</v-icon>
+            </v-avatar>
+            {{ nbStoppedProcesses }}
+          </v-chip>
+        </v-flex>
+        <v-flex xs2>
+          <v-chip label color="green" text-color="white">
+            <v-avatar>
+              <v-icon class="green darken-2">visibility</v-icon>
+            </v-avatar>
+            {{ nbRunningSupervisors }}
+          </v-chip>
+          <v-chip label color="red" text-color="white">
+            <v-avatar>
+              <v-icon class="red darken-2">visibility</v-icon>
+            </v-avatar>
+            {{ nbStoppedSupervisors }}
+          </v-chip>
+        </v-flex>
       </v-layout>
     </v-footer>
+    <v-snackbar :timeout="5000" bottom right :color="snackbar.color"
+                v-model="snackbar.visible">
+      {{ lastLogRecord.message }}
+    </v-snackbar>
   </v-app>
 </template>
 
@@ -55,11 +77,27 @@
   export default {
     data () {
       return {
+        log_map: {
+          DEBUG: 'grey darken-2',
+          INFO: 'grey darken-3',
+          WARNING: 'orange',
+          ERROR: 'error'
+        },
         drawer: false,
+        snackbar: {
+          visible: false,
+          color: 'info'
+        },
         menuItems: [
           { icon: 'settings', title: 'Processes', link: '/processes' },
           { icon: 'visibility', title: 'Supervisors', link: '/supervisors' }
         ]
+      }
+    },
+    watch: {
+      lastLogRecord (newRecord) {
+        this.snackbar.visible = true
+        this.snackbar.color = this.log_map[newRecord.level]
       }
     },
     computed: {
@@ -67,6 +105,14 @@
         'nbRunningSupervisors', 'nbStoppedSupervisors', 'totalNbSupervisors']),
       name () {
         return this.$store.state.multivisor.name
+      },
+      lastLogRecord () {
+        let n = this.$store.state.log.length
+        if (n) {
+          return this.$store.state.log[n - 1]
+        } else {
+          return { message: '' }
+        }
       }
     }
   }
