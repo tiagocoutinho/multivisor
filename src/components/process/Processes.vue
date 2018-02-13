@@ -2,10 +2,12 @@
   <v-container><v-layout justify-center>
   <v-card>
     <v-card-title>
-      <v-btn color="green" @click="restartSelected()">
+      <v-btn :disabled="!selectedProcesses.length"
+             color="green" @click="restartSelected()">
         <v-icon color="white">play_arrow</v-icon>
       </v-btn>
-      <v-btn color="red" @click="stopSelected()">
+      <v-btn :disabled="!selectedProcesses.length"
+             color="red" @click="stopSelected()">
         <v-icon color="white">stop</v-icon>
       </v-btn>
       <v-spacer></v-spacer>
@@ -116,10 +118,20 @@ export default {
   },
   methods: {
     restartProcess (process) {
-      this.$store.dispatch('restartProcess', process.uid)
+      this.$store.dispatch('restartProcesses', [process.uid])
     },
     stopProcess (process) {
-      this.$store.dispatch('stopProcess', process.uid)
+      this.$store.dispatch('stopProcesses', [process.uid])
+    },
+    restartSelected () {
+      let uids = this.selectedProcesses.map(process => process.uid)
+      this.$store.dispatch('restartProcesses', uids)
+      this.selectedProcesses = []
+    },
+    stopSelected () {
+      let uids = this.selectedProcesses.map(process => process.uid)
+      this.$store.dispatch('stopProcesses', uids)
+      this.selectedProcesses = []
     }
   },
   computed: {

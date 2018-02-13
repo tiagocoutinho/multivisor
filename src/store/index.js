@@ -41,12 +41,13 @@ export const store = new Vuex.Store({
           multivisor.streamTo(eventHandler)
         })
     },
-    restartProcess (context, uid) {
-      multivisor.processAction(uid, 'restart')
+    restartProcesses (context, uids) {
+      multivisor.processAction(uids, 'restart')
     },
-    stopProcess (context, uid) {
+    stopProcesses (context, uid) {
       multivisor.processAction(uid, 'stop')
     }
+
   },
   getters: {
     loadedSupervisors (state) {
