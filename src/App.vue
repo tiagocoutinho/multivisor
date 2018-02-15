@@ -1,30 +1,35 @@
 <template>
   <v-app >
-    <v-navigation-drawer clipped mini-variant fixed v-model="drawer" app>
-      <v-list>
-        <v-list-tile v-for="item in menuItems"
-                     :key="item.title" :to="item.link">
-          <v-list-tile-action>
-            <v-icon left>{{ item.icon }}</v-icon>
-          </v-list-tile-action>
-          <!-- <v-list-tile-content v-html="item.title"></v-list-tile-content>-->
-        </v-list-tile>
-      </v-list>
-    </v-navigation-drawer>
-    <v-toolbar fixed dark app class="primary">
-      <v-toolbar-side-icon @click.stop="drawer = !drawer"
-                           class="hidden-sm-and-up">
-      </v-toolbar-side-icon>
+    <v-toolbar fixed dense dark app class="primary">
       <v-toolbar-title>
         <router-link to="/" tag="span" style="cursor:pointer">{{ name }}</router-link>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-toolbar-items class="hidden-xs-only">
-        <v-btn flat v-for="item in menuItems"
-               :key="item.title" :to="item.link">
-          <v-icon left>{{ item.icon }}</v-icon>
-          <div v-html="item.title" />
-        </v-btn>
+      <v-toolbar-items>
+      <v-chip class="deep-purple darken-2 white--text">
+        <v-tooltip bottom>
+          <v-avatar slot="activator" class="deep-purple">
+            <v-icon>settings</v-icon>
+          </v-avatar>
+          <span>Processes</span>
+        </v-tooltip>
+        <v-icon>thumb_up</v-icon>&nbsp;
+        {{ nbRunningProcesses }}&nbsp;
+        <v-icon>thumb_down</v-icon>&nbsp;
+        {{ nbStoppedProcesses }}
+      </v-chip>
+      <v-chip class="indigo darken-2 white--text">
+        <v-tooltip bottom>
+          <v-avatar slot="activator" class="indigo">
+            <v-icon>visibility</v-icon>
+          </v-avatar>
+          <span>Supervisors</span>
+        </v-tooltip>
+        <v-icon>thumb_up</v-icon>&nbsp;
+        {{ nbRunningSupervisors }}&nbsp;
+        <v-icon>thumb_down</v-icon>&nbsp;
+        {{ nbStoppedSupervisors }}
+      </v-chip>
       </v-toolbar-items>
     </v-toolbar>
     <v-content>
@@ -32,38 +37,6 @@
         <router-view></router-view>
       </v-container>
     </v-content>
-    <v-footer app fixed color="primary">
-      <v-layout row justify-center>
-        <v-flex xs2>
-          <v-chip label color="green" text-color="white">
-            <v-avatar>
-              <v-icon class="green darken-2">settings</v-icon>
-            </v-avatar>
-            {{ nbRunningProcesses }}
-          </v-chip>
-          <v-chip label color="red" text-color="white">
-            <v-avatar>
-              <v-icon class="red darken-2">settings</v-icon>
-            </v-avatar>
-            {{ nbStoppedProcesses }}
-          </v-chip>
-        </v-flex>
-        <v-flex xs2>
-          <v-chip label color="green" text-color="white">
-            <v-avatar>
-              <v-icon class="green darken-2">visibility</v-icon>
-            </v-avatar>
-            {{ nbRunningSupervisors }}
-          </v-chip>
-          <v-chip label color="red" text-color="white">
-            <v-avatar>
-              <v-icon class="red darken-2">visibility</v-icon>
-            </v-avatar>
-            {{ nbStoppedSupervisors }}
-          </v-chip>
-        </v-flex>
-      </v-layout>
-    </v-footer>
     <v-snackbar :timeout="5000" bottom right :color="snackbar.color"
                 v-model="snackbar.visible">
       {{ lastLogRecord.message }}
@@ -89,8 +62,10 @@
           color: 'info'
         },
         menuItems: [
-          { icon: 'settings', title: 'Processes', link: '/processes' },
+          { icon: 'settings', title: 'Processes', link: '/processes' }
+          /* hide supervisor view for now
           { icon: 'visibility', title: 'Supervisors', link: '/supervisors' }
+          */
         ]
       }
     },
