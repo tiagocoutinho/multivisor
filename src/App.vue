@@ -1,8 +1,8 @@
 <template>
   <v-app >
     <v-toolbar fixed dense dark app class="primary">
-      <v-toolbar-title>{{ name }}</v-toolbar-title>
-      <v-spacer></v-spacer>
+      <v-toolbar-title class="hidden-xs-only">{{ name }}</v-toolbar-title>
+      <v-spacer class="hidden-xs-only"></v-spacer>
       <v-toolbar-items>
       <v-tooltip bottom>
         <v-btn slot="activator" icon @click="restartSelected()"
@@ -23,7 +23,7 @@
                     placeholder="Filter..." class="mx-3 mt-2"
                     v-model="searchProcesses">
       </v-text-field>
-      <v-chip class="deep-purple darken-2 white--text mx-2">
+      <v-chip class="deep-purple darken-2 white--text mx-2 hidden-xs-only">
         <v-tooltip bottom>
           <v-avatar slot="activator" class="deep-purple">
             <v-icon>settings</v-icon>
@@ -35,7 +35,7 @@
         <v-icon class="mx-2">thumb_down</v-icon>
         {{ nbStoppedProcesses }}
       </v-chip>
-      <v-chip class="indigo darken-2 white--text mx-2">
+      <v-chip class="indigo darken-2 white--text mx-2 hidden-xs-only">
         <v-tooltip bottom>
           <v-avatar slot="activator" class="indigo">
             <v-icon>visibility</v-icon>
@@ -95,7 +95,8 @@
                   <v-btn icon small @click="restartProcess(props.item)">
                     <v-icon color="green">play_arrow</v-icon>
                   </v-btn>
-                  <v-btn icon small @click="stopProcess(props.item)">
+                  <v-btn icon small @click="stopProcess(props.item)"
+                         :disabled="!props.item.running">
                     <v-icon color="red">stop</v-icon>
                   </v-btn>
                 </td>
@@ -157,7 +158,7 @@
         processHeaders: [
           { align: 'left', sortable: true, text: 'Group', value: 'group', tooltip: 'process group', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'Name', value: 'name', tooltip: 'process name' },
-          { align: 'left', sortable: true, text: 'Supervisor', value: 'supervisor', tooltip: 'supervisor controlling proces', class: 'hidden-sm-only' },
+          { align: 'left', sortable: true, text: 'Supervisor', value: 'supervisor', tooltip: 'supervisor controlling proces', class: 'hidden-sm-and-down' },
           { align: 'left', sortable: true, text: 'State', value: 'statename', tooltip: 'process state' },
           { align: 'left', sortable: false, text: 'Actions', value: '', tooltip: '(re)start/stop/view log' }
         ],
