@@ -1,9 +1,7 @@
 <template>
   <v-app >
     <v-toolbar fixed dense dark app class="primary">
-      <v-toolbar-title>
-        <router-link to="/" tag="span" style="cursor:pointer">{{ name }}</router-link>
-      </v-toolbar-title>
+      <v-toolbar-title>{{ name }}</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-toolbar-items>
       <v-tooltip bottom>
