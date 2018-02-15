@@ -6,28 +6,44 @@
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-toolbar-items>
-      <v-chip class="deep-purple darken-2 white--text">
+      <v-tooltip bottom>
+        <v-btn slot="activator" icon @click="restartSelected()">
+          <v-icon large color="green darken-4">play_arrow</v-icon>
+        </v-btn>
+        <span>Start selected processes</span>
+      </v-tooltip>
+      <v-tooltip bottom>
+        <v-btn slot="activator" icon @click="stopSelected()">
+          <v-icon large color="red darken-4">stop</v-icon>
+        </v-btn>
+        <span>Stop selected processes</span>
+      </v-tooltip>
+      <v-text-field append-icon="search"
+                    clearable single-line
+                    placeholder="Filter..." class="mx-3 mt-2">
+      </v-text-field>
+      <v-chip class="deep-purple darken-2 white--text mx-2">
         <v-tooltip bottom>
           <v-avatar slot="activator" class="deep-purple">
             <v-icon>settings</v-icon>
           </v-avatar>
           <span>Processes</span>
         </v-tooltip>
-        <v-icon>thumb_up</v-icon>&nbsp;
-        {{ nbRunningProcesses }}&nbsp;
-        <v-icon>thumb_down</v-icon>&nbsp;
+        <v-icon class="mr-2">thumb_up</v-icon>
+        {{ nbRunningProcesses }}
+        <v-icon class="mx-2">thumb_down</v-icon>
         {{ nbStoppedProcesses }}
       </v-chip>
-      <v-chip class="indigo darken-2 white--text">
+      <v-chip class="indigo darken-2 white--text mx-2">
         <v-tooltip bottom>
           <v-avatar slot="activator" class="indigo">
             <v-icon>visibility</v-icon>
           </v-avatar>
           <span>Supervisors</span>
         </v-tooltip>
-        <v-icon>thumb_up</v-icon>&nbsp;
-        {{ nbRunningSupervisors }}&nbsp;
-        <v-icon>thumb_down</v-icon>&nbsp;
+        <v-icon class="mr-2">thumb_up</v-icon>
+        {{ nbRunningSupervisors }}
+        <v-icon class="mx-2">thumb_down</v-icon>
         {{ nbStoppedSupervisors }}
       </v-chip>
       </v-toolbar-items>
