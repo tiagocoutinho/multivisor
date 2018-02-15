@@ -115,6 +115,7 @@
             <template slot="expand" slot-scope="props">
               <v-card flat>
                 <v-card-text>
+                  <ProcessDetails :process="props.item"></ProcessDetails>
                 </v-card-text>
               </v-card>
             </template>
@@ -131,8 +132,12 @@
 
 <script>
   import {mapGetters} from 'vuex'
+  import ProcessDetails from './components/process/ProcessDetails'
 
   export default {
+    components: {
+      ProcessDetails
+    },
     data () {
       return {
         stateColorMap: {
