@@ -76,15 +76,21 @@ class Supervisor(dict):
         else:
             modified = False
         processes = {}
+        old_processes = self.pop('processes', {})
         if pid is not None:
             for proc in supervisor.getAllProcessInfo():
                 process = Process(self, proc)
                 processes[process['uid']] = process
-        old_processes = self.pop('processes', None)
         self['processes'] = processes
-        modified |= processes != old_processes
+        modified |= processes.keys() != old_processes.keys()
         if modified:
             send('multivisor', self, event='supervisor_changed')
+            return True
+        for name, process in processes.items():
+            if process != old_processes[name]:
+                modified = True
+                send('multivisor', process, event='process_changed')
+                print process['full_name']
         return modified
 
     def update_server(self, group_names=()):
@@ -239,6 +245,9 @@ class Process(dict):
         p2.pop('description')
         p2.pop('now')
         return p1 == p2
+
+    def __ne__(self, proc):
+        return not self == proc
 
 # Configuration
 
