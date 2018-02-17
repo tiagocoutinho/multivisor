@@ -89,7 +89,7 @@
                     style="cursor:pointer;height:30px;padding:0 4px;">
                     {{ props.item.name }}
                 </td>
-                <td class="hidden-sm-and-down px-0" style="height:30px;padding:0 4px;">
+                <td class="hidden-xs-only px-0" style="height:30px;padding:0 4px;">
                   {{ props.item.supervisor }}
                 </td>
                 <td style="height:30px;padding:0 4px;" class="px-0">
@@ -100,9 +100,12 @@
                 </td>
 
                 <td class="justify-center layout px-0" style="height:30px;padding:0 4px;">
-                  <v-btn icon small @click="restartProcess(props.item)">
-                    <v-icon color="green">play_arrow</v-icon>
-                  </v-btn>
+                    <v-btn icon small @click="restartProcess(props.item)">
+                      <v-icon color="green">
+                        <template v-if="props.item.running">autorenew</template>
+                        <template v-else>play_arrow</template>
+                      </v-icon>
+                    </v-btn>
                   <v-btn icon small @click="stopProcess(props.item)"
                          :disabled="!props.item.running">
                     <v-icon color="red">stop</v-icon>
@@ -167,7 +170,7 @@
         processHeaders: [
           { align: 'left', sortable: true, text: 'Group', value: 'group', tooltip: 'process group', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'Name', value: 'name', tooltip: 'process name' },
-          { align: 'left', sortable: true, text: 'Supervisor', value: 'supervisor', tooltip: 'supervisor controlling proces', class: 'hidden-sm-and-down' },
+          { align: 'left', sortable: true, text: 'Supervisor', value: 'supervisor', tooltip: 'supervisor controlling proces', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'State', value: 'statename', tooltip: 'process state' },
           { align: 'left', sortable: false, text: 'Actions', value: '', tooltip: '(re)start/stop/view log' }
         ],
