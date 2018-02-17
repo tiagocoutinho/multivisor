@@ -76,30 +76,32 @@
 
             <template slot="items" slot-scope="props">
               <tr>
-                <td style="height:30px; padding:0 4px;" class="px-0">
+                <td class="px-0"
+                    style="height:30px;">
                   <v-checkbox primary hide-details v-model="props.selected" >
                   </v-checkbox>
                 </td>
                 <td @click="props.expanded = !props.expanded"
-                    style="cursor:pointer;height:30px;padding:0 4px;"
-                    class="hidden-xs-only px-0" >
+                    class="hidden-xs-only px-0"
+                    style="cursor:pointer;height:30px;">
                     {{ props.item.group }}
                 </td>
                 <td @click="props.expanded = !props.expanded"
-                    style="cursor:pointer;height:30px;padding:0 4px;">
+                    class="px-0"
+                    style="cursor:pointer;height:30px;">
                     {{ props.item.name }}
                 </td>
-                <td class="hidden-xs-only px-0" style="height:30px;padding:0 4px;">
+                <td class="hidden-xs-only px-0" style="height:30px;">
                   {{ props.item.supervisor }}
                 </td>
-                <td style="height:30px;padding:0 4px;" class="px-0">
+                <td class="px-0" style="height:30px;">
                   <v-chip label :color="stateColorMap[props.item.statename]"
                           text-color="white" small>
                           {{ props.item.statename }}
                   </v-chip>
                 </td>
 
-                <td class="justify-center layout px-0" style="height:30px;padding:0 4px;">
+                <td class="justify-center layout px-0">
                     <v-btn icon small @click="restartProcess(props.item)">
                       <v-icon color="green">
                         <template v-if="props.item.running">autorenew</template>
