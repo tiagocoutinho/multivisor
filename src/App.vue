@@ -145,7 +145,7 @@
 
 <script>
   import {mapGetters} from 'vuex'
-  import ProcessDetails from './components/process/ProcessDetails'
+  import ProcessDetails from './components/process/Details'
 
   export default {
     components: {
