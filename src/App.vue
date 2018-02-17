@@ -52,6 +52,7 @@
     <v-content>
       <v-container fluid fill-height>
         <v-layout justify-center>
+          <v-card>
           <v-data-table
             :headers="processHeaders"
             :items="processes"
@@ -75,23 +76,30 @@
 
             <template slot="items" slot-scope="props">
               <tr>
-                <td>
+                <td style="height:30px; padding:0 4px;" class="px-0">
                   <v-checkbox primary hide-details v-model="props.selected" >
                   </v-checkbox>
                 </td>
                 <td @click="props.expanded = !props.expanded"
-                    style="cursor:pointer"
-                    class="hidden-xs-only" >{{ props.item.group }}</td>
+                    style="cursor:pointer;height:30px;padding:0 4px;"
+                    class="hidden-xs-only px-0" >
+                    {{ props.item.group }}
+                </td>
                 <td @click="props.expanded = !props.expanded"
-                    style="cursor:pointer">{{ props.item.name }}</td>
-                <td class="hidden-sm-and-down">{{ props.item.supervisor }}</td>
-                <td >
+                    style="cursor:pointer;height:30px;padding:0 4px;">
+                    {{ props.item.name }}
+                </td>
+                <td class="hidden-sm-and-down px-0" style="height:30px;padding:0 4px;">
+                  {{ props.item.supervisor }}
+                </td>
+                <td style="height:30px;padding:0 4px;" class="px-0">
                   <v-chip label :color="stateColorMap[props.item.statename]"
-                          text-color="white">
+                          text-color="white" small>
                           {{ props.item.statename }}
                   </v-chip>
                 </td>
-                <td class="justify-center layout px-0">
+
+                <td class="justify-center layout px-0" style="height:30px;padding:0 4px;">
                   <v-btn icon small @click="restartProcess(props.item)">
                     <v-icon color="green">play_arrow</v-icon>
                   </v-btn>
@@ -119,6 +127,7 @@
               </v-card>
             </template>
           </v-data-table>
+        </v-card>
         </v-layout>
       </v-container>
     </v-content>
