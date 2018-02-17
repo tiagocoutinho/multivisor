@@ -79,7 +79,6 @@ class Supervisor(dict):
                 self['running'] = True
                 self['identification'] = supervisor.getIdentification()
                 self['api_version'] = supervisor.getAPIVersion()
-                self['version'] = supervisor.getVersion()
                 self['supervisor_version'] = supervisor.getSupervisorVersion()
             modified = True
         else:
@@ -386,7 +385,7 @@ def data():
     return json.dumps(app.multivisor.config)
 
 
-@app.route("/update_supervisor", methods=['POST'])
+@app.route("/supervisor/update", methods=['POST'])
 def update_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -396,7 +395,7 @@ def update_supervisor():
     return 'OK'
 
 
-@app.route("/restart_supervisor", methods=['POST'])
+@app.route("/supervisor/restart", methods=['POST'])
 def restart_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -406,7 +405,7 @@ def restart_supervisor():
     return 'OK'
 
 
-@app.route("/reread_supervisor", methods=['POST'])
+@app.route("/supervisor/reread", methods=['POST'])
 def reread_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -416,7 +415,7 @@ def reread_supervisor():
     return 'OK'
 
 
-@app.route("/shutdown_supervisor", methods=['POST'])
+@app.route("/supervisor/shutdown", methods=['POST'])
 def shutdown_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -426,7 +425,7 @@ def shutdown_supervisor():
     return 'OK'
 
 
-@app.route("/restart_process", methods=['POST'])
+@app.route("/process/restart", methods=['POST'])
 def restart_process():
     uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
     processes = (app.multivisor.get_process(uid) for uid in uids)
@@ -435,7 +434,7 @@ def restart_process():
     return 'OK'
 
 
-@app.route("/stop_process", methods=['POST'])
+@app.route("/process/stop", methods=['POST'])
 def stop_process():
     uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
     processes = (app.multivisor.get_process(uid) for uid in uids)
@@ -444,14 +443,14 @@ def stop_process():
     return 'OK'
 
 
-@app.route("/process/<uid>")
+@app.route("/process/info/<uid>")
 def process_info(uid):
     process = app.multivisor.get_process(uid)
     process.refresh()
     return json.dumps(process)
 
 
-@app.route("/supervisor/<uid>")
+@app.route("/supervisor/info/<uid>")
 def supervisor_info(uid):
     supervisor = app.multivisor.get_supervisor(uid)
     supervisor.refresh()

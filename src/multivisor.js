@@ -1,13 +1,13 @@
 export const supervisorAction = (id, action) => {
   let form = new FormData()
   form.append('supervisor', id)
-  return fetch('/' + action + '_supervisor', {method: 'POST', body: form})
+  return fetch('/supervisor/' + action, {method: 'POST', body: form})
 }
 
 export const processAction = (uid, action) => {
   let form = new FormData()
   form.append('uid', uid)
-  fetch('/' + action + '_process', { method: 'POST', body: form })
+  fetch('/process/' + action, { method: 'POST', body: form })
 }
 
 export const load = () => {
