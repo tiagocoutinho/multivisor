@@ -61,11 +61,11 @@ It consists of a `global` section where you can give an optional
 name to your multivisor instance (default is *multivisor* and
 it will appear on the top left corner of multivisors web page).
 
-To add a new supervisor to the list of supervisors monitored by
-multivisor simply add a section `[supervisor:<name>]`. It must
-contain at least a `host`. The `port`  is optional and defaults
-to `9001`. You can also add a `username` and `password` in case
-your supervisor XML-RPC interface configuration requires one.
+To add a new supervisor to the list of supervisors monitored by multivisor
+simply add a section `[supervisor:<name>]`. It must contain at least a `url`
+containing `<host>[:<port>]`. The port is optional and defaults to `9001`.
+You can also add a `username` and `password` in case your supervisor XML-RPC
+interface configuration requires one.
 
 Here is a basic example:
 

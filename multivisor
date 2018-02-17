@@ -20,6 +20,16 @@ from supervisor.xmlrpc import Faults
 log = logging.getLogger('multivisor')
 
 
+def _to_host_port(url, default_port=None):
+    pars = url.rsplit(':', 1) if isinstance(url, (str, unicode)) else url
+    host, port = pars[0], int(pars[1]) if len(pars) > 1 else default_port
+    try:
+        host = host[host.index('://')+3:]
+    except ValueError:
+        pass
+    return host, port
+
+
 class Supervisor(dict):
 
     Null = {
@@ -40,9 +50,8 @@ class Supervisor(dict):
         credentials = ''
         if self.username and self.password:
             credentials = '{0}:{1}@'.format(self.username, self.password)
-        self.address = 'http://{0}{1}:{2}/RPC2'.format(credentials,
-                                                       self['host'],
-                                                       self['port'])
+        host, port = _to_host_port(self['url'], default_port=9001)
+        self.address = 'http://{0}{1}:{2}/RPC2'.format(credentials, host, port)
         self._static_server = self.server
 
     @property
