@@ -7,7 +7,7 @@
       <v-tooltip bottom>
         <v-btn slot="activator" icon @click="restartSelected()"
                :disabled="!selectedProcesses.length">
-          <v-icon large color="green darken-4">play_arrow</v-icon>
+          <v-icon large color="green darken-1">autorenew</v-icon>
         </v-btn>
         <span>(Re)start selected processes</span>
       </v-tooltip>
