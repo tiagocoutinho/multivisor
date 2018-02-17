@@ -15,6 +15,7 @@ A centralized supervisor web UI inspired by [cesi](https://github.com/gamegos/ce
 # Fetch the project:
 git clone git://github.com/tiagocoutinho/multivisor
 cd multivisor
+
 # Prepare backend: feel free to use your favorite python virtual env. here
 pip install -r requirements.txt
 
@@ -31,10 +32,18 @@ supervisord -c examples/full_example/supervisord_baslid001.conf
 # Finally, launch multivisor:
 ./multivisor -c examples/full_example/multivisor.conf
 ```
+
 That's it! Start a browser pointing to [localhost:22000](http://localhost:22000) and
-you should be able to somthing that looks like this:
+you should be able to see something that looks like this:
+
+Multivisor running on google chrome desktop:
 
 ![multivisor on chrome desktop app mode](doc/multivisor_desktop.png)
+
+Multivisor running on a mobile:
+
+![multivisor on mobile](doc/multivisor_mobile.png)
+
 
 ## Technologies
 
