@@ -50,7 +50,7 @@
       </v-toolbar-items>
     </v-toolbar>
     <v-content>
-      <v-container fluid fill-height>
+      <v-container fluid>
         <v-layout justify-center>
           <v-card>
           <v-data-table
@@ -95,23 +95,38 @@
                   {{ props.item.supervisor }}
                 </td>
                 <td class="px-0" style="height:30px;">
-                  <v-chip label :color="stateColorMap[props.item.statename]"
+                  <v-chip disabled label :color="stateColorMap[props.item.statename]"
                           text-color="white" small>
                           {{ props.item.statename }}
                   </v-chip>
                 </td>
 
-                <td class="justify-center layout px-0">
-                    <v-btn icon small @click="restartProcess(props.item)">
-                      <v-icon color="green">
-                        <template v-if="props.item.running">autorenew</template>
-                        <template v-else>play_arrow</template>
-                      </v-icon>
-                    </v-btn>
+                <td class="justify-center px-0" style="height:30px;">
+                  <v-btn icon small @click="restartProcess(props.item)">
+                    <v-icon color="green">
+                      <template v-if="props.item.running">autorenew</template>
+                      <template v-else>play_arrow</template>
+                    </v-icon>
+                  </v-btn>
                   <v-btn icon small @click="stopProcess(props.item)"
                          :disabled="!props.item.running">
                     <v-icon color="red">stop</v-icon>
                   </v-btn>
+                  <v-menu open-on-hover bottom left>
+                    <v-btn icon small slot="activator" dark color="blue--text">
+                      <v-icon>more_vert</v-icon>
+                    </v-btn>
+                    <div class="white">
+                    <v-btn icon small @click="viewLog(props.item, 'out')"
+                           v-if="props.item.running && (props.item.logfile)">
+                      <v-icon color="blue">book</v-icon>
+                    </v-btn>
+                    <v-btn icon small @click="viewLog(props.item, 'err')"
+                           v-if="props.item.running && (props.item.stderr_logfile)">
+                      <v-icon color="orange">book</v-icon>
+                    </v-btn>
+                    </div>
+                  </v-menu>
                 </td>
               </tr>
             </template>
@@ -140,6 +155,22 @@
                 v-model="snackbar.visible">
       {{ lastLogRecord.message }}
     </v-snackbar>
+    <v-bottom-sheet v-model="logSheet">
+      <v-card>
+        <v-card-title :class="{orange: logSheetStream === 'err', blue: logSheetStream === 'out'}">
+          <h3>{{ logSheetTitle }}</h3>
+          <v-spacer></v-spacer>
+          <v-btn icon small flat @click="logSheet=false">
+            <v-icon>close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text style="max-height:300px;" class="scroll-y">
+          <pre style="">
+            {{ logSheetText }}
+          </pre>
+        </v-card-text>
+      </v-card>
+    </v-bottom-sheet>
   </v-app>
 </template>
 
@@ -169,12 +200,17 @@
           WARNING: 'orange',
           ERROR: 'error'
         },
+        logSheet: false,
+        logSheetStream: 'out',
+        logSheetTitle: '',
+        logSheetText: '',
+        logSheetEvent: null,
         processHeaders: [
           { align: 'left', sortable: true, text: 'Group', value: 'group', tooltip: 'process group', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'Name', value: 'name', tooltip: 'process name' },
           { align: 'left', sortable: true, text: 'Supervisor', value: 'supervisor', tooltip: 'supervisor controlling proces', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'State', value: 'statename', tooltip: 'process state' },
-          { align: 'left', sortable: false, text: 'Actions', value: '', tooltip: '(re)start/stop/view log' }
+          { align: 'left', sortable: false, text: '', value: '', tooltip: '(re)start/stop/view log' }
         ],
         searchProcesses: '',
         selectedProcesses: [],
@@ -188,6 +224,14 @@
       lastLogRecord (newRecord) {
         this.snackbar.visible = true
         this.snackbar.color = this.logMap[newRecord.level]
+      },
+      logSheet (visible) {
+        if (!visible && this.logSheetEvent != null) {
+          this.logSheetEvent.close()
+          this.logSheetEvent = null
+          this.logSheetTitle = ''
+          this.logSheetText = ''
+        }
       }
     },
     methods: {
@@ -206,6 +250,31 @@
         let uids = this.selectedProcesses.map(process => process.uid)
         this.$store.dispatch('stopProcesses', uids)
         this.selectedProcesses = []
+      },
+      viewLog (process, stream) {
+        let titlePrefix = (stream === 'out') ? 'Output log of ' : 'Error log of '
+        this.logSheetStream = stream
+        this.logSheetTitle = titlePrefix + process.name + ' on ' + process.supervisor
+        let addr = '/process/log/' + stream + '/tail/' + process.uid
+        let eventSource = new EventSource(addr)
+        eventSource.onmessage = event => {
+          let message = JSON.parse(event.data).message
+          if (message) {
+            this.logSheetText += message
+          }
+        }
+        eventSource.onopen = event => {
+          console.log(stream + ' stream opened for ' + process.uid)
+          this.logSheet = true
+        }
+        eventSource.onclose = event => {
+          console.log(stream + ' stream closed for' + process.uid)
+          this.logSheet = false
+          this.logSheetTitle = ''
+          this.logSheetText = ''
+          this.logSheetEvent = null
+        }
+        this.logSheetEvent = eventSource
       }
     },
     computed: {
