@@ -2,6 +2,7 @@
   <v-card>
     <v-card-text>
       <i>Last updated: {{lastUpdate}}</i><br/>
+      Host:<b>{{process.host}}</b></br>
       PID:<b>{{process.pid}}</b><br/>
       Started at:<b>{{startTime}}</b><br/>
       Details:<b>{{process.description}}</b><br/>
