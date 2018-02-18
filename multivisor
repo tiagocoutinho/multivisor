@@ -302,7 +302,7 @@ class SSEHandler(logging.Handler):
                    level=record.levelname,
                    time=record.created,
                    name=record.name)
-        send('multivisor', msg, event='log')
+        send('multivisor', msg, event='notification')
 
 
 class Multivisor(object):
@@ -470,18 +470,18 @@ def process_log_tail(stream, uid):
     def event_stream():
         i, offset, length = 0, 0, 2**12
         while True:
-            data = tail(pname, offset, i and length or 2**10)
+            data = tail(pname, offset, length)
             log, offset, overflow = data
             print len(log), offset, overflow
             # don't care about overflow in first log message
             if overflow and i:
                 length = min(length * 2, 2**14)
             else:
-                yield 'data: {}\n\n'.format(json.dumps(dict(message=log)))
+                data = json.dumps(dict(message=log, size=offset))
+                yield 'data: {}\n\n'.format(data)
             gevent.sleep(1)
             i += 1
-    return Response(event_stream(),
-                    mimetype="text/event-stream")
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 @app.route('/stream')

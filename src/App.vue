@@ -25,7 +25,7 @@
       </v-text-field>
       <v-chip class="deep-purple darken-2 white--text mx-2 hidden-xs-only">
         <v-tooltip bottom>
-          <v-avatar slot="activator" class="deep-purple">
+          <v-avatar slot="activator" class="deep-purple lighten-1">
             <v-icon>settings</v-icon>
           </v-avatar>
           <span>Processes</span>
@@ -37,7 +37,7 @@
       </v-chip>
       <v-chip class="indigo darken-2 white--text mx-2 hidden-xs-only">
         <v-tooltip bottom>
-          <v-avatar slot="activator" class="indigo">
+          <v-avatar slot="activator" class="indigo lighten-1">
             <v-icon>visibility</v-icon>
           </v-avatar>
           <span>Supervisors</span>
@@ -101,29 +101,29 @@
                   </v-chip>
                 </td>
 
-                <td class="justify-center px-0" style="height:30px;">
-                  <v-btn icon small @click="restartProcess(props.item)">
+                <td class="layout px-0" style="height:30px;">
+                  <v-btn icon small @click="restartProcess(props.item)"  class="mx-0 my-1">
                     <v-icon color="green">
                       <template v-if="props.item.running">autorenew</template>
                       <template v-else>play_arrow</template>
                     </v-icon>
                   </v-btn>
                   <v-btn icon small @click="stopProcess(props.item)"
-                         :disabled="!props.item.running">
+                         :disabled="!props.item.running" class="mx-0 my-1">
                     <v-icon color="red">stop</v-icon>
                   </v-btn>
-                  <v-menu open-on-hover bottom left>
-                    <v-btn icon small slot="activator" dark color="blue--text">
+                  <v-menu open-on-hover auto>
+                    <v-btn icon small slot="activator" dark color="blue--text" class="mx-0 my-1">
                       <v-icon>more_vert</v-icon>
                     </v-btn>
-                    <div class="white">
+                    <div class="grey lighten-3">
                     <v-btn icon small @click="viewLog(props.item, 'out')"
-                           v-if="props.item.running && (props.item.logfile)">
-                      <v-icon color="blue">book</v-icon>
+                           v-if="props.item.logfile">
+                      <v-icon color="blue">description</v-icon>
                     </v-btn>
                     <v-btn icon small @click="viewLog(props.item, 'err')"
-                           v-if="props.item.running && (props.item.stderr_logfile)">
-                      <v-icon color="orange">book</v-icon>
+                           v-if="props.item.stderr_logfile">
+                      <v-icon color="orange">description</v-icon>
                     </v-btn>
                     </div>
                   </v-menu>
@@ -153,33 +153,22 @@
     </v-content>
     <v-snackbar :timeout="5000" bottom right :color="snackbar.color"
                 v-model="snackbar.visible">
-      {{ lastLogRecord.message }}
+      {{ lastNotification.message }}
     </v-snackbar>
-    <v-bottom-sheet v-model="logSheet">
-      <v-card>
-        <v-card-title :class="{orange: logSheetStream === 'err', blue: logSheetStream === 'out'}">
-          <h3>{{ logSheetTitle }}</h3>
-          <v-spacer></v-spacer>
-          <v-btn icon small flat @click="logSheet=false">
-            <v-icon>close</v-icon>
-          </v-btn>
-        </v-card-title>
-        <v-card-text style="max-height:300px;" class="scroll-y">
-          <pre style="">
-            {{ logSheetText }}
-          </pre>
-        </v-card-text>
-      </v-card>
+    <v-bottom-sheet v-model="logSource.visible">
+      <LogSheet :visible.sync="logSource.visible" :source="logSource"></LogSheet>
     </v-bottom-sheet>
   </v-app>
 </template>
 
 <script>
   import {mapGetters} from 'vuex'
+  import LogSheet from './components/process/Log'
   import ProcessDetails from './components/process/Details'
 
   export default {
     components: {
+      LogSheet,
       ProcessDetails
     },
     data () {
@@ -194,23 +183,23 @@
           'FATAL': 'red',
           'UNKNOWN': 'black'
         },
-        logMap: {
+        notificationMap: {
           DEBUG: 'grey darken-2',
           INFO: 'grey darken-3',
           WARNING: 'orange',
           ERROR: 'error'
         },
-        logSheet: false,
-        logSheetStream: 'out',
-        logSheetTitle: '',
-        logSheetText: '',
-        logSheetEvent: null,
+        logSource: {
+          process: null,
+          visible: false,
+          stream: 'out'
+        },
         processHeaders: [
           { align: 'left', sortable: true, text: 'Group', value: 'group', tooltip: 'process group', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'Name', value: 'name', tooltip: 'process name' },
           { align: 'left', sortable: true, text: 'Supervisor', value: 'supervisor', tooltip: 'supervisor controlling proces', class: 'hidden-xs-only' },
           { align: 'left', sortable: true, text: 'State', value: 'statename', tooltip: 'process state' },
-          { align: 'left', sortable: false, text: '', value: '', tooltip: '(re)start/stop/view log' }
+          { align: 'left', sortable: false, text: 'Actions', value: '', tooltip: '(re)start/stop/view log' }
         ],
         searchProcesses: '',
         selectedProcesses: [],
@@ -221,17 +210,9 @@
       }
     },
     watch: {
-      lastLogRecord (newRecord) {
+      lastNotification (notification) {
         this.snackbar.visible = true
-        this.snackbar.color = this.logMap[newRecord.level]
-      },
-      logSheet (visible) {
-        if (!visible && this.logSheetEvent != null) {
-          this.logSheetEvent.close()
-          this.logSheetEvent = null
-          this.logSheetTitle = ''
-          this.logSheetText = ''
-        }
+        this.snackbar.color = this.notificationMap[notification.level]
       }
     },
     methods: {
@@ -252,29 +233,11 @@
         this.selectedProcesses = []
       },
       viewLog (process, stream) {
-        let titlePrefix = (stream === 'out') ? 'Output log of ' : 'Error log of '
-        this.logSheetStream = stream
-        this.logSheetTitle = titlePrefix + process.name + ' on ' + process.supervisor
-        let addr = '/process/log/' + stream + '/tail/' + process.uid
-        let eventSource = new EventSource(addr)
-        eventSource.onmessage = event => {
-          let message = JSON.parse(event.data).message
-          if (message) {
-            this.logSheetText += message
-          }
+        this.logSource = {
+          process,
+          stream,
+          visible: true
         }
-        eventSource.onopen = event => {
-          console.log(stream + ' stream opened for ' + process.uid)
-          this.logSheet = true
-        }
-        eventSource.onclose = event => {
-          console.log(stream + ' stream closed for' + process.uid)
-          this.logSheet = false
-          this.logSheetTitle = ''
-          this.logSheetText = ''
-          this.logSheetEvent = null
-        }
-        this.logSheetEvent = eventSource
       }
     },
     computed: {
@@ -283,10 +246,10 @@
       name () {
         return this.$store.state.multivisor.name
       },
-      lastLogRecord () {
-        let n = this.$store.state.log.length
+      lastNotification () {
+        let n = this.$store.state.notifications.length
         if (n) {
-          return this.$store.state.log[n - 1]
+          return this.$store.state.notifications[n - 1]
         } else {
           return { message: '' }
         }
