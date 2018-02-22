@@ -1,8 +1,8 @@
 {
   "name": "multivisor",
-  "version": "1.0.0",
+  "version": "2.1.1",
   "description": "Manage multiple supervisor instances from a centralized UI",
-  "author": "Jose Tiago Macara Coutinho <coutinhotiago@gmail.com>",
+  "author": "Tiago Coutinho <coutinhotiago@gmail.com>",
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",

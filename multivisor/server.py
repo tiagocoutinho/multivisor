@@ -4,6 +4,7 @@ import gevent
 from gevent.monkey import patch_all
 patch_all(thread=False)
 
+import os
 import logging
 import weakref
 import functools
@@ -519,6 +520,9 @@ def main(args=None):
     log_level = getattr(logging, options.log_level.upper())
     log_fmt = '%(levelname)s %(asctime)-15s %(name)s: %(message)s'
     logging.basicConfig(level=log_level, format=log_fmt)
+
+    if not os.path.exists(options.config_file):
+        parser.exit(status=2, message='configuration file does not exist. Bailing out!\n')
 
     app.multivisor = Multivisor(options)
 

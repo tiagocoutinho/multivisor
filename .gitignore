@@ -1,7 +1,10 @@
 .DS_Store
 node_modules/
-/dist/
+multivisor/dist/
+build_py/
+dist/
 npm-debug.log*
+*.egg-info
 
 *.pyc
 *.log*
