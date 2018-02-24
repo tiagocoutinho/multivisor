@@ -10,35 +10,54 @@ export const store = new Vuex.Store({
       id: 'admin',
       role: 'administrator'
     },
-    notifications: []
+    notifications: [],
+    selectedProcesses: [],
+    search: '',
+    log: {
+      process: null,
+      visible: false,
+      stream: 'out'
+    }
   },
   mutations: {
-    setMultivisor (state, multivisor) {
+    updateMultivisor (state, multivisor) {
       state.multivisor = multivisor
     },
-    setProcess (state, process) {
+    updateProcess (state, process) {
       let supervisor = state.multivisor.supervisors[process.supervisor]
       supervisor.processes[process.uid] = process
     },
-    setSupervisor (state, supervisor) {
+    updateSupervisor (state, supervisor) {
       state.multivisor.supervisors[supervisor.name] = supervisor
     },
-    appendNotification (state, notification) {
+    newNotification (state, notification) {
       state.notifications.push(notification)
+    },
+    setLogVisible (state, visible) {
+      state.log.visible = visible
+    },
+    setLog (state, log) {
+      state.log = log
+    },
+    updateSelectedProcesses (state, selectedProcesses) {
+      state.selectedProcesses = selectedProcesses
+    },
+    updateSearch (state, search) {
+      state.search = search
     }
   },
   actions: {
     init ({ commit }) {
       multivisor.load()
         .then((data) => {
-          commit('setMultivisor', data)
+          commit('updateMultivisor', data)
           const eventHandler = (event) => {
             if (event.event === 'process_changed') {
-              commit('setProcess', event.payload)
+              commit('updateProcess', event.payload)
             } else if (event.event === 'supervisor_changed') {
-              commit('setSupervisor', event.payload)
+              commit('updateSupervisor', event.payload)
             } else if (event.event === 'notification') {
-              commit('appendNotification', event.payload)
+              commit('newNotification', event.payload)
             }
           }
           multivisor.streamTo(eventHandler)

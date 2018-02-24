@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <v-bottom-sheet v-model="visible">
     <v-toolbar dense height="32px"
-               :color="source.stream === 'err' ? 'orange' : 'blue'">
+               :color="log.stream === 'err' ? 'orange' : 'blue'">
       <h5>{{ title }}</h5>
       <v-spacer></v-spacer>
       <v-tooltip bottom>
@@ -42,7 +42,7 @@
         </pre>
       </v-card-text>
     </v-card>
-  </div>
+  </v-bottom-sheet>
 </template>
 
 <script>
@@ -50,7 +50,6 @@ import * as multivisor from '../../multivisor'
 
 export default {
   name: 'LogSheet',
-  props: ['visible', 'source'],
   data () {
     return {
       text: '',
@@ -60,19 +59,25 @@ export default {
       eventSource: null
     }
   },
+
   watch: {
-    visible (visible) {
-      this.viewLog(visible)
-    }
+    visible () { this.viewLog() }
   },
+
   computed: {
+    log () {
+      return this.$store.state.log
+    },
+    visible: {
+      get () { return this.$store.state.log.visible },
+      set (v) { this.$store.commit('setLogVisible', v) }
+    },
     title () {
-      if (!this.source.visible) {
+      if (!this.log.visible) {
         return ''
       }
-      console.log(this.source.visible)
-      return `${this.source.stream === 'out' ? 'O-log of ' : 'E-log of '}
-      ${this.source.process.name} on ${this.source.process.supervisor}`
+      return `${this.log.stream === 'out' ? 'O-log of ' : 'E-log of '}
+      ${this.log.process.name} on ${this.log.process.supervisor}`
     },
     windowSize () {
       let h = window.innerHeight
@@ -104,24 +109,23 @@ export default {
         setTimeout(() => { logTag.scrollTop = logTag.scrollHeight }, 100)
       }
     },
-    viewLog (visible) {
+    viewLog () {
+      let log = this.log
       if (this.eventSource !== null) {
         this.text = ''
         this.size = 0
         this.eventSource.close()
       }
-      if (!visible) {
+      if (!log.visible) {
         return
       }
-      let stream = this.source.stream
-      let procUID = this.source.process.uid
-      let eventSource = new EventSource(`/process/log/${stream}/tail/${procUID}`)
+      let eventSource = new EventSource(`/process/log/${log.stream}/tail/${log.process.uid}`)
       eventSource.onmessage = event => {
         let data = JSON.parse(event.data)
         this.appendLogMessage(data)
       }
       eventSource.onopen = event => {
-        console.log(stream + ' stream opened for ' + procUID)
+        console.debug(log.stream + ' stream opened for ' + this.log.process.uid)
       }
       eventSource.onclose = event => {
         this.eventSource = null
@@ -130,10 +134,8 @@ export default {
         this.eventSource.close()
         this.eventSource = null
       }
-
       this.eventSource = eventSource
     }
-
   }
 }
 </script>
