@@ -58,7 +58,7 @@ export default {
   },
   computed: {
     search () { return this.$store.state.search },
-    processes () { return this.$store.getters.loadedProcesses },
+    processes () { return this.$store.getters.processes },
     selectedProcesses: {
       get () { return this.$store.state.selectedProcesses },
       set (v) { this.$store.commit('updateSelectedProcesses', v) }
