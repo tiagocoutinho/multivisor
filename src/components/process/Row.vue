@@ -10,12 +10,14 @@
       style="cursor:pointer;height:30px;">
       {{ row.item.name }}
     </td>
-    <td @click="row.expanded = !row.expanded"
+    <td v-if="showGroup"
+        @click="row.expanded = !row.expanded"
         class="hidden-xs-only px-0"
         style="cursor:pointer;height:30px;">
         {{ row.item.group }}
     </td>
-    <td class="hidden-xs-only px-0" style="height:30px;">
+    <td v-if="showSupervisor"
+        class="hidden-xs-only px-0" style="height:30px;">
       {{ row.item.supervisor }}
     </td>
     <td class="px-0" style="height:30px;">
@@ -59,7 +61,7 @@
 import { stateColorMap } from '../../multivisor'
 
 export default {
-  props: [ 'row' ],
+  props: [ 'row', 'show-supervisor', 'show-group' ],
   data () { return { stateColorMap: stateColorMap } },
   methods: {
     restartProcess (process) {

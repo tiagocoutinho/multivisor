@@ -72,16 +72,27 @@ export const store = new Vuex.Store({
 
   },
   getters: {
-
     supervisors (state) {
       return Object.values(state.multivisor.supervisors)
     },
     processes (state, getters) {
-      let r = getters.supervisors.reduce((processes, supervisor) => {
+      return getters.supervisors.reduce((processes, supervisor) => {
         processes.push(...Object.values(supervisor.processes))
         return processes
       }, [])
-      return r
+    },
+    groupMap (state, getters) {
+      return getters.processes.reduce((groups, proc) => {
+        (proc.group in groups && groups[proc.group].processes.push(proc)) ||
+          (groups[proc.group] = { name: proc.group, processes: [proc] })
+        return groups
+      }, {})
+    },
+    groups (state, getters) {
+      return Object.values(getters.groupMap)
+    },
+    supervisor (state) {
+      return (uid) => { return state.multivisor.supervisors[uid] }
     },
     process (state) {
       return (uid) => {
@@ -89,6 +100,9 @@ export const store = new Vuex.Store({
           return process.uid === uid
         })
       }
+    },
+    group (state, getters) {
+      return (name) => { return getters.groupMap[name] }
     },
     totalNbProcesses (state, getters) {
       return getters.processes.length
@@ -111,6 +125,9 @@ export const store = new Vuex.Store({
     },
     nbStoppedSupervisors (state, getters) {
       return getters.totalNbSupervisors - getters.nbRunningSupervisors
+    },
+    nbGroups (state, getters) {
+      return getters.groups.length
     }
   }
 })
