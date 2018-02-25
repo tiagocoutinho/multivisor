@@ -13,6 +13,10 @@ export const store = new Vuex.Store({
       process: null,
       visible: false,
       stream: 'out'
+    },
+    processDetails: {
+      process: multivisor.nullProcess,
+      visible: false
     }
   },
   mutations: {
@@ -40,6 +44,12 @@ export const store = new Vuex.Store({
     },
     updateSearch (state, search) {
       state.search = search
+    },
+    setProcessDetailsVisible (state, visible) {
+      state.processDetails.visible = visible
+    },
+    setProcessDetails (state, details) {
+      state.processDetails = details
     }
   },
   actions: {

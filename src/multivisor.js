@@ -1,12 +1,12 @@
 export const stateColorMap = {
-  STOPPED: 'grey',
+  STOPPED: 'red',
   STARTING: 'blue',
   RUNNING: 'green',
   BACKOFF: 'orange',
   STOPPING: 'blue',
-  EXITED: 'orange',
-  FATAL: 'red',
-  UNKNOWN: 'black'
+  EXITED: 'red',
+  FATAL: 'purple',
+  UNKNOWN: 'grey'
 }
 
 export const notificationColorMap = {
@@ -99,4 +99,16 @@ export const timeAgo = (timestamp) => {
 export const nullMultivisor = {
   name: 'Multivisor',
   supervisors: {}
+}
+
+export const nullProcess = {
+  name: '',
+  uid: '',
+  pid: 0,
+  description: '',
+  exitstatus: 0,
+  logfile: null,
+  stderr_logfile: null,
+  start: 0,
+  now: 0
 }

@@ -16,6 +16,7 @@
 <script>
   import { mapGetters } from 'vuex'
   export default {
+    name: 'ProcessChip',
     computed: {
       ...mapGetters(['nbRunningProcesses', 'nbStoppedProcesses'])
     }
