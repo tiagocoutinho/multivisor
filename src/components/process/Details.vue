@@ -2,22 +2,20 @@
   <v-bottom-sheet inset v-model="visible">
     <v-card>
       <v-card-title>Last updated {{ lastUpdate }}</v-card-title>
-    <v-card-content>
-    <v-list dense>
-      <template v-for="(item, index) in items">
-        <v-list-tile avatar :key="item.id" v-if="showItem(item)">
-          <v-list-tile-avatar :color="item.color">
-            <span class="white--text headline">{{ item.label[0] }}</span>
-          </v-list-tile-avatar>
-          <v-list-tile-content>
-            <v-list-tile-title>{{ itemValue(item) }}</v-list-tile-title>
-            <v-list-tile-sub-title>{{ item.label }}</v-list-tile-sub-title>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-divider inset v-if="index < (items.length - 2)"></v-divider>
-      </template>
-    </v-list>
-  </v-card-content>
+      <v-list dense>
+        <template v-for="(item, index) in items">
+          <v-list-tile avatar :key="item.id" v-if="showItem(item)">
+            <v-list-tile-avatar :color="item.color">
+              <span class="white--text headline">{{ item.label[0] }}</span>
+            </v-list-tile-avatar>
+            <v-list-tile-content>
+              <v-list-tile-title>{{ itemValue(item) }}</v-list-tile-title>
+              <v-list-tile-sub-title>{{ item.label }}</v-list-tile-sub-title>
+            </v-list-tile-content>
+          </v-list-tile>
+          <v-divider inset v-if="index < (items.length - 2)"></v-divider>
+        </template>
+      </v-list>
   </v-card>
   </v-bottom-sheet>
 </template>

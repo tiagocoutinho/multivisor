@@ -1,13 +1,13 @@
 <template>
-  <v-chip class="purple darken-2 white--text">
-    <v-tooltip bottom>
-      <v-avatar slot="activator" class="purple lighten-1">
-        <v-icon>group_work</v-icon>
-      </v-avatar>
-      <span>Groups</span>
-    </v-tooltip>
-    {{ nbGroups }}
-  </v-chip>
+  <v-tooltip bottom>
+    <v-btn flat slot="activator"
+           router to="/view/group"
+           class="purple darken-2 white--text">
+      <v-icon class="mr-2">group_work</v-icon>
+      {{ nbGroups }}
+    </v-btn>
+    <span>Groups</span>
+  </v-tooltip>
 </template>
 
 <script>

@@ -1,15 +1,19 @@
 <template>
   <v-toolbar dense fixed dark app class="primary">
-    <v-toolbar-title>{{ name }}</v-toolbar-title>
+    <v-toolbar-title>
+      <router-link to="/" tag="span" style="cursor: pointer">{{ name }}</router-link>
+    </v-toolbar-title>
     <v-spacer></v-spacer>
     <v-text-field append-icon="search" clearable single-line hide-details
                   placeholder="Filter..." v-model="search"
                   color="grey lighten-1">
     </v-text-field>
     <ActionBar></ActionBar>
+    <v-toolbar-items>
     <ProcessChip class="hidden-sm-and-down"></ProcessChip>
     <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
     <GroupChip class="hidden-sm-and-down"></GroupChip>
+  </v-toolbar-items>
   </v-toolbar>
 </template>
 

@@ -3,7 +3,7 @@
     <ToolBar></ToolBar>
     <v-content>
       <v-container fluid grid-list-md>
-        <SupervisorPage></SupervisorPage>
+        <router-view></router-view>
       </v-container>
     </v-content>
     <NotificationBar></NotificationBar>
@@ -13,22 +13,17 @@
 </template>
 
 <script>
-import ToolBar from './components/ToolBar'
-import NotificationBar from './components/NotificationBar'
+import ToolBar from '@/components/ToolBar'
+import NotificationBar from '@/components/NotificationBar'
 
-import SupervisorPage from './components/supervisor/Page'
-
-import LogSheet from './components/process/Log'
-import ProcessDetails from './components/process/Details'
-import ProcessTable from './components/process/Table'
+import LogSheet from '@/components/process/Log'
+import ProcessDetails from '@/components/process/Details'
 
 export default {
   components: {
     ToolBar,
     LogSheet,
-    ProcessTable,
     ProcessDetails,
-    SupervisorPage,
     NotificationBar
   }
 }

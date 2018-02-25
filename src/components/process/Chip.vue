@@ -1,16 +1,18 @@
 <template>
-  <v-chip class="deep-purple darken-2 white--text">
-    <v-tooltip bottom>
-      <v-avatar slot="activator" class="deep-purple lighten-1">
-        <v-icon>settings</v-icon>
-      </v-avatar>
-      <span>Processes</span>
-    </v-tooltip>
-    <v-icon class="mr-2">thumb_up</v-icon>
-    {{ nbRunningProcesses }}
-    <v-icon class="mx-2">thumb_down</v-icon>
-    {{ nbStoppedProcesses }}
-  </v-chip>
+  <v-tooltip bottom>
+    <v-btn slot="activator" flat
+           router to="/view/process"
+           class="deep-purple darken-2 white--text">
+      <v-icon class="mr-2">settings</v-icon>
+      <div>
+      <v-icon small>thumb_up</v-icon>
+      {{ nbRunningProcesses }}
+      <v-icon small class="ml-1">thumb_down</v-icon>
+      {{ nbStoppedProcesses }}
+    </div>
+    </v-btn>
+    <span>Processes</span>
+  </v-tooltip>
 </template>
 
 <script>

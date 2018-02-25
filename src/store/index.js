@@ -1,9 +1,10 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import * as multivisor from '../multivisor'
+import * as multivisor from '@/multivisor'
+
 Vue.use(Vuex)
 
-export const store = new Vuex.Store({
+export default new Vuex.Store({
   state: {
     multivisor: multivisor.nullMultivisor,
     notifications: [],
@@ -140,6 +141,22 @@ export const store = new Vuex.Store({
         }
         return filtered
       }, new Set())
+    },
+    filteredGroupMap (state, getters) {
+      if (!state.search) {
+        return getters.groups
+      }
+      let filteredProcesses = getters.filteredProcessUIDs
+      return getters.processes.reduce((groups, proc) => {
+        if (filteredProcesses.has(proc.uid)) {
+          (proc.group in groups && groups[proc.group].processes.push(proc)) ||
+            (groups[proc.group] = { name: proc.group, processes: [proc] })
+        }
+        return groups
+      }, {})
+    },
+    filteredGroups (state, getters) {
+      return Object.values(getters.filteredGroupMap)
     },
     totalNbProcesses (state, getters) {
       return getters.processes.length
