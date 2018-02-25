@@ -473,7 +473,6 @@ def process_log_tail(stream, uid):
         while True:
             data = tail(pname, offset, length)
             log, offset, overflow = data
-            print len(log), offset, overflow
             # don't care about overflow in first log message
             if overflow and i:
                 length = min(length * 2, 2**14)
