@@ -6,10 +6,6 @@ Vue.use(Vuex)
 export const store = new Vuex.Store({
   state: {
     multivisor: multivisor.nullMultivisor,
-    user: {
-      id: 'admin',
-      role: 'administrator'
-    },
     notifications: [],
     selectedProcesses: [],
     search: '',
@@ -68,10 +64,29 @@ export const store = new Vuex.Store({
     },
     stopProcesses (context, uid) {
       multivisor.processAction(uid, 'stop')
+    },
+    selectAll () {
+      this.commit('updateSelectedProcesses', [...this.getters.filteredProcessUIDs])
+    },
+    clearSelected () {
+      this.commit('updateSelectedProcesses', [])
+    },
+    restartSelected () {
+      this.dispatch('restartProcesses', this.state.selectedProcesses).then(() => {
+        this.dispatch('clearSelected')
+      })
+    },
+    stopSelected () {
+      this.dispatch('stopProcesses', this.state.selectedProcesses).then(() => {
+        this.dispatch('clearSelected')
+      })
     }
-
   },
   getters: {
+    name (state) {
+      console.log(state.multivisor)
+      return state.multivisor.name
+    },
     supervisors (state) {
       return Object.values(state.multivisor.supervisors)
     },
@@ -103,6 +118,19 @@ export const store = new Vuex.Store({
     },
     group (state, getters) {
       return (name) => { return getters.groupMap[name] }
+    },
+    filteredProcessUIDs (state, getters) {
+      if (!state.search) {
+        return new Set(getters.processes.map(process => process.uid))
+      }
+      let search = state.search.toLowerCase()
+      return getters.processes.reduce((filtered, process) => {
+        if (process.uid.toLowerCase().indexOf(search) !== -1 ||
+            process.statename.toLowerCase().indexOf(search) !== -1) {
+          filtered.add(process.uid)
+        }
+        return filtered
+      }, new Set())
     },
     totalNbProcesses (state, getters) {
       return getters.processes.length

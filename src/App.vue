@@ -2,12 +2,8 @@
   <v-app >
     <ToolBar></ToolBar>
     <v-content>
-      <v-container fluid>
-        <v-layout justify-center>
-          <v-card>
-          <ProcessTable></ProcessTable>
-        </v-card>
-        </v-layout>
+      <v-container fluid grid-list-md>
+        <SupervisorPage></SupervisorPage>
       </v-container>
     </v-content>
     <NotificationBar></NotificationBar>
@@ -16,23 +12,19 @@
 </template>
 
 <script>
-  import ToolBar from './components/ToolBar'
-  import LogSheet from './components/process/Log'
-  import ProcessTable from './components/process/Table'
-  import NotificationBar from './components/NotificationBar'
+import ToolBar from './components/ToolBar'
+import LogSheet from './components/process/Log'
+import ProcessTable from './components/process/Table'
+import SupervisorPage from './components/supervisor/Page'
+import NotificationBar from './components/NotificationBar'
 
-  export default {
-    components: {
-      ToolBar,
-      LogSheet,
-      ProcessTable,
-      NotificationBar
-    },
-    computed: {
-      logVisible: {
-        get () { return this.$store.state.log.visible },
-        set (v) { this.$store.commit('setLogVisible', v) }
-      }
-    }
+export default {
+  components: {
+    ToolBar,
+    LogSheet,
+    ProcessTable,
+    SupervisorPage,
+    NotificationBar
   }
+}
 </script>

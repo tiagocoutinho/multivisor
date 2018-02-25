@@ -1,5 +1,5 @@
 <template>
-  <v-chip class="indigo darken-2 white--text mx-2">
+  <v-chip class="indigo darken-2 white--text">
     <v-tooltip bottom>
       <v-avatar slot="activator" class="indigo lighten-1">
         <v-icon>visibility</v-icon>

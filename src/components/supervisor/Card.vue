@@ -1,18 +1,18 @@
 <template>
   <v-card>
-
     <v-toolbar dense color="indigo" dark>
       <v-toolbar-title>{{ supervisor.name }}</v-toolbar-title>
       <v-spacer></v-spacer>
     </v-toolbar>
     <v-list subheader dense
             v-for="(group, index) in supervisor.groups" :key="group.name">
-      <v-divider v-if="index > 0"></v-divider>
-      <v-subheader>{{ group.name }}</v-subheader>
+      <v-subheader style="height:24px;" class="indigo lighten-5">
+        {{ group.name }}
+      </v-subheader>
       <v-list-tile v-for="process in group.processes" :key="process.uid">
         <v-list-tile-action>
           <v-checkbox hide-details v-model="selectedProcesses"
-                      :value="process"></v-checkbox>
+                      :value="process.uid"></v-checkbox>
         </v-list-tile-action>
         <v-list-tile-content>
           <v-list-tile-title>{{ process.name }}
@@ -57,6 +57,7 @@
 <script>
 import ProcessState from '../process/State'
 import ProcessDetails from '../process/Details'
+
 export default {
   props: ['item'],
   components: {
