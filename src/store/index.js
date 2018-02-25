@@ -84,7 +84,6 @@ export const store = new Vuex.Store({
   },
   getters: {
     name (state) {
-      console.log(state.multivisor)
       return state.multivisor.name
     },
     supervisors (state) {
