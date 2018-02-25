@@ -21,6 +21,7 @@ import GroupChip from './group/Chip'
 import ActionBar from './ActionBar'
 
 export default {
+  name: 'ToolBar',
   components: { ActionBar, ProcessChip, SupervisorChip, GroupChip },
   computed: {
     ...mapGetters(['name']),

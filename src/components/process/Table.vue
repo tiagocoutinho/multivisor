@@ -45,6 +45,7 @@ import ProcessRow from './Row'
 import ProcessDetails from './Details'
 
 export default {
+  name: 'ProcessTable',
   props: {
     processes: { default: null },
     showGroup: { default: true },

@@ -12,6 +12,7 @@
 import SupervisorList from './List'
 
 export default {
+  name: 'SupervisorCard',
   props: ['item'],
   components: {
     SupervisorList

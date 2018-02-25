@@ -40,6 +40,7 @@
 import { mapActions } from 'vuex'
 
 export default {
+  name: 'ActionBar',
   computed: {
     selectedProcesses () { return this.$store.state.selectedProcesses }
   },

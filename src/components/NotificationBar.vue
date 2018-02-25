@@ -9,6 +9,7 @@
 import { notificationColorMap } from '../multivisor'
 
 export default {
+  name: 'NotificationBar',
   data () {
     return { visible: false, color: 'info' }
   },

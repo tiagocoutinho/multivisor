@@ -14,11 +14,12 @@
 </template>
 
 <script>
-  import { mapGetters } from 'vuex'
-  export default {
-    name: 'ProcessChip',
-    computed: {
-      ...mapGetters(['nbRunningProcesses', 'nbStoppedProcesses'])
-    }
+import { mapGetters } from 'vuex'
+
+export default {
+  name: 'ProcessChip',
+  computed: {
+    ...mapGetters(['nbRunningProcesses', 'nbStoppedProcesses'])
   }
+}
 </script>

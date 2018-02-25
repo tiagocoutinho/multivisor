@@ -19,6 +19,7 @@
 import SupervisorCard from './Card'
 
 export default {
+  name: 'SupervisorPage',
   components: {
     SupervisorCard
   },

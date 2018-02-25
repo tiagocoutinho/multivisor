@@ -17,6 +17,7 @@
 import ProcessTile from '../process/Tile'
 
 export default {
+  name: 'SupervisorList',
   props: ['supervisor'],
   components: {
     ProcessTile

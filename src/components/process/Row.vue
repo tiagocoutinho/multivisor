@@ -61,6 +61,7 @@
 import { stateColorMap } from '../../multivisor'
 
 export default {
+  name: 'ProcessRow',
   props: [ 'row', 'show-supervisor', 'show-group' ],
   data () { return { stateColorMap: stateColorMap } },
   methods: {

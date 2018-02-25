@@ -48,6 +48,7 @@
 import ProcessState from '../process/State'
 
 export default {
+  name: 'ProcessTitle',
   props: ['process'],
   components: {
     ProcessState

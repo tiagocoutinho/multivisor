@@ -9,6 +9,7 @@
 import { stateColorMap } from '../../multivisor'
 
 export default {
+  name: 'ProcessState',
   props: {
     state: { default: 'UNKNOWN' },
     small: { default: false }

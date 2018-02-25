@@ -14,10 +14,12 @@
 </template>
 
 <script>
-  import { mapGetters } from 'vuex'
-  export default {
-    computed: {
-      ...mapGetters(['nbRunningSupervisors', 'nbStoppedSupervisors'])
-    }
+import { mapGetters } from 'vuex'
+
+export default {
+  name: 'SupervisorChip',
+  computed: {
+    ...mapGetters(['nbRunningSupervisors', 'nbStoppedSupervisors'])
   }
+}
 </script>

@@ -23,7 +23,6 @@
 </template>
 
 <script>
-
 import { timeAgo } from '../../multivisor'
 
 export default {
