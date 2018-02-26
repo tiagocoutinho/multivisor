@@ -504,8 +504,8 @@ def make_rpcinterface(supervisord, **config):
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', help='web port', type=int,
-                        default=22000)
+    parser.add_argument('--bind', help='[host][:port] (default: 0:22000)',
+                        default='0:22000')
     parser.add_argument('-c', help='configuration file',
                         dest='config_file',
                         default='/etc/multivisor.conf')
@@ -523,12 +523,15 @@ def main(args=None):
     if not os.path.exists(options.config_file):
         parser.exit(status=2, message='configuration file does not exist. Bailing out!\n')
 
+    bind = _to_host_port(options.bind, 22000)
+
     app.multivisor = Multivisor(options)
 
     app_task = spawn(app.multivisor.run_forever)
 
     from gevent.wsgi import WSGIServer
-    http_server = WSGIServer(('', options.port), application=app)
+
+    http_server = WSGIServer(bind, application=app)
     try:
         http_server.serve_forever()
     except KeyboardInterrupt:
