@@ -1,5 +1,6 @@
 <template>
-  <v-data-table
+  <v-container justify-center>
+    <v-data-table
     :headers="headers"
     :items="procs"
     :search="search"
@@ -28,35 +29,22 @@
                   :show-supervisor="showSupervisor"
                   :show-group="showGroup"></ProcessRow>
     </template>
-
-    <template slot="expand" slot-scope="props">
-      <v-card flat>
-        <v-card-text>
-          <ProcessDetails :process="props.item"></ProcessDetails>
-        </v-card-text>
-      </v-card>
-    </template>
-  </v-data-table>
+    </v-data-table>
+  </v-container>
 </template>
 
 <script>
-import { stateColorMap } from '../../multivisor'
 import ProcessRow from './Row'
 import ProcessDetails from './Details'
 
 export default {
-  name: 'ProcessTable',
+  name: 'ProcessPage',
   props: {
     processes: { default: null },
     showGroup: { default: true },
     showSupervisor: { default: true }
   },
   components: { ProcessRow, ProcessDetails },
-  data () {
-    return {
-      stateColorMap: stateColorMap
-    }
-  },
   computed: {
     headers () {
       let header = [{ align: 'left', sortable: true, text: 'Name', value: 'name', tooltip: 'process name' }]
