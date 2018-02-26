@@ -29,7 +29,7 @@ export const processAction = (uid, action) => {
 }
 
 export const load = () => {
-  return fetch('data')
+  return fetch('/data')
     .then(response => response.json())
 }
 
