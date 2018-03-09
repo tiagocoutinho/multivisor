@@ -5,6 +5,7 @@ from gevent.monkey import patch_all
 patch_all(thread=False)
 
 import os
+import json
 import logging
 import weakref
 import functools
@@ -12,12 +13,12 @@ from collections import OrderedDict
 from ConfigParser import SafeConfigParser
 from xmlrpclib import ServerProxy
 
+from zmq import green as zmq
 from louie import send, connect
 from flask import Flask, render_template, Response, request, json
-from gevent import queue, spawn, sleep, iwait, joinall, lock
+from gevent import queue, spawn, sleep, joinall
 from supervisor.states import RUNNING_STATES
 from supervisor.xmlrpc import Faults
-
 
 log = logging.getLogger('multivisor')
 
@@ -32,7 +33,14 @@ def _to_host_port(url, default_port=None):
     return host, port
 
 
+EVENT_CHANNEL = zmq.Context.instance().socket(zmq.SUB)
+EVENT_CHANNEL.setsockopt(zmq.SUBSCRIBE, '')
+
+
 class Supervisor(dict):
+
+    # dict<identification, Supervisor>
+    All = weakref.WeakValueDictionary()
 
     Null = {
         'identification': None,
@@ -54,14 +62,34 @@ class Supervisor(dict):
             credentials = '{0}:{1}@'.format(self.username, self.password)
         host, port = _to_host_port(self['url'], default_port=9001)
         self.address = 'http://{0}{1}:{2}/RPC2'.format(credentials, host, port)
-        self._static_server = self.server
+        # fill supervisor info before events start coming in
+        self.refresh()
+        event_url = self.pop('event_url', None)
+        if event_url:
+            if '://' not in event_url:
+                event_url = 'tcp://' + event_url
+            EVENT_CHANNEL.connect(event_url)
+        self.event_url = event_url
 
     @property
     def server(self):
         return ServerProxy(self.address)
 
+    def handle_event(self, event):
+        name = event['eventname']
+        if name.startswith('SUPERVISOR_STATE'):
+            self.refresh()
+        elif not self['running']:
+            self.refresh()
+        elif name.startswith('PROCESS'):
+            payload = event['payload']
+            puid = '{}:{}@{}'.format(payload['groupname'],
+                                     payload['processname'],
+                                     self.name)
+            self['processes'][puid].handle_event(event)
+
     def refresh(self):
-        server = self._static_server
+        server = self.server
         try:
             pid = server.supervisor.getPID()
         except:
@@ -79,10 +107,13 @@ class Supervisor(dict):
                 self.update(self.Null)
             else:
                 self['running'] = True
-                self['identification'] = supervisor.getIdentification()
+                self['identification'] = ident = supervisor.getIdentification()
                 self['api_version'] = supervisor.getAPIVersion()
                 self['supervisor_version'] = supervisor.getSupervisorVersion()
+                self.All[ident] = self
             modified = True
+            self.log.info('supervisor %r state changed to %s', supervisor_name,
+                          'RUNNING' if self['running'] else 'STOPPED')
         else:
             modified = False
         processes = {}
@@ -204,6 +235,11 @@ class Process(dict):
     def full_name(self):
         return self['full_name']
 
+    def handle_event(self, event):
+        event_name = event['eventname']
+        if event_name.startswith('PROCESS_STATE'):
+            self.refresh()
+
     def _refresh(self, server):
         info = server.getProcessInfo(self.full_name)
         old_self = self.copy()
@@ -217,23 +253,22 @@ class Process(dict):
                               old_self['statename'], self['statename'])
 
     def refresh(self):
-        return self._refresh(self.server)
+        try:
+            return self._refresh(self.server)
+        except Exception as err:
+            self.log.warn('Failed to refresh {}: {}'.format(self['uid'], err))
 
     def _start(self, server):
         try:
             server.startProcess(self.full_name)
         except:
             self.log.error('Error trying to start %s!', self)
-            self._refresh(server)
-            return
-        self._refresh(server)
 
     def start(self):
         return self._start(self.server)
 
     def _stop(self, server):
         server.stopProcess(self.full_name)
-        self._refresh(server)
 
     def stop(self):
         return self._stop(self.server)
@@ -331,7 +366,8 @@ class Multivisor(object):
 
     def poll_supervisors(self):
         tasks = [spawn(supervisor.refresh)
-                 for supervisor in self.supervisors.values()]
+                 for supervisor in self.supervisors.values()
+                 if supervisor.event_url is None]
         joinall(tasks)
 
     def get_supervisor(self, name):
@@ -348,9 +384,24 @@ class Multivisor(object):
         self._dispatcher.clients.remove(client)
 
     def run_forever(self):
+        self._event_loop = spawn(event_loop)
         while True:
             self.poll_supervisors()
             sleep(self.options.poll_period)
+
+
+def event_generator():
+    while True:
+        event_bytes = EVENT_CHANNEL.recv()
+        yield json.loads(event_bytes)
+
+
+def event_loop():
+    while True:
+        for event in event_generator():
+            identification = event['server']
+            supervisor = Supervisor.All[identification]
+            supervisor.handle_event(event)
 
 
 app = Flask(__name__,
@@ -479,7 +530,7 @@ def process_log_tail(stream, uid):
             else:
                 data = json.dumps(dict(message=log, size=offset))
                 yield 'data: {}\n\n'.format(data)
-            gevent.sleep(1)
+            sleep(1)
             i += 1
     return Response(event_stream(), mimetype="text/event-stream")
 
@@ -494,11 +545,6 @@ def stream():
         app.multivisor.remove_listener(client)
     return Response(event_stream(),
                     mimetype="text/event-stream")
-
-
-def make_rpcinterface(supervisord, **config):
-    print config
-    return
 
 
 def main(args=None):
