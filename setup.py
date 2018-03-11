@@ -10,5 +10,7 @@ setup(
     package_data=dict(multivisor=['dist/*',
                                   'dist/static/css/*',
                                   'dist/static/js/*']),
-    entry_points=dict(console_scripts=['multivisor=multivisor.server:main']),
+    entry_points=dict(console_scripts=[
+        'multivisor=multivisor.server:main',
+        'multivisor-dispatcher=multivisor.dispatcher:main']),
     install_requires=['flask', 'louie', 'gevent', 'supervisor'])
