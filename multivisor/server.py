@@ -268,7 +268,10 @@ class Process(dict):
         return self._start(self.server)
 
     def _stop(self, server):
-        server.stopProcess(self.full_name)
+        try:
+            server.stopProcess(self.full_name)
+        except Exception as err:
+            self.log.warn('Failed to stop {}: {}'.format(self['uid'], err))
 
     def stop(self):
         return self._stop(self.server)
