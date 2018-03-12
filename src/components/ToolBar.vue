@@ -1,5 +1,5 @@
 <template>
-  <v-toolbar dense fixed dark app class="primary">
+  <v-toolbar fixed dark app class="primary">
     <v-toolbar-title>
       <router-link to="/" tag="span" style="cursor: pointer">{{ name }}</router-link>
     </v-toolbar-title>

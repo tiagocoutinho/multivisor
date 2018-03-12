@@ -1,8 +1,6 @@
 <template>
   <v-tooltip bottom>
-    <v-btn slot="activator" flat
-           router to="/view/process"
-           class="deep-purple darken-2 white--text">
+    <v-btn slot="activator" flat router to="/view/process">
       <v-icon class="mr-2">settings</v-icon>
       <div>
       <v-icon small>thumb_up</v-icon>

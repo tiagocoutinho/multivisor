@@ -1,7 +1,7 @@
 <template lang="html">
   <v-speed-dial open-on-hover
                 transition="scale-transition" direction="bottom">
-    <v-btn slot="activator" small fab hover flat>
+    <v-btn slot="activator" icon>
       <v-icon>more_vert</v-icon>
     </v-btn>
 

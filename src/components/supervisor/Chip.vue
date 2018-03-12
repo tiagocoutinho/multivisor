@@ -2,7 +2,7 @@
   <v-tooltip bottom>
     <v-btn slot="activator" flat
            router to="/view/supervisor"
-           class="indigo darken-2 white--text">
+           >
       <v-icon class="mr-2">visibility</v-icon>
       <div>
       <v-icon small>thumb_up</v-icon>

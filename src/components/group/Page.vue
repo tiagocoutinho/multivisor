@@ -8,11 +8,11 @@
         no-results-text="Sorry, no matching processes found"
         no-data-text="Sorry, there are no processes currently being monitored">
         <v-flex slot="item" slot-scope="props"
-                xs12 sm12 md6 lg4>
+                xs12 sm12 md6 lg4 xl3>
           <GroupCard :item="props"></GroupCard>
         </v-flex>
       </v-data-iterator>
-  </v-container> 
+  </v-container>
 </template>
 
 <script>

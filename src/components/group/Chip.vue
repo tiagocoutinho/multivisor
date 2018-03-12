@@ -1,8 +1,6 @@
 <template>
   <v-tooltip bottom>
-    <v-btn flat slot="activator"
-           router to="/view/group"
-           class="purple darken-2 white--text">
+    <v-btn slot="activator" flat router to="/view/group">
       <v-icon class="mr-2">group_work</v-icon>
       {{ nbGroups }}
     </v-btn>
