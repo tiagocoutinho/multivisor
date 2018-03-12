@@ -67,7 +67,7 @@ export default {
     process () { return this.row.item },
     selectedProcesses: {
       get () { return this.$store.state.selectedProcesses },
-      set (v) { this.$store.commit('updateSelectedProcesses', v) }
+      set (v) { this.$store.commit('setSelectedProcesses', v) }
     }
   },
   methods: {

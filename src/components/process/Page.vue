@@ -61,7 +61,7 @@ export default {
     search () { return this.$store.state.search },
     selectedProcesses: {
       get () { return this.$store.state.selectedProcesses },
-      set (v) { this.$store.commit('updateSelectedProcesses', v) }
+      set (v) { this.$store.commit('setSelectedProcesses', v) }
     },
     procs () {
       return this.processes || this.$store.getters.processes

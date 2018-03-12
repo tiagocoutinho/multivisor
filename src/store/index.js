@@ -40,8 +40,16 @@ export default new Vuex.Store({
     setLog (state, log) {
       state.log = log
     },
-    updateSelectedProcesses (state, selectedProcesses) {
+    setSelectedProcesses (state, selectedProcesses) {
       state.selectedProcesses = selectedProcesses
+    },
+    addSelectedProcesses (state, processes) {
+      let toAdd = new Set([...state.selectedProcesses, ...processes])
+      state.selectedProcesses = [...toAdd]
+    },
+    removeSelectedProcesses (state, processes) {
+      let toRemove = new Set(processes)
+      state.selectedProcesses = state.selectedProcesses.filter(process => !toRemove.has(process))
     },
     updateSearch (state, search) {
       state.search = search
@@ -77,10 +85,10 @@ export default new Vuex.Store({
       multivisor.processAction(uid, 'stop')
     },
     selectAll () {
-      this.commit('updateSelectedProcesses', [...this.getters.filteredProcessUIDs])
+      this.commit('setSelectedProcesses', [...this.getters.filteredProcessUIDs])
     },
     clearSelected () {
-      this.commit('updateSelectedProcesses', [])
+      this.commit('setSelectedProcesses', [])
     },
     restartSelected () {
       this.dispatch('restartProcesses', this.state.selectedProcesses).then(() => {
@@ -119,9 +127,9 @@ export default new Vuex.Store({
     supervisor (state) {
       return (uid) => { return state.multivisor.supervisors[uid] }
     },
-    process (state) {
+    process (state, getters) {
       return (uid) => {
-        return state.processes.find((process) => {
+        return getters.processes.find((process) => {
           return process.uid === uid
         })
       }

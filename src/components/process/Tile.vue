@@ -56,7 +56,7 @@ export default {
   computed: {
     selectedProcesses: {
       get () { return this.$store.state.selectedProcesses },
-      set (v) { this.$store.commit('updateSelectedProcesses', v) }
+      set (v) { this.$store.commit('setSelectedProcesses', v) }
     }
   },
   methods: {

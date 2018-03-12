@@ -10,10 +10,10 @@
     </v-text-field>
     <ActionBar></ActionBar>
     <v-toolbar-items>
-    <ProcessChip class="hidden-sm-and-down"></ProcessChip>
-    <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
-    <GroupChip class="hidden-sm-and-down"></GroupChip>
-  </v-toolbar-items>
+      <ProcessChip class="hidden-sm-and-down"></ProcessChip>
+      <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
+      <GroupChip class="hidden-sm-and-down"></GroupChip>
+    </v-toolbar-items>
   </v-toolbar>
 </template>
 
