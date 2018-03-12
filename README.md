@@ -16,13 +16,15 @@ A centralized supervisor web UI inspired by [cesi](https://github.com/gamegos/ce
 git clone git://github.com/tiagocoutinho/multivisor
 cd multivisor
 
-# Prepare backend: feel free to use your favorite python virtual env. here
-pip install -r requirements.txt
 
 # Install frontend dependencies
 npm install
 # Build for production with minification
 npm run build
+
+# install backend: feel free to use your favorite python virtual environment
+# here. Otherwise you will need administrative privileges
+pip install .
 
 # Launch a few supervisors
 supervisord -c examples/full_example/supervisord_lid001.conf
@@ -30,7 +32,7 @@ supervisord -c examples/full_example/supervisord_lid002.conf
 supervisord -c examples/full_example/supervisord_baslid001.conf
 
 # Finally, launch multivisor:
-./multivisor -c examples/full_example/multivisor.conf
+multivisor -c examples/full_example/multivisor.conf
 ```
 
 That's it! Start a browser pointing to [localhost:22000](http://localhost:22000) and
@@ -49,77 +51,97 @@ Multivisor running on a mobile:
 
 The backend runs a [flask](http://flask.pocoo.org/) web server.
 
-The frontend is based on [vue](https://vuejs.org/) + [vuex](https://vuex.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
+The frontend is based on [vue](https://vuejs.org/) +
+[vuex](https://vuex.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
 
 
 ## Configuration
 
-Multivisor relies on a INI like configuration file (much like supervisor itself). It is usually named *multivisor.conf* and it
-must be passed as argument to multivisor when starting the server.
+Make sure multivisor is installed on the host you are running supervisor. Then,
+configure your supervisor(s) to send events to multivisor by adding the
+following lines to your supervisord.conf:
+
+```
+[eventlistener:multivisor-dispatcher]
+command=multivisor-dispatcher --bind=tcp://*:9002
+events=EVENT
+```
+
+The name of the eventlistener is yours to choose (here we choose
+*multivisor-dispatcher*).
+
+Repeat the above procedure for every supervisor you have running.
+
+Multivisor relies on a INI like configuration file (much like supervisor
+itself). It is usually named *multivisor.conf* and it must be passed as argument
+to multivisor when starting the server.
 
 It consists of a `global` section where you can give an optional
-name to your multivisor instance (default is *multivisor* and
-it will appear on the top left corner of multivisors web page).
+name to your multivisor instance (default is *multivisor*. This name will appear
+on the top left corner of multivisors web page).
 
 To add a new supervisor to the list of supervisors monitored by multivisor
 simply add a section `[supervisor:<name>]`. It must contain at least a `url`
 containing `<host>[:<port>]`. The port is optional and defaults to `9001`.
 You can also add a `username` and `password` in case your supervisor XML-RPC
 interface configuration requires one.
+It should also contain an `event_url` field with value being the url of the
+multivisor-dispatcher eventlistener.
 
 Here is a basic example:
 
-```toml
+```
 [global]
-name = Simpsons multivisor
+name=ACME
 
-[supervisor:homer1]
-host = homer.simpsons.com
-#port = 9001
+[supervisor:roadrunner]
+url=roadrunner.acme.org
 #username = <supervisor user name>
 #password = <supervisor password>
+event_url=roadrunner.acme.org:9002
 
-[supervisor:homer2]
-host = homer.simpsons.com
-port = 9002
+[supervisor:coyote]
+url=coyote.acme.org:9011
+event_url=coyote.acme.org:9012
 
-[supervisor:bart]
-host=bart.simpsons.com
+[supervisor:bugsbunny]
+url=bugsbunny.acme.org
+event_url=bugsbunny.acme.org:9002
 ```
 
-## Build
+## Build & Install
 
-``` bash
+```bash
 
-# install python dependencies
-pip install -r requirements.txt
-
-# install dependencies
+# install frontend
 npm install
 
 # build for production with minification
 npm run build
 
+# install backend
+pip install .
 
 ```
 
 ## Run
 
-``` bash
+```bash
 # serve at localhost:22000
-./multivisor -c multivisor.conf
+multivisor -c multivisor.conf
 ```
 
 Start a browser pointing to [localhost:22000](http://localhost:22000)
 
 ## Development mode
 
-You can run the backend using the webpack dev server to facilitate your development cycle:
+You can run the backend using the webpack dev server to facilitate your
+development cycle:
 
 First, start multivisor (which listens on 22000 by default):
 
-``` bash
-./multivisor -c multivisor.conf
+```bash
+python -m multivisor.server -c multivisor.conf
 ```
 
 Now, in another console, run the webpack dev server (it will
@@ -129,4 +151,5 @@ transfer the requests between the browser and multivisor):
 npm run dev
 ```
 
-That's it. If you modify `App.vue` for example, you should see the changes directly on your browser.
+That's it. If you modify `App.vue` for example, you should see the changes
+directly on your browser.
