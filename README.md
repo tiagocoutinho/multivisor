@@ -58,35 +58,35 @@ The frontend is based on [vue](https://vuejs.org/) +
 ## Configuration
 
 Make sure multivisor is installed on the host you are running supervisor. Then,
-configure your supervisor(s) to send events to multivisor by adding the
+configure your supervisor(s) to send events to multivisor-rpc by adding the
 following lines to your supervisord.conf:
 
 ```
-[eventlistener:multivisor-dispatcher]
-command=multivisor-dispatcher --bind=tcp://*:9002
+[eventlistener:multivisor-rpc]
+command=multivisor-rpc --bind=tcp://*:9002
 events=EVENT
 ```
 
 The name of the eventlistener is yours to choose (here we choose
-*multivisor-dispatcher*).
+*multivisor-rpc*).
 
 Repeat the above procedure for every supervisor you have running.
 
-Multivisor relies on a INI like configuration file (much like supervisor
-itself). It is usually named *multivisor.conf* and it must be passed as argument
-to multivisor when starting the server.
+The `multivisor` web server relies on the `multivisor-rpc` event listener of
+each supervisor for both RPC and events.
 
-It consists of a `global` section where you can give an optional
-name to your multivisor instance (default is *multivisor*. This name will appear
-on the top left corner of multivisors web page).
+The multivisor web server is configured with a INI like configuration file
+(much like supervisor itself). It is usually named *multivisor.conf* and it
+must be passed as argument to multivisor when starting the server.
+
+It consists of a `global` section where you can give an optional name to your
+multivisor instance (default is *multivisor*. This name will appear on the top
+left corner of multivisor the web page).
 
 To add a new supervisor to the list of supervisors monitored by multivisor
-simply add a section `[supervisor:<name>]`. It must contain at least a `url`
-containing `<host>[:<port>]`. The port is optional and defaults to `9001`.
-You can also add a `username` and `password` in case your supervisor XML-RPC
-interface configuration requires one.
-It should also contain an `event_url` field with value being the url of the
-multivisor-dispatcher eventlistener.
+simply add a section `[supervisor:<name>]`.
+It accepts an optional `url` in the format `[<host>][:<port>]`. The default
+is `<name>:9002`.
 
 Here is a basic example:
 
@@ -95,18 +95,18 @@ Here is a basic example:
 name=ACME
 
 [supervisor:roadrunner]
-url=roadrunner.acme.org
-#username = <supervisor user name>
-#password = <supervisor password>
-event_url=roadrunner.acme.org:9002
+# since no url is given it will be roadrunner:9002
 
 [supervisor:coyote]
-url=coyote.acme.org:9011
-event_url=coyote.acme.org:9012
+# no host is given: defaults to coyote
+url=:9011
 
 [supervisor:bugsbunny]
+# no port is given: defaults to 9002
 url=bugsbunny.acme.org
-event_url=bugsbunny.acme.org:9002
+
+[supervisor:daffyduck]
+url=daffyduck.acme.org:9007
 ```
 
 ## Build & Install
