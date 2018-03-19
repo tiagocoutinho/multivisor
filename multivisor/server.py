@@ -72,8 +72,11 @@ class Supervisor(dict):
         while True:
             try:
                 self.refresh()
-                for event in self.server.event_stream():
-                    self.handle_event(event)
+                for i, event in enumerate(self.server.event_stream()):
+                    # ignore first event. It serves only to trigger
+                    # connection and avoid TimeoutExpired
+                    if i != 0:
+                        self.handle_event(event)
             except zerorpc.LostRemote:
                 self.log.info('Lost remote to {}'.format(self.name))
             except zerorpc.TimeoutExpired:

@@ -67,6 +67,7 @@ class Supervisor(object):
         channel = Queue()
         self.event_channels.add(channel)
         try:
+            yield 'First event to trigger connection. Please ignore me!'
             for event in channel:
                 yield event
         except LostRemote as e:
