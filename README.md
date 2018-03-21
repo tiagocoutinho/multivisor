@@ -49,7 +49,11 @@ Multivisor running on a mobile:
 
 ## Technologies
 
-The backend runs a [flask](http://flask.pocoo.org/) web server.
+![multivisor diagram](doc/diagram.svg)
+
+The `multivisor` backend runs a [flask](http://flask.pocoo.org/) web server.
+
+`multivisor-rpc` exposes a [0RPC](http://www.zerorpc.io) interface.
 
 The frontend is based on [vue](https://vuejs.org/) +
 [vuex](https://vuex.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
