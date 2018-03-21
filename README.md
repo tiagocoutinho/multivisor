@@ -49,7 +49,7 @@ Multivisor running on a mobile:
 
 ## Technologies
 
-![multivisor diagram](doc/diagram.svg)
+![multivisor diagram](doc/diagram.png)
 
 The `multivisor` backend runs a [flask](http://flask.pocoo.org/) web server.
 
