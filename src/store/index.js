@@ -99,6 +99,12 @@ export default new Vuex.Store({
       this.dispatch('stopProcesses', this.state.selectedProcesses).then(() => {
         this.dispatch('clearSelected')
       })
+    },
+    updateSupervisor (context, uid) {
+      multivisor.supervisorAction(uid, 'update')
+    },
+    restartSupervisor (context, uid) {
+      multivisor.supervisorAction(uid, 'restart')
     }
   },
   getters: {
