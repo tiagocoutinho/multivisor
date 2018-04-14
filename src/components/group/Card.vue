@@ -3,41 +3,34 @@
     <v-toolbar dense color="purple darken-2" dark>
       <v-toolbar-title>{{ group.name }}</v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-speed-dial open-on-hover
-                    transition="scale-transition" direction="left">
-        <v-btn slot="activator" icon>
-          <v-icon>more_vert</v-icon>
+      <v-tooltip top>
+        <v-btn slot="activator" icon small @click="restartSelected()"
+               v-show="selectedProcesses.length">
+          <v-icon>autorenew</v-icon>
         </v-btn>
-
-        <v-tooltip top>
-          <v-btn slot="activator" fab small dark color="green darken-2"
-                 @click="restartSelected()" v-show="selectedProcesses.length">
-            <v-icon>autorenew</v-icon>
-          </v-btn>
-          <span>(Re)start selected processes</span>
-        </v-tooltip>
-        <v-tooltip top>
-          <v-btn slot="activator" fab small dark color="red darken-2"
-                 @click="stopSelected()" v-show="selectedProcesses.length">
-            <v-icon>stop</v-icon>
-          </v-btn>
-          <span>Stop selected processes</span>
-        </v-tooltip>
-        <v-tooltip top>
-          <v-btn slot="activator" fab small dark color="blue darken-1"
-                 @click="clearSelected()" v-show="selectedProcesses.length">
-            <v-icon>clear_all</v-icon>
-          </v-btn>
-          <span>Clear selection</span>
-        </v-tooltip>
-        <v-tooltip top>
-          <v-btn slot="activator" fab small dark color="blue darken-1"
-                 @click="selectAll()">
-            <v-icon>select_all</v-icon>
-          </v-btn>
-          <span>Select all</span>
-        </v-tooltip>
-      </v-speed-dial>
+      <span>(Re)start selected processes</span>
+      </v-tooltip>
+      <v-tooltip top>
+        <v-btn slot="activator" icon small @click="stopSelected()"
+               v-show="selectedProcesses.length">
+          <v-icon>stop</v-icon>
+        </v-btn>
+        <span>Stop selected processes</span>
+      </v-tooltip>
+      <v-tooltip top>
+        <v-btn slot="activator" icon small @click="clearSelected()"
+               v-show="selectedProcesses.length">
+          <v-icon>clear_all</v-icon>
+        </v-btn>
+        <span>Clear selection</span>
+      </v-tooltip>
+      <v-tooltip top>
+        <v-btn slot="activator" icon small @click="selectAll()"
+               v-show="selectedProcesses.length < group.processes.length">
+          <v-icon>done_all</v-icon>
+        </v-btn>
+        <span>Select all</span>
+      </v-tooltip>
     </v-toolbar>
     <GroupList :group="group"></GroupList>
   </v-card>
