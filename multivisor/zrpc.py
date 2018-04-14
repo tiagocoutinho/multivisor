@@ -83,9 +83,9 @@ class Supervisor(object):
             return
         event = dict(event)
         if name.startswith('PROCESS_STATE'):
-            logging.info('handling %s', name)
             payload = event['payload']
             pname = "{}:{}".format(payload['groupname'], payload['processname'])
+            logging.info('handling %s of %s', name, pname)
             try:
                 payload['process'] = self.rpc.supervisor.getProcessInfo(pname)
             except xmlrpclib.Fault:

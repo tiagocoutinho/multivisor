@@ -140,7 +140,6 @@ class Supervisor(dict):
         try:
             added, changed, removed = server.supervisor_reloadConfig()[0]
         except Exception as e:
-            print e
             if e.faultCode == Faults.SHUTDOWN_STATE:
                 self.log.debug('%s already shutting down', self.name)
                 return
@@ -195,7 +194,8 @@ class Supervisor(dict):
         self.log.info('Updated %s', self.name)
 
     def restart(self):
-        result = self.server.supervisor_restart()
+        self.reread()
+        result = self.server.supervisor_restart(timeout=30)
         if result:
             Dispatcher.info('Restarted {}'.format(self.name))
         else:
