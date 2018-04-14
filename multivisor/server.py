@@ -88,7 +88,9 @@ class Supervisor(dict):
             self.refresh()
         elif not self['running']:
             self.refresh()
-        elif name.startswith('PROCESS'):
+        elif name.startswith('PROCESS_GROUP'):
+            self.refresh()
+        elif name.startswith('PROCESS_STATE'):
             payload = event['payload']
             puid = '{}:{}@{}'.format(payload['groupname'],
                                      payload['processname'],

@@ -82,8 +82,8 @@ class Supervisor(object):
         if self.shutting_down:
             return
         event = dict(event)
-        if name.startswith('PROCESS'):
-            logging.info('start %s', name)
+        if name.startswith('PROCESS_STATE'):
+            logging.info('handling %s', name)
             payload = event['payload']
             pname = "{}:{}".format(payload['groupname'], payload['processname'])
             try:
@@ -100,7 +100,10 @@ class Supervisor(object):
 def run(bind=DEFAULT_BIND):
     def event_consumer_loop():
         for event in channel:
-            supervisor.publish_event(event)
+            try:
+                supervisor.publish_event(event)
+            except:
+                logging.exception('Error processing %s', event)
     channel = Queue()
     supervisor = Supervisor(channel)
     spawn(event_consumer_loop)
