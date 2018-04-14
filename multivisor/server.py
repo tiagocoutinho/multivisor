@@ -134,10 +134,11 @@ class Supervisor(dict):
             self.update_info(info)
 
     def update_server(self, group_names=()):
-        supervisor = self.server.supervisor
+        server = self.server
         try:
-            added, changed, removed = supervisor.reloadConfig()[0]
-        except xmlrpclib.Fault as e:
+            added, changed, removed = server.supervisor_reloadConfig()[0]
+        except Exception as e:
+            print e
             if e.faultCode == Faults.SHUTDOWN_STATE:
                 self.log.debug('%s already shutting down', self.name)
                 return
@@ -149,7 +150,7 @@ class Supervisor(dict):
         # valid in order to print a useful error message.
         if group_names:
             groups = set()
-            for info in supervisor.getAllProcessInfo():
+            for info in server.supervisor_getAllProcessInfo():
                 groups.add(info['group'])
             # New gnames would not currently exist in this set so
             # add those as well.
@@ -162,7 +163,7 @@ class Supervisor(dict):
         for gname in removed:
             if group_names and gname not in group_names:
                 continue
-            results = supervisor.stopProcessGroup(gname)
+            results = server.supervisor_stopProcessGroup(gname)
             self.log.debug('stopped process group %s', gname)
 
             fails = [res for res in results
@@ -170,23 +171,23 @@ class Supervisor(dict):
             if fails:
                 self.log.debug("%s as problems; not removing", gname)
                 continue
-            supervisor.removeProcessGroup(gname)
+            server.supervisor_removeProcessGroup(gname)
             self.log.debug("removed process group %s", gname)
 
         for gname in changed:
             if group_names and gname not in group_names:
                 continue
-            supervisor.stopProcessGroup(gname)
+            server.supervisor_stopProcessGroup(gname)
             self.log.debug('stopped process group %s', gname)
 
-            supervisor.removeProcessGroup(gname)
-            supervisor.addProcessGroup(gname)
+            server.supervisor_removeProcessGroup(gname)
+            server.supervisor_addProcessGroup(gname)
             self.log.debug('updated process group %s', gname)
 
         for gname in added:
             if group_names and gname not in group_names:
                 continue
-            supervisor.addProcessGroup(gname)
+            server.supervisor_addProcessGroup(gname)
             self.log.debug('added process group %s', gname)
 
         self.log.info('Updated %s', self.name)
