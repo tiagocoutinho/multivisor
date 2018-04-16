@@ -13,7 +13,7 @@ from ConfigParser import SafeConfigParser
 
 import zerorpc
 from gevent import queue, spawn, sleep, joinall
-from flask import Flask, render_template, Response, request, json
+from flask import Flask, render_template, Response, request, json, jsonify
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
@@ -447,12 +447,12 @@ def reload():
 @app.route("/refresh")
 def refresh():
     app.multivisor.refresh()
-    return json.dumps(app.multivisor.config)
+    return jsonify(app.multivisor.config)
 
 
 @app.route("/data")
 def data():
-    return json.dumps(app.multivisor.config)
+    return jsonify(app.multivisor.config)
 
 
 @app.route("/supervisor/update", methods=['POST'])
