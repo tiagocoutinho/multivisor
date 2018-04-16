@@ -92,9 +92,9 @@ class Supervisor(dict):
             self.refresh()
         elif name.startswith('PROCESS_STATE'):
             payload = event['payload']
-            puid = '{}:{}@{}'.format(payload['groupname'],
-                                     payload['processname'],
-                                     self.name)
+            puid = '{}:{}:{}'.format(self.name,
+                                     payload['groupname'],
+                                     payload['processname'])
             self['processes'][puid].handle_event(event)
 
     def create_base_info(self):
@@ -240,14 +240,14 @@ class Process(dict):
         self.update(kwargs)
         supervisor_name = supervisor['name']
         full_name = self['group'] + ':' + self['name']
-        uid = full_name + '@' + supervisor_name
+        uid = '{}:{}'.format(supervisor_name, full_name)
         self.log = log.getChild(uid)
         self.supervisor = weakref.proxy(supervisor)
         self['full_name'] = full_name
         self['running'] = self['state'] in RUNNING_STATES
         self['supervisor'] = supervisor_name
         self['host'] = supervisor['host']
-        self['uid'] = full_name + '@' + self['supervisor']
+        self['uid'] = uid
 
     @property
     def server(self):
@@ -405,7 +405,7 @@ class Multivisor(object):
         return self.supervisors[name]
 
     def get_process(self, uid):
-        _, supervisor = uid.split('@', 1)
+        supervisor, _ = uid.split(':', 1)
         return self.supervisors[supervisor]['processes'][uid]
 
     def add_listener(self, client):
@@ -529,7 +529,7 @@ def supervisor_info(uid):
 
 @app.route("/process/log/<stream>/tail/<uid>")
 def process_log_tail(stream, uid):
-    pname, sname = uid.split('@', 1)
+    sname, pname = uid.split(':', 1)
     supervisor = app.multivisor.get_supervisor(sname)
     server = supervisor.server
     if stream == 'out':

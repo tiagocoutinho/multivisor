@@ -64,7 +64,7 @@ export default {
     supervisor () { return this.item.item },
     selectedProcesses () {
       let procs = this.$store.state.selectedProcesses.reduce((processes, puid) => {
-        let supervisor = puid.split('@', 2)[1]
+        let supervisor = puid.split(':', 1)[0]
         if (supervisor === this.supervisor.name) {
           processes.push(puid)
         }
