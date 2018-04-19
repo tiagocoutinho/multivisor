@@ -37,6 +37,8 @@ def sanitize_url(url, protocol=None, host=None, port=None):
 
 
 def filter_patterns(names, patterns):
+    patterns = ['*:{}'.format(p) if ':' not in p and '*' not in p else p
+                for p in patterns]
     result = set()
     sets = (fnmatch.filter(names, pattern) for pattern in patterns)
     map(result.update, sets)

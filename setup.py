@@ -12,6 +12,7 @@ setup(
                                   'dist/static/js/*']),
     entry_points=dict(console_scripts=[
         'multivisor=multivisor.server:main',
+        'multivisorctl=multivisor.cli:main',
         'multivisor-dispatcher=multivisor.dispatcher:main',
         'multivisor-rpc=multivisor.zrpc:main']),
-    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc'])
+    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'colorful'])
