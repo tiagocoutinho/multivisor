@@ -7,6 +7,7 @@ patch_all(thread=False)
 import os
 import re
 import time
+import fnmatch
 import logging
 import weakref
 from ConfigParser import SafeConfigParser
@@ -33,6 +34,13 @@ def sanitize_url(url, protocol=None, host=None, port=None):
     port = '' if port is None else ':' + str(port)
     return dict(url='{}{}{}'.format(protocol, host, port),
                 protocol=protocol, host=host, port=port)
+
+
+def filter_patterns(names, patterns):
+    result = set()
+    sets = (fnmatch.filter(names, pattern) for pattern in patterns)
+    map(result.update, sets)
+    return result
 
 
 class Supervisor(dict):
@@ -396,6 +404,12 @@ class Multivisor(object):
     def supervisors(self):
         return self.config['supervisors']
 
+    @property
+    def processes(self):
+        procs = (svisor['processes'] for svisor in self.supervisors.values())
+        return { puid: proc for sprocs in procs
+                 for puid, proc in sprocs.items() }
+
     def refresh(self):
         tasks = [spawn(supervisor.refresh)
                  for supervisor in self.supervisors.values()]
@@ -497,20 +511,27 @@ def shutdown_supervisor():
 
 @app.route("/process/restart", methods=['POST'])
 def restart_process():
-    uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
-    processes = (app.multivisor.get_process(uid) for uid in uids)
-    tasks = [spawn(process.restart) for process in processes]
+    procs = app.multivisor.processes
+    patterns = request.form['uid'].split(',')
+    puids = filter_patterns(procs, patterns)
+    tasks = [gevent.spawn(procs[puid].restart) for puid in puids]
     joinall(tasks)
     return 'OK'
 
 
 @app.route("/process/stop", methods=['POST'])
 def stop_process():
-    uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
-    processes = (app.multivisor.get_process(uid) for uid in uids)
-    tasks = [spawn(process.stop) for process in processes]
+    procs = app.multivisor.processes
+    patterns = request.form['uid'].split(',')
+    puids = filter_patterns(procs, patterns)
+    tasks = [gevent.spawn(procs[puid].stop) for puid in puids]
     joinall(tasks)
     return 'OK'
+
+
+@app.route("/process/list")
+def list_processes():
+    return jsonify(tuple(app.multivisor.processes.keys()))
 
 
 @app.route("/process/info/<uid>")
