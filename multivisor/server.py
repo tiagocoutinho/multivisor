@@ -583,7 +583,7 @@ def main(args=None):
 
 #    app_task = spawn(app.multivisor.run_forever)
 
-    from gevent.wsgi import WSGIServer
+    from gevent.pywsgi import WSGIServer
 
     http_server = WSGIServer(bind, application=app)
     logging.info('Start accepting requests')
