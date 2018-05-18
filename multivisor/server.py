@@ -582,7 +582,7 @@ def main(args=None):
 
     logging.info('Start accepting requests')
     try:
-        app.run(host=url_opts['host'], port=url_opts['port'], threaded=False)
+        app.run(host=url_opts['host'], port=url_opts['port'])
     except KeyboardInterrupt:
         log.info('Ctrl-C pressed. Bailing out')
 
