@@ -1,6 +1,6 @@
 {
   "name": "multivisor",
-  "version": "4.1.2",
+  "version": "4.1.3",
   "description": "Manage multiple supervisor instances from a centralized UI",
   "author": "Tiago Coutinho <coutinhotiago@gmail.com>",
   "private": true,
