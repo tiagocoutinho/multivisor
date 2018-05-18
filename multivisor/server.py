@@ -21,17 +21,17 @@ log = logging.getLogger('multivisor')
 
 
 def sanitize_url(url, protocol=None, host=None, port=None):
-    match = re.match('((?P<protocol>\w+)\://)?(?P<host>(\w|\.)+)?(\:(?P<port>\d+))?', url)
+    match = re.match('((?P<protocol>\w+)\://)?(?P<host>\w+)?(\:(?P<port>\d+))?', url)
     if match is None:
         raise ValueError('Invalid URL: {!r}'.format(url))
     pars = match.groupdict()
     _protocol, _host, _port = pars['protocol'], pars['host'], pars['port']
     protocol = protocol if _protocol is None else _protocol
     host = host if _host is None else _host
-    port = int(port if _port is None else _port)
+    port = port if _port is None else _port
     protocol = '' if protocol is None else (protocol + '://')
-    port_str = '' if port is None else ':' + str(port)
-    return dict(url='{}{}{}'.format(protocol, host, port_str),
+    port = '' if port is None else ':' + str(port)
+    return dict(url='{}{}{}'.format(protocol, host, port),
                 protocol=protocol, host=host, port=port)
 
 
@@ -558,8 +558,8 @@ def stream():
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--bind', help='[host][:port] (default: 0.0.0.0:22000)',
-                        default='0.0.0.0:22000')
+    parser.add_argument('--bind', help='[host][:port] (default: 0:22000)',
+                        default='0:22000')
     parser.add_argument('-c', help='configuration file',
                         dest='config_file',
                         default='/etc/multivisor.conf')
@@ -577,12 +577,18 @@ def main(args=None):
     if not os.path.exists(options.config_file):
         parser.exit(status=2, message='configuration file does not exist. Bailing out!\n')
 
-    url_opts = sanitize_url(options.bind, host='0.0.0.0', port=22000)
+    bind = sanitize_url(options.bind, host='0', port=22000)['url']
+
     app.multivisor = Multivisor(options)
 
+#    app_task = spawn(app.multivisor.run_forever)
+
+    from gevent.wsgi import WSGIServer
+
+    http_server = WSGIServer(bind, application=app)
     logging.info('Start accepting requests')
     try:
-        app.run(host=url_opts['host'], port=url_opts['port'])
+        http_server.serve_forever()
     except KeyboardInterrupt:
         log.info('Ctrl-C pressed. Bailing out')
 
