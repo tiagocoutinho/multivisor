@@ -428,11 +428,6 @@ class Multivisor(object):
     def remove_listener(self, client):
         Dispatcher.clients.remove(client)
 
-    def run_forever(self):
-        #self._event_loop = spawn(event_loop)
-        while True:
-            self.poll_supervisors()
-            sleep(self.options.poll_period)
 
 
 app = Flask(__name__,
@@ -596,8 +591,6 @@ def main(args=None):
     parser.add_argument('--log-level', help='log level', type=str,
                         default='INFO',
                         choices=['DEBUG', 'INFO', 'WARN', 'ERROR'])
-    parser.add_argument('--poll-period', help='polling period(s)', type=float,
-                        default=2)
     options = parser.parse_args(args)
 
     log_level = getattr(logging, options.log_level.upper())
@@ -610,8 +603,6 @@ def main(args=None):
     bind = sanitize_url(options.bind, host='0', port=22000)['url']
 
     app.multivisor = Multivisor(options)
-
-#    app_task = spawn(app.multivisor.run_forever)
 
     from gevent.pywsgi import WSGIServer
 
