@@ -398,6 +398,11 @@ class Multivisor(object):
             self._config = load_config(self.options.config_file)
         return self._config
 
+    @property
+    def config_file_content(self):
+        with open(self.options.config_file) as config_file:
+            return config_file.read()
+
     def reload(self):
         self._config = None
         return self.config
@@ -492,6 +497,12 @@ def refresh():
 @app.route("/data")
 def data():
     return jsonify(app.multivisor.config)
+
+
+@app.route("/config/file")
+def config_file_content():
+    content = app.multivisor.config_file_content
+    return jsonify(dict(content=content))
 
 
 @app.route("/supervisor/update", methods=['POST'])
