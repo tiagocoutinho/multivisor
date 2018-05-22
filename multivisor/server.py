@@ -428,6 +428,34 @@ class Multivisor(object):
     def remove_listener(self, client):
         Dispatcher.clients.remove(client)
 
+    def _do_supervisors(self, operation, *names):
+        supervisors = (self.get_supervisor(name) for name in names)
+        tasks = [spawn(operation, supervisor) for supervisor in supervisors]
+        joinall(tasks)
+
+    def _do_processes(self, operation, *patterns):
+        procs = self.processes
+        puids = filter_patterns(procs, patterns)
+        tasks = [gevent.spawn(operation, procs[puid]) for puid in puids]
+        joinall(tasks)
+
+    def update_supervisors(self, *names):
+        self._do_supervisors(Supervisor.update_server, *names)
+
+    def restart_supervisors(self, *names):
+        self._do_supervisors(Supervisor.restart, *names)
+
+    def reread_supervisors(self, *names):
+        self._do_supervisors(Supervisor.reread, *names)
+
+    def shutdown_supervisors(self, *names):
+        self._do_supervisors(Supervisor.shutdown, *names)
+
+    def restart_processes(self, *patterns):
+        self._do_processes(Process.restart, *patterns)
+
+    def stop_processes(self, *patterns):
+        self._do_processes(Process.stop, *patterns)
 
 
 app = Flask(__name__,
@@ -468,9 +496,7 @@ def data():
 def update_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.update_server) for supervisor in supervisors]
-    joinall(tasks)
+    app.multivisor.update_supervisors(*names)
     return 'OK'
 
 
@@ -478,9 +504,7 @@ def update_supervisor():
 def restart_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.restart) for supervisor in supervisors]
-    joinall(tasks)
+    app.multivisor.restart_supervisors(*names)
     return 'OK'
 
 
@@ -488,9 +512,7 @@ def restart_supervisor():
 def reread_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.reread) for supervisor in supervisors]
-    joinall(tasks)
+    app.multivisor.reread_supervisors(*names)
     return 'OK'
 
 
@@ -506,21 +528,15 @@ def shutdown_supervisor():
 
 @app.route("/process/restart", methods=['POST'])
 def restart_process():
-    procs = app.multivisor.processes
     patterns = request.form['uid'].split(',')
-    puids = filter_patterns(procs, patterns)
-    tasks = [gevent.spawn(procs[puid].restart) for puid in puids]
-    joinall(tasks)
+    procs = app.multivisor.restart_processes(*patterns)
     return 'OK'
 
 
 @app.route("/process/stop", methods=['POST'])
 def stop_process():
-    procs = app.multivisor.processes
     patterns = request.form['uid'].split(',')
-    puids = filter_patterns(procs, patterns)
-    tasks = [gevent.spawn(procs[puid].stop) for puid in puids]
-    joinall(tasks)
+    app.multivisor.stop_processes(*patterns)
     return 'OK'
 
 
