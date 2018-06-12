@@ -1,7 +1,9 @@
 # TODO list
 
 * login
-* supervisor actions: reread, reload, view log, (stop group)?
+* [done] supervisor actions: update, restart
+* supervisor log
+* stop group?
 * register group icons, process, host, supervisor?
 * group view: should split processes by host sub-section?
 * [done] check behavior of numprocs > 1
