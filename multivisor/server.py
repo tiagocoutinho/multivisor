@@ -139,13 +139,9 @@ class Supervisor(dict):
         server = self.server
         try:
             added, changed, removed = server.supervisor_reloadConfig()[0]
-        except Exception as e:
-            if e.faultCode == Faults.SHUTDOWN_STATE:
-                self.log.debug('%s already shutting down', self.name)
-                return
-            else:
-                self.log.error('Error reading config of %s', self.name)
-                return
+        except zerorpc.RemoteError as rerr:
+            Dispatcher.error(rerr.msg)
+            return
 
         # If any gnames are specified we need to verify that they are
         # valid in order to print a useful error message.
