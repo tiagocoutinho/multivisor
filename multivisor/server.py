@@ -189,8 +189,17 @@ class Supervisor(dict):
 
         self.log.info('Updated %s', self.name)
 
+    def _reread(self):
+        return self.server.supervisor_reloadConfig()
+
     def restart(self):
-        self.reread()
+        # do a reread. If there is an error (bad config) inform the user and
+        # and refuse to restart
+        try:
+            self._reread()
+        except zerorpc.RemoteError as rerr:
+            Dispatcher.error('Cannot restart: {}'.format(rerr.msg))
+            return
         result = self.server.supervisor_restart(timeout=30)
         if result:
             Dispatcher.info('Restarted {}'.format(self.name))
@@ -198,10 +207,14 @@ class Supervisor(dict):
             Dispatcher.error('Error restarting {}'.format(self.name))
 
     def reread(self):
-        added, changed, removed = self.server.supervisor_reloadConfig()[0]
-        Dispatcher.info('Reread config of {} ' \
-                        '({} added; {} changed; {} disappeared)'.format(
-                        self.name, len(added), len(changed), len(removed)))
+        try:
+            added, changed, removed = self._reread()[0]
+        except zerorpc.RemoteError as rerr:
+            Dispatcher.error(rerr.msg)
+        else:
+            Dispatcher.info('Reread config of {} ' \
+                            '({} added; {} changed; {} disappeared)'.format(
+                            self.name, len(added), len(changed), len(removed)))
 
     def shutdown(self):
         result = self.server.supervisor_shutdown()
