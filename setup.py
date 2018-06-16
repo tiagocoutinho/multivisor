@@ -15,4 +15,4 @@ setup(
         'multivisorctl=multivisor.cli:main',
         'multivisor-dispatcher=multivisor.dispatcher:main',
         'multivisor-rpc=multivisor.zrpc:main']),
-    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'colorful'])
+    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'colorful', 'louie'])

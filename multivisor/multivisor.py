@@ -7,6 +7,7 @@ import logging
 import weakref
 from ConfigParser import SafeConfigParser
 
+import louie
 import zerorpc
 from gevent import queue, spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
@@ -102,11 +103,11 @@ class Supervisor(dict):
             if this_p != info_p:
                 for name, process in info_p.items():
                     if process != this_p[name]:
-                        Dispatcher.send(process, 'process_changed')
+                        send(process, 'process_changed')
             self.update(info)
         else:
             self.update(info)
-            Dispatcher.send(self, 'supervisor_changed')
+            send(self, 'supervisor_changed')
 
     def refresh(self):
         try:
@@ -122,7 +123,7 @@ class Supervisor(dict):
         try:
             added, changed, removed = server.supervisor_reloadConfig()[0]
         except zerorpc.RemoteError as rerr:
-            Dispatcher.error(rerr.msg)
+            error(rerr.msg)
             return
 
         # If any gnames are specified we need to verify that they are
@@ -180,30 +181,30 @@ class Supervisor(dict):
         try:
             self._reread()
         except zerorpc.RemoteError as rerr:
-            Dispatcher.error('Cannot restart: {}'.format(rerr.msg))
+            error('Cannot restart: {}'.format(rerr.msg))
             return
         result = self.server.supervisor_restart(timeout=30)
         if result:
-            Dispatcher.info('Restarted {}'.format(self.name))
+            info('Restarted {}'.format(self.name))
         else:
-            Dispatcher.error('Error restarting {}'.format(self.name))
+            error('Error restarting {}'.format(self.name))
 
     def reread(self):
         try:
             added, changed, removed = self._reread()[0]
         except zerorpc.RemoteError as rerr:
-            Dispatcher.error(rerr.msg)
+            error(rerr.msg)
         else:
-            Dispatcher.info('Reread config of {} ' \
+            info('Reread config of {} ' \
                             '({} added; {} changed; {} disappeared)'.format(
                             self.name, len(added), len(changed), len(removed)))
 
     def shutdown(self):
         result = self.server.supervisor_shutdown()
         if result:
-            Dispatcher.info('Shut down {}'.format(self.name))
+            info('Shut down {}'.format(self.name))
         else:
-            Dispatcher.error('Error shutting down {}'.format(self.name))
+            error('Error shutting down {}'.format(self.name))
 
 
 class Process(dict):
@@ -243,40 +244,40 @@ class Process(dict):
         event_name = event['eventname']
         if event_name.startswith('PROCESS_STATE'):
             payload = event['payload']
-            info = payload.get('process')
-            if info is not None:
-                old = self.update_info(info)
+            proc_info = payload.get('process')
+            if proc_info is not None:
+                old = self.update_info(proc_info)
                 if old != self:
                     old_state, new_state = old['statename'], self['statename']
-                    Dispatcher.send(self, event='process_changed')
+                    send(self, event='process_changed')
                     if old_state != new_state:
-                        Dispatcher.info('{} changed from {} to {}'
+                        info('{} changed from {} to {}'
                                         .format(self, old_state, new_state))
 
     def read_info(self):
-        info = dict(self.Null)
+        proc_info = dict(self.Null)
         try:
-            info.update(self.server.supervisor_getProcessInfo(self.full_name))
+            proc_info.update(self.server.supervisor_getProcessInfo(self.full_name))
         except Exception as err:
             self.log.warn('Failed to read info from %s: %s', self['uid'], err)
-        return info
+        return proc_info
 
-    def update_info(self, info):
+    def update_info(self, proc_info):
         old = dict(self)
-        info['running'] = info['state'] in RUNNING_STATES
-        self.update(info)
+        proc_info['running'] = proc_info['state'] in RUNNING_STATES
+        self.update(proc_info)
         return old
 
     def refresh(self):
-        info = self.read_info()
-        self.update_info(info)
+        proc_info = self.read_info()
+        self.update_info(proc_info)
 
     def start(self):
         try:
             self.server.supervisor_startProcess(self.full_name, timeout=30)
         except:
             message = 'Error trying to start {}!'.format(self)
-            Dispatcher.error(message)
+            error(message)
             self.log.exception(message)
 
     def stop(self):
@@ -284,7 +285,7 @@ class Process(dict):
             self.server.supervisor_stopProcess(self.full_name)
         except:
             message = 'Failed to stop {}'.format(self['uid'])
-            Dispatcher.warning(message)
+            warning(message)
             self.log.exception(message)
 
     def restart(self):
@@ -327,35 +328,27 @@ def load_config(config_file):
     return config
 
 
-class Dispatcher(object):
+def send(payload, event):
+    louie.send(signal=event, sender='multivisor', payload=payload)
 
-    clients = []
 
-    @classmethod
-    def send(cls, payload, event):
-        data = json.dumps(dict(payload=payload, event=event))
-        event = 'data: {0}\n\n'.format(data)
-        for client in cls.clients:
-            client.put(event)
+def notification(message, level):
+    payload = dict(message=message, level=level, time=time.time())
+    send(payload, 'notification')
 
-    @classmethod
-    def notification(cls, message, level):
-        payload = dict(message=message, level=level, time=time.time())
-        cls.send(payload, 'notification')
 
-    @classmethod
-    def info(cls, message):
-        cls.notification(message, 'INFO')
+def info(message):
+    notification(message, 'INFO')
 
-    @classmethod
-    def warning(cls, message):
-        logging.warning(message)
-        cls.notification(message, 'WARNING')
 
-    @classmethod
-    def error(cls, message):
-        logging.error(message)
-        cls.notification(message, 'ERROR')
+def warning(message):
+    logging.warning(message)
+    notification(message, 'WARNING')
+
+
+def error(message):
+    logging.error(message)
+    notification(message, 'ERROR')
 
 
 class Multivisor(object):
@@ -400,12 +393,6 @@ class Multivisor(object):
     def get_process(self, uid):
         supervisor, _ = uid.split(':', 1)
         return self.supervisors[supervisor]['processes'][uid]
-
-    def add_listener(self, client):
-        Dispatcher.clients.append(client)
-
-    def remove_listener(self, client):
-        Dispatcher.clients.remove(client)
 
     def _do_supervisors(self, operation, *names):
         supervisors = (self.get_supervisor(name) for name in names)

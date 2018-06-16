@@ -7,6 +7,7 @@ patch_all(thread=False)
 import os
 import logging
 
+import louie
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify
@@ -151,12 +152,31 @@ def process_log_tail(stream, uid):
 def stream():
     def event_stream():
         client = queue.Queue()
-        app.multivisor.add_listener(client)
+        app.dispatcher.add_listener(client)
         for event in client:
             yield event
-        app.multivisor.remove_listener(client)
+        app.dispatcher.remove_listener(client)
     return Response(event_stream(),
                     mimetype="text/event-stream")
+
+
+class Dispatcher(object):
+
+    def __init__(self):
+        self.clients = []
+        louie.connect(self.on_multivisor_event, sender='multivisor')
+
+    def add_listener(self, client):
+        self.clients.append(client)
+
+    def remove_listener(self, client):
+        clients.clients.remove(client)
+
+    def on_multivisor_event(self, signal, payload):
+        data = json.dumps(dict(payload=payload, event=signal))
+        event = 'data: {0}\n\n'.format(data)
+        for client in self.clients:
+            client.put(event)
 
 
 def main(args=None):
@@ -181,6 +201,7 @@ def main(args=None):
 
     bind = sanitize_url(options.bind, host='0', port=22000)['url']
 
+    app.dispatcher = Dispatcher()
     app.multivisor = Multivisor(options)
 
     http_server = WSGIServer(bind, application=app)
