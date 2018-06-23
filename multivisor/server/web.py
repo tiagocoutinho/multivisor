@@ -12,8 +12,8 @@ from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify
 
-from .util import sanitize_url
-from .multivisor import Multivisor
+from ..util import sanitize_url
+from ..multivisor import Multivisor
 
 
 log = logging.getLogger('multivisor')

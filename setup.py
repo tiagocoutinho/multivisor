@@ -11,8 +11,9 @@ setup(
                                   'dist/static/css/*',
                                   'dist/static/js/*']),
     entry_points=dict(console_scripts=[
-        'multivisor=multivisor.server:main',
-        'multivisorctl=multivisor.cli:main',
+        'multivisor=multivisor.server.web:main',
+        'multivisor-cli=multivisor.client.cli:main',
         'multivisor-dispatcher=multivisor.dispatcher:main',
-        'multivisor-rpc=multivisor.zrpc:main']),
-    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'colorful', 'louie'])
+        'multivisor-rpc=multivisor.server.zrpc:main']),
+    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'louie',
+                      'requests', 'prompt_toolkit'])
