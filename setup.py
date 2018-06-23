@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='multivisor',
-    version='4.1.4',
+    version='4.2.0',
     author='Tiago Coutinho',
     author_email='coutinhotiago@gmail.com',
     description='A centralized supervisor web UI',
@@ -16,4 +16,4 @@ setup(
         'multivisor-dispatcher=multivisor.dispatcher:main',
         'multivisor-rpc=multivisor.server.zrpc:main']),
     install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'louie',
-                      'requests', 'prompt_toolkit'])
+                      'maya', 'requests', 'prompt_toolkit'])

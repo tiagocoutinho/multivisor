@@ -1,11 +1,9 @@
+from __future__ import absolute_import
+
 import argparse
 
-import gevent.monkey
-gevent.monkey.patch_all(thread=False)
-
-from ..util import sanitize_url
-from .repl import Repl, Commands
-from .http import Multivisor
+from .. import util
+from . import repl, http
 
 
 def parse_args(args=None):
@@ -15,14 +13,16 @@ def parse_args(args=None):
     return parser.parse_args(args)
 
 
-
 def main(args=None):
+    import gevent.monkey
+    gevent.monkey.patch_all(thread=False)
+
     options = parse_args(args)
-    url = sanitize_url(options.url, protocol='http', port=22000)['url']
-    multivisor = Multivisor(url)
-    commands = Commands(multivisor)
-    repl = Repl(commands)
-    repl.run()
+    url = util.sanitize_url(options.url, protocol='http', port=22000)['url']
+    multivisor = http.Multivisor(url)
+    cli = repl.Repl(multivisor)
+    gevent.spawn(multivisor.run)
+    cli.run()
 
 
 if __name__ == '__main__':
