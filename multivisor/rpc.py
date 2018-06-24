@@ -6,8 +6,6 @@ disadvantages: it depends on supervisor internal supervisor.events.subscribe
                interface so its usage is quite risky.
 advantages: it avoids creating an eventlistener process just to forward events.
 
-limitations: for now it is fixing the 0RPC port to 9003.
-
 The python environment where supervisor runs must have multivisor installed
 """
 
@@ -27,7 +25,7 @@ from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
 from .util import sanitize_url
 
 
-DEFAULT_BIND = 'tcp://*:9003'
+DEFAULT_BIND = 'tcp://*:9002'
 
 
 def sync(klass):
@@ -154,7 +152,7 @@ def run_rpc_server(multivisor, bind, future_server):
 
 def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
     import pdb;pdb.set_trace()
-    url = sanitize_url(bind, protocol='tcp', host='*', port=9003)
+    url = sanitize_url(bind, protocol='tcp', host='*', port=9002)
     print bind, url
     multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'])
     multivisor._start()
