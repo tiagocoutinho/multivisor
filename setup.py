@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='multivisor',
-    version='4.1.3',
+    version='4.1.4',
     author='Tiago Coutinho',
     author_email='coutinhotiago@gmail.com',
     description='A centralized supervisor web UI',
