@@ -64,6 +64,8 @@ class Supervisor(dict):
                 self.log.info('Lost remote to {}'.format(self.name))
             except zerorpc.TimeoutExpired:
                 self.log.info('Timeout expired on {}'.format(self.name))
+            except Exception as err:
+                self.log.info('Error on {}: {}'.format(self.name, str(err)))
 
     def handle_event(self, event):
         name = event['eventname']
