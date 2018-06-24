@@ -16,4 +16,4 @@ setup(
         'multivisor-dispatcher=multivisor.dispatcher:main',
         'multivisor-rpc=multivisor.server.zrpc:main']),
     install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'louie',
-                      'maya', 'requests', 'prompt_toolkit'])
+                      'maya', 'requests', 'prompt_toolkit>=2.0.0,<2.1.0'])
