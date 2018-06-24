@@ -24,15 +24,17 @@ from supervisor.http import NOT_DONE_YET
 from supervisor.events import subscribe, unsubscribe, Event, getEventNameByType
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
 
+from .util import sanitize_url
+
 
 DEFAULT_BIND = 'tcp://*:9003'
 
-import threading
+
 def sync(klass):
     def wrap_func(meth):
         @functools.wraps(meth)
         def wrapper(*args, **kwargs):
-            args[0].log.debug('0RPC: called {}'.format(meth.__name__))
+            args[0]._log.debug('0RPC: called {}'.format(meth.__name__))
             result = meth(*args, **kwargs)
             if callable(result):
                 r = NOT_DONE_YET
@@ -56,95 +58,104 @@ def sync(klass):
 @sync
 class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
 
-    def __init__(self, supervisord, channel):
+    def __init__(self, supervisord, bind):
         SupervisorNamespaceRPCInterface.__init__(self, supervisord)
-        self._channel = channel
+        self._bind = bind
+        self._channel = queue.Queue()
         self._event_channels = set()
-        self.log = supervisord.options.logger
+        self._server = None
+        self._watcher = None
+        self._shutting_down = False
+        self._log = supervisord.options.logger
 
-    def _handle_event(self):
+    def _start(self):
+        subscribe(Event, self._handle_event)
+
+    def _shutdown(self):
+        unsubscribe(Event, self._handle_event)
+        self._shutting_down = True
+
+    def _process_event(self, event):
+        if self._shutting_down:
+            return
+        event_name = getEventNameByType(event.__class__)
+        if event_name == 'SUPERVISOR_STATE_CHANGE_STOPPING':
+            self._log.warn('0ZRPC: noticed that supervisor is dying')
+            self._shutdown()
+        elif event_name.startswith('TICK'):
+            return
+        try:
+            # old supervisor version
+            payload_str = event.payload()
+        except AttributeError:
+            payload_str = str(event)
+        payload = dict((x.split(':') for x in payload_str.split()))
+        if event_name.startswith('PROCESS_STATE'):
+            pname = "{}:{}".format(payload['groupname'], payload['processname'])
+            payload['process'] = self.getProcessInfo(pname)
+        return dict(pool='multivisor', server=self.supervisord.options.identifier,
+                    eventname=event_name, payload=payload)
+
+    # called on 0RPC server thread
+    def _dispatch_event(self):
         while not self._channel.empty():
             event = self._channel.get()
-            event = process_event(self, event)
+            event = self._process_event(event)
             if event is None:
                 return
-            self.log.info('0RPC: event received {} (#{} clients)'
+            self._log.info('0RPC: event received {} (#{} clients)'
                           .format(event['eventname'], len(self._event_channels)))
             for channel in self._event_channels:
                 channel.put(event)
 
+    # called on main thread
+    def _handle_event(self, event):
+        if self._server is None:
+            reply = start_rpc_server(self, self._bind)
+            self._server, self._watcher = reply
+        self._channel.put(event)
+        self._watcher.send()
+
     @stream
     def event_stream(self):
-        self.log.info('0RPC: client connected to stream')
+        self._log.info('0RPC: client connected to stream')
         channel = Queue()
         self._event_channels.add(channel)
         try:
             yield 'First event to trigger connection. Please ignore me!'
             for event in channel:
-                self.log.debug('sending {}'.format(event['eventname']))
+                self._log.debug('sending {}'.format(event['eventname']))
                 yield event
         except LostRemote as e:
-            self.log.info('0RPC: remote end of stream disconnected')
+            self._log.info('0RPC: remote end of stream disconnected')
         finally:
             self._event_channels.remove(channel)
 
 
-SHUTTING_DOWN = False
-
-def process_event(multivisor, event):
-    global SHUTTING_DOWN
-    if SHUTTING_DOWN:
-        return
-    event_name = getEventNameByType(event.__class__)
-    if event_name == 'SUPERVISOR_STATE_CHANGE_STOPPING':
-        unsubscribe(*multivisor._listener)
-        SHUTTING_DOWN = True
-    if event_name.startswith('TICK'):
-        return
-    try:
-        payload_str = event.payload()
-    except AttributeError:
-        # old supervisor version
-        payload_str = str(event)
-    payload = dict((x.split(':') for x in payload_str.split()))
-    if event_name.startswith('PROCESS_STATE'):
-        pname = "{}:{}".format(payload['groupname'], payload['processname'])
-        payload['process'] = multivisor.getProcessInfo(pname)
-    return dict(pool='multivisor', server=multivisor.supervisord.options.identifier,
-                eventname=event_name, payload=payload)
+def start_rpc_server(multivisor, bind):
+    future_server = queue.Queue(1)
+    th = threading.Thread(target=run_rpc_server, name='RPCServer',
+                          args=(multivisor, bind, future_server))
+    th.daemon = True
+    th.start()
+    return future_server.get()
 
 
-def event_bridge(channel, watcher, event):
-    channel.put(event)
-    watcher.send()
-
-
-def run_rpc_server(bind, multivisor, watch):
+def run_rpc_server(multivisor, bind, future_server):
+    multivisor._log.info('0RPC: spawn server on {}...'.format(os.getpid()))
     watcher = hub.get_hub().loop.async()
-    def handle_event():
-        spawn(multivisor._handle_event)
-    multivisor.log.info('0RPC: spawn server on {}...'.format(os.getpid()))
-    watcher.start(handle_event)
+    watcher.start(lambda: spawn(multivisor._dispatch_event))
     server = Server(multivisor)
-    multivisor._server = server
     server.bind(bind)
-    watch.put(watcher)
-    multivisor.log.info('0RPC: server running!')
+    future_server.put((server, watcher))
+    multivisor._log.info('0RPC: server running!')
     server.run()
 
 
 def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
-    if '://' not in bind:
-        bind = 'tcp://' + bind
-    channel = queue.Queue()
-    multivisor = MultivisorNamespaceRPCInterface(supervisord, channel)
-    # create a one message channel so the RPC server thread can pass us its gevent watcher
-    watch = queue.Queue(1)
-    th = threading.Thread(target=run_rpc_server, name='RPCServer', args=(bind, multivisor, watch))
-    th.daemon = True
-    th.start()
-    watcher = watch.get()
-    listener = Event, functools.partial(event_bridge, channel, watcher)
-    multivisor._listener = listener
-    subscribe(*listener)
+    import pdb;pdb.set_trace()
+    url = sanitize_url(bind, protocol='tcp', host='*', port=9003)
+    print bind, url
+    multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'])
+    multivisor._start()
     return multivisor

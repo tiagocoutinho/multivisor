@@ -3,7 +3,7 @@ import fnmatch
 
 
 def sanitize_url(url, protocol=None, host=None, port=None):
-    match = re.match('((?P<protocol>\w+)\://)?(?P<host>\w+)?(\:(?P<port>\d+))?', url)
+    match = re.match('((?P<protocol>\w+)\://)?(?P<host>(\w+|\*))?(\:(?P<port>\d+))?', url)
     if match is None:
         raise ValueError('Invalid URL: {!r}'.format(url))
     pars = match.groupdict()
