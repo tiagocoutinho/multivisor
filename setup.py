@@ -5,7 +5,7 @@ setup(
     version='4.2.0',
     author='Tiago Coutinho',
     author_email='coutinhotiago@gmail.com',
-    description='A centralized supervisor web UI',
+    description='A centralized supervisor UI (web & CLI)',
     packages=find_packages(),
     package_data=dict(multivisor=['dist/*',
                                   'dist/static/css/*',
