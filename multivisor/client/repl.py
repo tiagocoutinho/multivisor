@@ -45,7 +45,7 @@ def process_description(process):
         return process['description']
     elif process['running']:
         start = maya.MayaDT(process['start'])
-        desc = 'pid {pid}, started at {start} ({delta})' \
+        desc = 'pid {pid}, started {start} ({delta})' \
                .format(pid=process['pid'], start=start.rfc2822(), delta=start.slang_time())
     else:
         stop = maya.MayaDT(process['stop'])
