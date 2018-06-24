@@ -6,6 +6,7 @@ from os import environ
 from functools import partial
 
 from gevent import spawn
+from gevent.lock import RLock
 from gevent.queue import Queue
 from zerorpc import stream, Server, LostRemote
 from supervisor.childutils import getRPCInterface
@@ -99,9 +100,13 @@ class Supervisor(object):
 
 def run(bind=DEFAULT_BIND):
     def event_consumer_loop():
+        # xmlrpclib is not reentrant. We might have several greenlets accessing
+        # supervisor at the same time so we serialize event treatment here
+        lock = RLock()
         for event in channel:
             try:
-                supervisor.publish_event(event)
+                with lock:
+                    supervisor.publish_event(event)
             except:
                 logging.exception('Error processing %s', event)
     channel = Queue()
