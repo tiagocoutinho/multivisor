@@ -1,15 +1,23 @@
 # Multivisor
 
-A centralized supervisor web UI inspired by [cesi](https://github.com/gamegos/cesi).
+A centralized supervisor UI (Web & CLI)
 
 * Processes status always up to date
 * Reactivity through asynchronous actions
 * Notifications when state changes
-* Have a Single Page App
-* Mobile aware
-* Powerful filter to quickly see relevant processes
+* Mobile aware, SPA web page
+* Powerful filters
+* Interactive CLI
 
-## Running the example from scratch
+## Web interface
+
+![multivisor on chrome desktop app mode](doc/multivisor_desktop.png)
+
+## Command line interface
+
+[![multivisor-cli](https://asciinema.org/a/8gQrjXDanvfafT7UnPXS1u0bp.png)](https://asciinema.org/a/8gQrjXDanvfafT7UnPXS1u0bp?autoplay=1&speed=2)
+
+# Running the example from scratch
 
 ```bash
 # Fetch the project:
@@ -35,19 +43,23 @@ supervisord -c examples/full_example/supervisord_baslid001.conf
 multivisor -c examples/full_example/multivisor.conf
 ```
 
-That's it! Start a browser pointing to [localhost:22000](http://localhost:22000) and
-you should be able to see something that looks like this:
+That's it!
 
-Multivisor running on google chrome desktop:
+## Web interface
 
-![multivisor on chrome desktop app mode](doc/multivisor_desktop.png)
-
-Multivisor running on a mobile:
+Start a browser pointing to [localhost:22000](http://localhost:22000). On a mobile
+device it should look something like this:
 
 ![multivisor on mobile](doc/multivisor_mobile.png)
 
+## Command line interface
 
-## Technologies
+Type on the command line:
+```
+multivisor-cli
+```
+
+# Technologies
 
 ![multivisor diagram](doc/diagram.png)
 
@@ -58,8 +70,10 @@ The `multivisor` backend runs a [flask](http://flask.pocoo.org/) web server.
 The frontend is based on [vue](https://vuejs.org/) +
 [vuex](https://vuex.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
 
+The `multivisor-cli` runs a
+[prompt-toolkit 2](http://python-prompt-toolkit.rtfd.io) based console.
 
-## Configuration
+# Configuration
 
 Make sure multivisor is installed on the host you are running supervisor. Then,
 configure your supervisor(s) to send events to multivisor-rpc by adding the

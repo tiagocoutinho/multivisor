@@ -1,38 +1,21 @@
 #!/usr/bin/env python
 
-import gevent
-from gevent.monkey import patch_all
-patch_all(thread=False)
-
 import os
-import re
+import json
 import time
 import logging
 import weakref
 from ConfigParser import SafeConfigParser
 
+import louie
 import zerorpc
 from gevent import queue, spawn, sleep, joinall
-from flask import Flask, render_template, Response, request, json
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
+from .util import sanitize_url, filter_patterns
+
 log = logging.getLogger('multivisor')
-
-
-def sanitize_url(url, protocol=None, host=None, port=None):
-    match = re.match('((?P<protocol>\w+)\://)?(?P<host>\w+)?(\:(?P<port>\d+))?', url)
-    if match is None:
-        raise ValueError('Invalid URL: {!r}'.format(url))
-    pars = match.groupdict()
-    _protocol, _host, _port = pars['protocol'], pars['host'], pars['port']
-    protocol = protocol if _protocol is None else _protocol
-    host = host if _host is None else _host
-    port = port if _port is None else _port
-    protocol = '' if protocol is None else (protocol + '://')
-    port = '' if port is None else ':' + str(port)
-    return dict(url='{}{}{}'.format(protocol, host, port),
-                protocol=protocol, host=host, port=port)
 
 
 class Supervisor(dict):
@@ -92,9 +75,9 @@ class Supervisor(dict):
             self.refresh()
         elif name.startswith('PROCESS_STATE'):
             payload = event['payload']
-            puid = '{}:{}@{}'.format(payload['groupname'],
-                                     payload['processname'],
-                                     self.name)
+            puid = '{}:{}:{}'.format(self.name,
+                                     payload['groupname'],
+                                     payload['processname'])
             self['processes'][puid].handle_event(event)
 
     def create_base_info(self):
@@ -120,11 +103,11 @@ class Supervisor(dict):
             if this_p != info_p:
                 for name, process in info_p.items():
                     if process != this_p[name]:
-                        Dispatcher.send(process, 'process_changed')
+                        send(process, 'process_changed')
             self.update(info)
         else:
             self.update(info)
-            Dispatcher.send(self, 'supervisor_changed')
+            send(self, 'supervisor_changed')
 
     def refresh(self):
         try:
@@ -140,7 +123,7 @@ class Supervisor(dict):
         try:
             added, changed, removed = server.supervisor_reloadConfig()[0]
         except zerorpc.RemoteError as rerr:
-            Dispatcher.error(rerr.msg)
+            error(rerr.msg)
             return
 
         # If any gnames are specified we need to verify that they are
@@ -198,30 +181,30 @@ class Supervisor(dict):
         try:
             self._reread()
         except zerorpc.RemoteError as rerr:
-            Dispatcher.error('Cannot restart: {}'.format(rerr.msg))
+            error('Cannot restart: {}'.format(rerr.msg))
             return
         result = self.server.supervisor_restart(timeout=30)
         if result:
-            Dispatcher.info('Restarted {}'.format(self.name))
+            info('Restarted {}'.format(self.name))
         else:
-            Dispatcher.error('Error restarting {}'.format(self.name))
+            error('Error restarting {}'.format(self.name))
 
     def reread(self):
         try:
             added, changed, removed = self._reread()[0]
         except zerorpc.RemoteError as rerr:
-            Dispatcher.error(rerr.msg)
+            error(rerr.msg)
         else:
-            Dispatcher.info('Reread config of {} ' \
+            info('Reread config of {} ' \
                             '({} added; {} changed; {} disappeared)'.format(
                             self.name, len(added), len(changed), len(removed)))
 
     def shutdown(self):
         result = self.server.supervisor_shutdown()
         if result:
-            Dispatcher.info('Shut down {}'.format(self.name))
+            info('Shut down {}'.format(self.name))
         else:
-            Dispatcher.error('Error shutting down {}'.format(self.name))
+            error('Error shutting down {}'.format(self.name))
 
 
 class Process(dict):
@@ -240,14 +223,14 @@ class Process(dict):
         self.update(kwargs)
         supervisor_name = supervisor['name']
         full_name = self['group'] + ':' + self['name']
-        uid = full_name + '@' + supervisor_name
+        uid = '{}:{}'.format(supervisor_name, full_name)
         self.log = log.getChild(uid)
         self.supervisor = weakref.proxy(supervisor)
         self['full_name'] = full_name
         self['running'] = self['state'] in RUNNING_STATES
         self['supervisor'] = supervisor_name
         self['host'] = supervisor['host']
-        self['uid'] = full_name + '@' + self['supervisor']
+        self['uid'] = uid
 
     @property
     def server(self):
@@ -261,40 +244,40 @@ class Process(dict):
         event_name = event['eventname']
         if event_name.startswith('PROCESS_STATE'):
             payload = event['payload']
-            info = payload.get('process')
-            if info is not None:
-                old = self.update_info(info)
+            proc_info = payload.get('process')
+            if proc_info is not None:
+                old = self.update_info(proc_info)
                 if old != self:
                     old_state, new_state = old['statename'], self['statename']
-                    Dispatcher.send(self, event='process_changed')
+                    send(self, event='process_changed')
                     if old_state != new_state:
-                        Dispatcher.info('{} changed from {} to {}'
+                        info('{} changed from {} to {}'
                                         .format(self, old_state, new_state))
 
     def read_info(self):
-        info = dict(self.Null)
+        proc_info = dict(self.Null)
         try:
-            info.update(self.server.supervisor_getProcessInfo(self.full_name))
+            proc_info.update(self.server.supervisor_getProcessInfo(self.full_name))
         except Exception as err:
             self.log.warn('Failed to read info from %s: %s', self['uid'], err)
-        return info
+        return proc_info
 
-    def update_info(self, info):
+    def update_info(self, proc_info):
         old = dict(self)
-        info['running'] = info['state'] in RUNNING_STATES
-        self.update(info)
+        proc_info['running'] = proc_info['state'] in RUNNING_STATES
+        self.update(proc_info)
         return old
 
     def refresh(self):
-        info = self.read_info()
-        self.update_info(info)
+        proc_info = self.read_info()
+        self.update_info(proc_info)
 
     def start(self):
         try:
             self.server.supervisor_startProcess(self.full_name, timeout=30)
         except:
             message = 'Error trying to start {}!'.format(self)
-            Dispatcher.error(message)
+            error(message)
             self.log.exception(message)
 
     def stop(self):
@@ -302,7 +285,7 @@ class Process(dict):
             self.server.supervisor_stopProcess(self.full_name)
         except:
             message = 'Failed to stop {}'.format(self['uid'])
-            Dispatcher.warning(message)
+            warning(message)
             self.log.exception(message)
 
     def restart(self):
@@ -345,35 +328,27 @@ def load_config(config_file):
     return config
 
 
-class Dispatcher(object):
+def send(payload, event):
+    louie.send(signal=event, sender='multivisor', payload=payload)
 
-    clients = []
 
-    @classmethod
-    def send(cls, payload, event):
-        data = json.dumps(dict(payload=payload, event=event))
-        event = 'data: {0}\n\n'.format(data)
-        for client in cls.clients:
-            client.put(event)
+def notification(message, level):
+    payload = dict(message=message, level=level, time=time.time())
+    send(payload, 'notification')
 
-    @classmethod
-    def notification(cls, message, level):
-        payload = dict(message=message, level=level, time=time.time())
-        cls.send(payload, 'notification')
 
-    @classmethod
-    def info(cls, message):
-        cls.notification(message, 'INFO')
+def info(message):
+    notification(message, 'INFO')
 
-    @classmethod
-    def warning(cls, message):
-        logging.warning(message)
-        cls.notification(message, 'WARNING')
 
-    @classmethod
-    def error(cls, message):
-        logging.error(message)
-        cls.notification(message, 'ERROR')
+def warning(message):
+    logging.warning(message)
+    notification(message, 'WARNING')
+
+
+def error(message):
+    logging.error(message)
+    notification(message, 'ERROR')
 
 
 class Multivisor(object):
@@ -388,6 +363,11 @@ class Multivisor(object):
             self._config = load_config(self.options.config_file)
         return self._config
 
+    @property
+    def config_file_content(self):
+        with open(self.options.config_file) as config_file:
+            return config_file.read()
+
     def reload(self):
         self._config = None
         return self.config
@@ -395,6 +375,12 @@ class Multivisor(object):
     @property
     def supervisors(self):
         return self.config['supervisors']
+
+    @property
+    def processes(self):
+        procs = (svisor['processes'] for svisor in self.supervisors.values())
+        return { puid: proc for sprocs in procs
+                 for puid, proc in sprocs.items() }
 
     def refresh(self):
         tasks = [spawn(supervisor.refresh)
@@ -405,202 +391,35 @@ class Multivisor(object):
         return self.supervisors[name]
 
     def get_process(self, uid):
-        _, supervisor = uid.split('@', 1)
+        supervisor, _ = uid.split(':', 1)
         return self.supervisors[supervisor]['processes'][uid]
 
-    def add_listener(self, client):
-        Dispatcher.clients.append(client)
+    def _do_supervisors(self, operation, *names):
+        supervisors = (self.get_supervisor(name) for name in names)
+        tasks = [spawn(operation, supervisor) for supervisor in supervisors]
+        joinall(tasks)
 
-    def remove_listener(self, client):
-        Dispatcher.clients.remove(client)
+    def _do_processes(self, operation, *patterns):
+        procs = self.processes
+        puids = filter_patterns(procs, patterns)
+        tasks = [spawn(operation, procs[puid]) for puid in puids]
+        joinall(tasks)
 
-    def run_forever(self):
-        #self._event_loop = spawn(event_loop)
-        while True:
-            self.poll_supervisors()
-            sleep(self.options.poll_period)
+    def update_supervisors(self, *names):
+        self._do_supervisors(Supervisor.update_server, *names)
 
+    def restart_supervisors(self, *names):
+        self._do_supervisors(Supervisor.restart, *names)
 
-app = Flask(__name__,
-            static_folder='./dist/static',
-            template_folder='./dist')
+    def reread_supervisors(self, *names):
+        self._do_supervisors(Supervisor.reread, *names)
 
+    def shutdown_supervisors(self, *names):
+        self._do_supervisors(Supervisor.shutdown, *names)
 
-@app.route("/")
-def index():
-#    return app.send_static_file('index.html')
-    return render_template('index.html')
+    def restart_processes(self, *patterns):
+        self._do_processes(Process.restart, *patterns)
 
+    def stop_processes(self, *patterns):
+        self._do_processes(Process.stop, *patterns)
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def catch_all(path):
-    return render_template("index.html")
-
-
-@app.route("/admin/reload")
-def reload():
-    app.multivisor.reload()
-    return 'OK'
-
-
-@app.route("/refresh")
-def refresh():
-    app.multivisor.refresh()
-    return json.dumps(app.multivisor.config)
-
-
-@app.route("/data")
-def data():
-    return json.dumps(app.multivisor.config)
-
-
-@app.route("/supervisor/update", methods=['POST'])
-def update_supervisor():
-    names = (unicode.strip(supervisor)
-             for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.update_server) for supervisor in supervisors]
-    joinall(tasks)
-    return 'OK'
-
-
-@app.route("/supervisor/restart", methods=['POST'])
-def restart_supervisor():
-    names = (unicode.strip(supervisor)
-             for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.restart) for supervisor in supervisors]
-    joinall(tasks)
-    return 'OK'
-
-
-@app.route("/supervisor/reread", methods=['POST'])
-def reread_supervisor():
-    names = (unicode.strip(supervisor)
-             for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.reread) for supervisor in supervisors]
-    joinall(tasks)
-    return 'OK'
-
-
-@app.route("/supervisor/shutdown", methods=['POST'])
-def shutdown_supervisor():
-    names = (unicode.strip(supervisor)
-             for supervisor in request.form['supervisor'].split(','))
-    supervisors = (app.multivisor.get_supervisor(name) for name in names)
-    tasks = [spawn(supervisor.shutdown) for supervisor in supervisors]
-    joinall(tasks)
-    return 'OK'
-
-
-@app.route("/process/restart", methods=['POST'])
-def restart_process():
-    uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
-    processes = (app.multivisor.get_process(uid) for uid in uids)
-    tasks = [spawn(process.restart) for process in processes]
-    joinall(tasks)
-    return 'OK'
-
-
-@app.route("/process/stop", methods=['POST'])
-def stop_process():
-    uids = (unicode.strip(uid) for uid in request.form['uid'].split(','))
-    processes = (app.multivisor.get_process(uid) for uid in uids)
-    tasks = [spawn(process.stop) for process in processes]
-    joinall(tasks)
-    return 'OK'
-
-
-@app.route("/process/info/<uid>")
-def process_info(uid):
-    process = app.multivisor.get_process(uid)
-    process.refresh()
-    return json.dumps(process)
-
-
-@app.route("/supervisor/info/<uid>")
-def supervisor_info(uid):
-    supervisor = app.multivisor.get_supervisor(uid)
-    supervisor.refresh()
-    return json.dumps(supervisor)
-
-
-@app.route("/process/log/<stream>/tail/<uid>")
-def process_log_tail(stream, uid):
-    pname, sname = uid.split('@', 1)
-    supervisor = app.multivisor.get_supervisor(sname)
-    server = supervisor.server
-    if stream == 'out':
-        tail = server.supervisor_tailProcessStdoutLog
-    else:
-        tail = server.supervisor_tailProcessStderrLog
-    def event_stream():
-        i, offset, length = 0, 0, 2**12
-        while True:
-            data = tail(pname, offset, length)
-            log, offset, overflow = data
-            # don't care about overflow in first log message
-            if overflow and i:
-                length = min(length * 2, 2**14)
-            else:
-                data = json.dumps(dict(message=log, size=offset))
-                yield 'data: {}\n\n'.format(data)
-            sleep(1)
-            i += 1
-    return Response(event_stream(), mimetype="text/event-stream")
-
-
-@app.route('/stream')
-def stream():
-    def event_stream():
-        client = queue.Queue()
-        app.multivisor.add_listener(client)
-        for event in client:
-            yield event
-        app.multivisor.remove_listener(client)
-    return Response(event_stream(),
-                    mimetype="text/event-stream")
-
-
-def main(args=None):
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--bind', help='[host][:port] (default: 0:22000)',
-                        default='0:22000')
-    parser.add_argument('-c', help='configuration file',
-                        dest='config_file',
-                        default='/etc/multivisor.conf')
-    parser.add_argument('--log-level', help='log level', type=str,
-                        default='INFO',
-                        choices=['DEBUG', 'INFO', 'WARN', 'ERROR'])
-    parser.add_argument('--poll-period', help='polling period(s)', type=float,
-                        default=2)
-    options = parser.parse_args(args)
-
-    log_level = getattr(logging, options.log_level.upper())
-    log_fmt = '%(levelname)s %(asctime)-15s %(name)s: %(message)s'
-    logging.basicConfig(level=log_level, format=log_fmt)
-
-    if not os.path.exists(options.config_file):
-        parser.exit(status=2, message='configuration file does not exist. Bailing out!\n')
-
-    bind = sanitize_url(options.bind, host='0', port=22000)['url']
-
-    app.multivisor = Multivisor(options)
-
-#    app_task = spawn(app.multivisor.run_forever)
-
-    from gevent.pywsgi import WSGIServer
-
-    http_server = WSGIServer(bind, application=app)
-    logging.info('Start accepting requests')
-    try:
-        http_server.serve_forever()
-    except KeyboardInterrupt:
-        log.info('Ctrl-C pressed. Bailing out')
-
-
-if __name__ == "__main__":
-    main()

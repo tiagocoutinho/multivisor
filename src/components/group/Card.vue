@@ -49,7 +49,7 @@ export default {
     group () { return this.item.item },
     selectedProcesses () {
       return this.$store.state.selectedProcesses.reduce((processes, puid) => {
-        let group = puid.split(':', 1)[0]
+        let group = puid.split(':', 2)[1]
         if (group === this.group.name) {
           processes.push(puid)
         }

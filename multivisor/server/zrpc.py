@@ -58,7 +58,6 @@ class Supervisor(object):
         self.channel = channel
         self.event_channels = set()
         self.rpc = get_rpc()
-        self.shutting_down = False
         for name in self.rpc.system.listMethods():
             setattr(self, *build_method(name))
 
@@ -80,8 +79,6 @@ class Supervisor(object):
         name = event['eventname']
         if name.startswith('TICK'):
             return
-        if self.shutting_down:
-            return
         event = dict(event)
         if name.startswith('PROCESS_STATE'):
             payload = event['payload']
@@ -92,7 +89,6 @@ class Supervisor(object):
             except xmlrpclib.Fault:
                 # probably supervisor is shutting down
                 logging.warn('probably shutting down...')
-                self.shutting_down = True
                 return
         for channel in self.event_channels:
             channel.put(event)
