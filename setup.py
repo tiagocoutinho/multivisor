@@ -7,9 +7,9 @@ setup(
     author_email='coutinhotiago@gmail.com',
     description='A centralized supervisor UI (web & CLI)',
     packages=find_packages(),
-    package_data=dict(multivisor=['dist/*',
-                                  'dist/static/css/*',
-                                  'dist/static/js/*']),
+    package_data={'multivisor.server': ['dist/*',
+                                        'dist/static/css/*',
+                                        'dist/static/js/*']},
     entry_points=dict(console_scripts=[
         'multivisor=multivisor.server.web:main',
         'multivisor-cli=multivisor.client.cli:main',
