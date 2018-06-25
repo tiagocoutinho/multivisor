@@ -19,8 +19,13 @@ from gevent.queue import Queue
 from zerorpc import stream, Server
 
 from supervisor.http import NOT_DONE_YET
-from supervisor.events import subscribe, unsubscribe, Event, getEventNameByType
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
+from supervisor.events import subscribe, Event, getEventNameByType
+# unsubscribe only appears in supervisor > 3.3.4
+try:
+    from supervisor.events import unsubscribe
+except:
+    unsubscribe = lambda x, y: None
 
 from .util import sanitize_url
 
@@ -151,9 +156,7 @@ def run_rpc_server(multivisor, bind, future_server):
 
 
 def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
-    import pdb;pdb.set_trace()
     url = sanitize_url(bind, protocol='tcp', host='*', port=9002)
-    print bind, url
     multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'])
     multivisor._start()
     return multivisor
