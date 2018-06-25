@@ -52,6 +52,7 @@ class Supervisor(dict):
         return this == other and this_p.keys() == other_p.keys()
 
     def run(self):
+        last_retry = time.time()
         while True:
             try:
                 self.refresh()
@@ -61,11 +62,17 @@ class Supervisor(dict):
                     if i != 0:
                         self.handle_event(event)
             except zerorpc.LostRemote:
-                self.log.info('Lost remote to {}'.format(self.name))
+                self.log.info('Lost remote')
             except zerorpc.TimeoutExpired:
-                self.log.info('Timeout expired on {}'.format(self.name))
+                self.log.info('Timeout expired')
             except Exception as err:
-                self.log.info('Error on {}: {}'.format(self.name, str(err)))
+                self.log.info('Connection error')
+            finally:
+                curr_time = time.time()
+                delta = curr_time - last_retry
+                if delta < 10:
+                    sleep(10 - delta)
+                last_retry = time.time()
 
     def handle_event(self, event):
         name = event['eventname']
