@@ -16,7 +16,7 @@ import threading
 
 from gevent import spawn, hub, sleep
 from gevent.queue import Queue
-from zerorpc import stream, Server
+from zerorpc import stream, Server, LostRemote
 
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
