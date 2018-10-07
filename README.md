@@ -65,33 +65,35 @@ multivisor-cli
 
 The `multivisor` backend runs a [flask](http://flask.pocoo.org/) web server.
 
-`multivisor-rpc` exposes a [0RPC](http://www.zerorpc.io) interface.
+The `multivisor-cli` runs a
+[prompt-toolkit 2](http://python-prompt-toolkit.rtfd.io) based console.
 
 The frontend is based on [vue](https://vuejs.org/) +
 [vuex](https://vuex.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
 
-The `multivisor-cli` runs a
-[prompt-toolkit 2](http://python-prompt-toolkit.rtfd.io) based console.
 
 # Configuration
 
-Make sure multivisor is installed on the host you are running supervisor. Then,
-configure your supervisor(s) to send events to multivisor-rpc by adding the
-following lines to your supervisord.conf:
+## Supervisor
+
+Make sure multivisor is installed in the same environment as the one supervisor(s) is(are) running.
+Then, configure the multivisor rpc interface by adding the following lines
+to your supervisord.conf:
 
 ```
-[eventlistener:multivisor-rpc]
-command=multivisor-rpc --bind=tcp://*:9002
-events=EVENT
+[rpcinterface:multivisor]
+supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
+bind=*:9002
 ```
 
-The name of the eventlistener is yours to choose (here we choose
-*multivisor-rpc*).
+If no *bind* is given, it defaults to `*:9002`.
 
 Repeat the above procedure for every supervisor you have running.
 
-The `multivisor` web server relies on the `multivisor-rpc` event listener of
-each supervisor for both RPC and events.
+## Multivisor
+
+The `multivisor` web server relies on the multivisor rpc interface running on
+each supervisor.
 
 The multivisor web server is configured with a INI like configuration file
 (much like supervisor itself). It is usually named *multivisor.conf* and it
@@ -101,12 +103,11 @@ It consists of a `global` section where you can give an optional name to your
 multivisor instance (default is *multivisor*. This name will appear on the top
 left corner of multivisor the web page).
 
-To add a new supervisor to the list of supervisors monitored by multivisor
-simply add a section `[supervisor:<name>]`.
+To add a new supervisor to the list simply add a section `[supervisor:<name>]`.
 It accepts an optional `url` in the format `[<host>][:<port>]`. The default
 is `<name>:9002`.
 
-Here is a basic example:
+Here is some basic example:
 
 ```
 [global]
@@ -126,6 +127,9 @@ url=bugsbunny.acme.org
 [supervisor:daffyduck]
 url=daffyduck.acme.org:9007
 ```
+
+Of course the multivisor itself can be configured in supervisor as a normal
+program.
 
 ## Build & Install
 

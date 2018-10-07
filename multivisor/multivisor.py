@@ -52,8 +52,10 @@ class Supervisor(dict):
         return this == other and this_p.keys() == other_p.keys()
 
     def run(self):
+        last_retry = time.time()
         while True:
             try:
+                self.log.info('(re)initializing...')
                 self.refresh()
                 for i, event in enumerate(self.server.event_stream()):
                     # ignore first event. It serves only to trigger
@@ -61,9 +63,17 @@ class Supervisor(dict):
                     if i != 0:
                         self.handle_event(event)
             except zerorpc.LostRemote:
-                self.log.info('Lost remote to {}'.format(self.name))
+                self.log.info('Lost remote')
             except zerorpc.TimeoutExpired:
-                self.log.info('Timeout expired on {}'.format(self.name))
+                self.log.info('Timeout expired')
+            except Exception as err:
+                self.log.info('Connection error')
+            finally:
+                curr_time = time.time()
+                delta = curr_time - last_retry
+                if delta < 10:
+                    sleep(10 - delta)
+                last_retry = time.time()
 
     def handle_event(self, event):
         name = event['eventname']
@@ -86,13 +96,13 @@ class Supervisor(dict):
     def read_info(self):
         info = self.create_base_info()
         server = self.server
-        info['pid']= pid = server.supervisor_getPID()
+        info['pid']= pid = server.getPID()
         info['running'] = True
-        info['identification'] = server.supervisor_getIdentification()
-        info['api_version'] = server.supervisor_getAPIVersion()
-        info['supervisor_version'] = server.supervisor_getSupervisorVersion()
+        info['identification'] = server.getIdentification()
+        info['api_version'] = server.getAPIVersion()
+        info['supervisor_version'] = server.getSupervisorVersion()
         info['processes'] = processes = {}
-        for proc in server.supervisor_getAllProcessInfo():
+        for proc in server.getAllProcessInfo():
             process = Process(self, proc)
             processes[process['uid']] = process
         return info
@@ -121,7 +131,7 @@ class Supervisor(dict):
     def update_server(self, group_names=()):
         server = self.server
         try:
-            added, changed, removed = server.supervisor_reloadConfig()[0]
+            added, changed, removed = server.reloadConfig()[0]
         except zerorpc.RemoteError as rerr:
             error(rerr.msg)
             return
@@ -130,7 +140,7 @@ class Supervisor(dict):
         # valid in order to print a useful error message.
         if group_names:
             groups = set()
-            for info in server.supervisor_getAllProcessInfo():
+            for info in server.getAllProcessInfo():
                 groups.add(info['group'])
             # New gnames would not currently exist in this set so
             # add those as well.
@@ -143,7 +153,7 @@ class Supervisor(dict):
         for gname in removed:
             if group_names and gname not in group_names:
                 continue
-            results = server.supervisor_stopProcessGroup(gname)
+            results = server.stopProcessGroup(gname)
             self.log.debug('stopped process group %s', gname)
 
             fails = [res for res in results
@@ -151,29 +161,29 @@ class Supervisor(dict):
             if fails:
                 self.log.debug("%s as problems; not removing", gname)
                 continue
-            server.supervisor_removeProcessGroup(gname)
+            server.removeProcessGroup(gname)
             self.log.debug("removed process group %s", gname)
 
         for gname in changed:
             if group_names and gname not in group_names:
                 continue
-            server.supervisor_stopProcessGroup(gname)
+            server.stopProcessGroup(gname)
             self.log.debug('stopped process group %s', gname)
 
-            server.supervisor_removeProcessGroup(gname)
-            server.supervisor_addProcessGroup(gname)
+            server.removeProcessGroup(gname)
+            server.addProcessGroup(gname)
             self.log.debug('updated process group %s', gname)
 
         for gname in added:
             if group_names and gname not in group_names:
                 continue
-            server.supervisor_addProcessGroup(gname)
+            server.addProcessGroup(gname)
             self.log.debug('added process group %s', gname)
 
         self.log.info('Updated %s', self.name)
 
     def _reread(self):
-        return self.server.supervisor_reloadConfig()
+        return self.server.reloadConfig()
 
     def restart(self):
         # do a reread. If there is an error (bad config) inform the user and
@@ -183,7 +193,7 @@ class Supervisor(dict):
         except zerorpc.RemoteError as rerr:
             error('Cannot restart: {}'.format(rerr.msg))
             return
-        result = self.server.supervisor_restart(timeout=30)
+        result = self.server.restart(timeout=30)
         if result:
             info('Restarted {}'.format(self.name))
         else:
@@ -200,7 +210,7 @@ class Supervisor(dict):
                             self.name, len(added), len(changed), len(removed)))
 
     def shutdown(self):
-        result = self.server.supervisor_shutdown()
+        result = self.server.shutdown()
         if result:
             info('Shut down {}'.format(self.name))
         else:
@@ -257,7 +267,7 @@ class Process(dict):
     def read_info(self):
         proc_info = dict(self.Null)
         try:
-            proc_info.update(self.server.supervisor_getProcessInfo(self.full_name))
+            proc_info.update(self.server.getProcessInfo(self.full_name))
         except Exception as err:
             self.log.warn('Failed to read info from %s: %s', self['uid'], err)
         return proc_info
@@ -274,7 +284,7 @@ class Process(dict):
 
     def start(self):
         try:
-            self.server.supervisor_startProcess(self.full_name, timeout=30)
+            self.server.startProcess(self.full_name, False, timeout=30)
         except:
             message = 'Error trying to start {}!'.format(self)
             error(message)
@@ -282,7 +292,7 @@ class Process(dict):
 
     def stop(self):
         try:
-            self.server.supervisor_stopProcess(self.full_name)
+            self.server.stopProcess(self.full_name)
         except:
             message = 'Failed to stop {}'.format(self['uid'])
             warning(message)
@@ -422,4 +432,3 @@ class Multivisor(object):
 
     def stop_processes(self, *patterns):
         self._do_processes(Process.stop, *patterns)
-
