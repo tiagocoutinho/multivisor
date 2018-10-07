@@ -11,6 +11,7 @@ The python environment where supervisor runs must have multivisor installed
 
 import os
 import queue
+import logging
 import functools
 import threading
 
@@ -69,7 +70,7 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         self._server = None
         self._watcher = None
         self._shutting_down = False
-        self._log = supervisord.options.logger
+        self._log = logging.getLogger('MVRPC')
 
     def _start(self):
         subscribe(Event, self._handle_event)
@@ -83,7 +84,7 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
             return
         event_name = getEventNameByType(event.__class__)
         if event_name == 'SUPERVISOR_STATE_CHANGE_STOPPING':
-            self._log.warn('0ZRPC: noticed that supervisor is dying')
+            self._log.warn('noticed that supervisor is dying')
             self._shutdown()
         elif event_name.startswith('TICK'):
             return
@@ -106,8 +107,6 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
             event = self._process_event(event)
             if event is None:
                 return
-            self._log.info('0RPC: event received {} (#{} clients)'
-                          .format(event['eventname'], len(self._event_channels)))
             for channel in self._event_channels:
                 channel.put(event)
 
@@ -121,16 +120,15 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
 
     @stream
     def event_stream(self):
-        self._log.info('0RPC: client connected to stream')
+        self._log.info('client connected to stream')
         channel = Queue()
         self._event_channels.add(channel)
         try:
             yield 'First event to trigger connection. Please ignore me!'
             for event in channel:
-                self._log.debug('sending {}'.format(event['eventname']))
                 yield event
         except LostRemote as e:
-            self._log.info('0RPC: remote end of stream disconnected')
+            self._log.info('remote end of stream disconnected')
         finally:
             self._event_channels.remove(channel)
 
@@ -156,6 +154,11 @@ def run_rpc_server(multivisor, bind, future_server):
 
 
 def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
+    # Uncomment following lines to configure python standard logging
+    #log_level = logging.INFO
+    #log_fmt = '%(threadName)-8s %(levelname)s %(asctime)-15s %(name)s: %(message)s'
+    #logging.basicConfig(level=log_level, format=log_fmt)
+
     url = sanitize_url(bind, protocol='tcp', host='*', port=9002)
     multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'])
     multivisor._start()
