@@ -15,7 +15,7 @@ A centralized supervisor UI (Web & CLI)
 
 ## Command line interface
 
-![multivisor-cli](doc/multivisor_cli.svg)
+[![multivisor-cli](https://asciinema.org/a/8gQrjXDanvfafT7UnPXS1u0bp.png)](https://asciinema.org/a/8gQrjXDanvfafT7UnPXS1u0bp?autoplay=1&speed=2)
 
 # Running the example from scratch
 
