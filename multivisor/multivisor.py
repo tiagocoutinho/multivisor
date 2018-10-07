@@ -55,6 +55,7 @@ class Supervisor(dict):
         last_retry = time.time()
         while True:
             try:
+                self.log.info('(re)initializing...')
                 self.refresh()
                 for i, event in enumerate(self.server.event_stream()):
                     # ignore first event. It serves only to trigger
@@ -431,4 +432,3 @@ class Multivisor(object):
 
     def stop_processes(self, *patterns):
         self._do_processes(Process.stop, *patterns)
-
