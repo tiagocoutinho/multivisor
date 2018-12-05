@@ -1,9 +1,17 @@
 import re
 import fnmatch
 
+_PROTO_RE_STR = '(?P<protocol>\w+)\://'
+_HOST_RE_STR = '?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
+_PORT_RE_STR = '\:(?P<port>\d{1,5})'
+
+URL_RE = re.compile('({protocol})?({host})?({port})?'.format(protocol=_PROTO_RE_STR,
+                                                             host=_HOST_RE_STR,
+                                                             port=_PORT_RE_STR))
+
 
 def sanitize_url(url, protocol=None, host=None, port=None):
-    match = re.match('((?P<protocol>\w+)\://)?(?P<host>(\w+|\*))?(\:(?P<port>\d+))?', url)
+    match = URL_RE.match(url)
     if match is None:
         raise ValueError('Invalid URL: {!r}'.format(url))
     pars = match.groupdict()
