@@ -21,7 +21,7 @@ A centralized supervisor UI (Web & CLI)
 
 ```bash
 # Fetch the project:
-git clone git://github.com/tiagocoutinho/multivisor
+git clone https://github.com/tiagocoutinho/multivisor
 cd multivisor
 
 
@@ -35,6 +35,7 @@ npm run build
 pip install .
 
 # Launch a few supervisors
+mkdir examples/full_example/log
 supervisord -c examples/full_example/supervisord_lid001.conf
 supervisord -c examples/full_example/supervisord_lid002.conf
 supervisord -c examples/full_example/supervisord_baslid001.conf
