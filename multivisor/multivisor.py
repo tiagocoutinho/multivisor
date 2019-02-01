@@ -38,7 +38,7 @@ class Supervisor(dict):
         addr = sanitize_url(url, protocol='tcp', host=name, port=9002)
         self.address = addr['url']
         self.host = self['host'] = addr['host']
-        self.server = zerorpc.Client(self.address, timeout=5)
+        self.server = zerorpc.Client(self.address)
         # fill supervisor info before events start coming in
         self.event_loop = spawn(self.run)
 
@@ -77,6 +77,7 @@ class Supervisor(dict):
 
     def handle_event(self, event):
         name = event['eventname']
+        self.log.info('handling %s...', name)
         if name.startswith('SUPERVISOR_STATE'):
             self.refresh()
         elif not self['running']:
