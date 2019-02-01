@@ -100,18 +100,18 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         if event_name.startswith('PROCESS_STATE'):
             pname = "{}:{}".format(payload['groupname'], payload['processname'])
             payload['process'] = self.getProcessInfo(pname)
-        return dict(pool='multivisor', server=self.supervisord.options.identifier,
-                    eventname=event_name, payload=payload)
+        # broadcast the event to clients
+        server = self.supervisord.options.identifier
+        new_event = dict(pool='multivisor', server=server,
+                         eventname=event_name, payload=payload)
+        for channel in self._event_channels:
+            channel.put(new_event)
 
     # called on 0RPC server thread
     def _dispatch_event(self):
         while not self._channel.empty():
             event = self._channel.get()
-            event = self._process_event(event)
-            if event is None:
-                return
-            for channel in self._event_channels:
-                channel.put(event)
+            self._process_event(event)
 
     # called on main thread
     def _handle_event(self, event):
