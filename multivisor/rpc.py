@@ -88,6 +88,9 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
             self._shutdown()
         elif event_name.startswith('TICK'):
             return
+        if not self._event_channels:
+            # if no client is listening avoid building the event
+            return
         try:
             # old supervisor version
             payload_str = event.payload()
