@@ -59,6 +59,16 @@ def sync(klass):
     return klass
 
 
+# When supervisor is asked to restart, it closes file descriptors
+# from 5..1024. Since we are not able to restart the ZeroRPC server
+# (see https://github.com/0rpc/zerorpc-python/issues/208) this patch
+# prevents supervisor from closing the gevent pipes and 0MQ sockets
+# This is a really agressive move but seems to work until the above
+# bug is solved
+from supervisor.options import ServerOptions
+ServerOptions.cleanup_fds = lambda options : None
+
+
 @sync
 class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
 
@@ -75,21 +85,27 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
     def _start(self):
         subscribe(Event, self._handle_event)
 
-    def _shutdown(self):
+    def _stop(self):
         unsubscribe(Event, self._handle_event)
         self._shutting_down = True
+
+    def _shutdown(self):
+        # disconnect all streams
+        for channel in self._event_channels:
+            channel.put(None)
+        if self._server is not None:
+            self._server.stop()
+            self._server.close()
 
     def _process_event(self, event):
         if self._shutting_down:
             return
         event_name = getEventNameByType(event.__class__)
-        if event_name == 'SUPERVISOR_STATE_CHANGE_STOPPING':
-            self._log.warn('noticed that supervisor is dying')
-            self._shutdown()
+        stop_event = event_name == 'SUPERVISOR_STATE_CHANGE_STOPPING'
+        if stop_event:
+            self._log.info('supervisor stopping!')
+            self._stop()
         elif event_name.startswith('TICK'):
-            return
-        if not self._event_channels:
-            # if no client is listening avoid building the event
             return
         try:
             # old supervisor version
@@ -106,6 +122,8 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
                          eventname=event_name, payload=payload)
         for channel in self._event_channels:
             channel.put(new_event)
+        if stop_event:
+            self._shutdown()
 
     # called on 0RPC server thread
     def _dispatch_event(self):
@@ -117,9 +135,21 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
     def _handle_event(self, event):
         if self._server is None:
             reply = start_rpc_server(self, self._bind)
+            if isinstance(reply, Exception):
+                self._log.critical('severe 0RPC error: %s', reply)
+                self._stop()
+                self._shutdown()
+                return
             self._server, self._watcher = reply
         self._channel.put(event)
         self._watcher.send()
+
+        # handle stop synchronously
+        event_name = getEventNameByType(event.__class__)
+        if event_name == 'SUPERVISOR_STATE_CHANGE_STOPPING':
+            self._server._stop_event.wait()
+            self._server = None
+            self._watcher = None
 
     @stream
     def event_stream(self):
@@ -129,6 +159,9 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         try:
             yield 'First event to trigger connection. Please ignore me!'
             for event in channel:
+                if event is None:
+                    self._log.info('stop: closing client')
+                    return
                 yield event
         except LostRemote as e:
             self._log.info('remote end of stream disconnected')
@@ -148,18 +181,32 @@ def start_rpc_server(multivisor, bind):
 def run_rpc_server(multivisor, bind, future_server):
     multivisor._log.info('0RPC: spawn server on {}...'.format(os.getpid()))
     watcher = hub.get_hub().loop.async()
+    stop_event = threading.Event()
     watcher.start(lambda: spawn(multivisor._dispatch_event))
-    server = Server(multivisor)
-    server.bind(bind)
-    future_server.put((server, watcher))
-    multivisor._log.info('0RPC: server running!')
-    server.run()
+    try:
+        server = Server(multivisor)
+        server._stop_event = stop_event
+        server.bind(bind)
+        future_server.put((server, watcher))
+        multivisor._log.info('0RPC: server running!')
+        server.run()
+        multivisor._log.info('0RPC: server stopped!')
+    except Exception as err:
+        future_server.put(err)
+    finally:
+        watcher.stop()
+        del server
+        # prevent reusage of this loop because supervisor closes all ports
+        # when a restart happens. It actually doesn't help preventing a crash
+        hub.get_hub().destroy(destroy_loop=True)
+        multivisor._log.info('0RPC: server thread destroyed!')
+    stop_event.set()
 
 
 def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
     # Uncomment following lines to configure python standard logging
     #log_level = logging.INFO
-    #log_fmt = '%(threadName)-8s %(levelname)s %(asctime)-15s %(name)s: %(message)s'
+    #log_fmt = '%(asctime)-15s %(levelname)s %(threadName)-8s %(name)s: %(message)s'
     #logging.basicConfig(level=log_level, format=log_fmt)
 
     url = sanitize_url(bind, protocol='tcp', host='*', port=9002)
