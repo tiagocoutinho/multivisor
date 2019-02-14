@@ -27,7 +27,10 @@ def default_process_status(process, max_puid_len=10, group_by='group'):
 def processes_status(status, group_by='process', filter=None,
                      process_status=default_process_status):
     processes = status['processes']
-    puid_len = max(map(len, processes))
+    if processes:
+        puid_len = max(map(len, processes))
+    else:
+        puid_len = 8
     result = []
     if filter is None:
         filter = lambda p: True
