@@ -123,9 +123,9 @@ def process_log_tail(stream, uid):
     supervisor = app.multivisor.get_supervisor(sname)
     server = supervisor.server
     if stream == 'out':
-        tail = server.supervisor_tailProcessStdoutLog
+        tail = server.tailProcessStdoutLog
     else:
-        tail = server.supervisor_tailProcessStderrLog
+        tail = server.tailProcessStderrLog
     def event_stream():
         i, offset, length = 0, 0, 2**12
         while True:
