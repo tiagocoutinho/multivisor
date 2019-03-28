@@ -19,22 +19,22 @@ export const notificationColorMap = {
 export const supervisorAction = (id, action) => {
   let form = new FormData()
   form.append('supervisor', id)
-  return fetch('/supervisor/' + action, {method: 'POST', body: form})
+  return fetch('/api/supervisor/' + action, {method: 'POST', body: form})
 }
 
 export const processAction = (uid, action) => {
   let form = new FormData()
   form.append('uid', uid)
-  fetch('/process/' + action, { method: 'POST', body: form })
+  fetch('/api/process/' + action, { method: 'POST', body: form })
 }
 
 export const load = () => {
-  return fetch('/data')
+  return fetch('/api/data')
     .then(response => response.json())
 }
 
 export const streamTo = (eventHandler) => {
-  let eventSource = new EventSource('/stream')
+  let eventSource = new EventSource('/api/stream')
   eventSource.onmessage = event => {
     let data = JSON.parse(event.data)
     eventHandler(data)
