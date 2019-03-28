@@ -119,7 +119,7 @@ export default {
       if (!log.visible) {
         return
       }
-      let eventSource = new EventSource(`/process/log/${log.stream}/tail/${log.process.uid}`)
+      let eventSource = new EventSource(`/api/process/log/${log.stream}/tail/${log.process.uid}`)
       eventSource.onmessage = event => {
         let data = JSON.parse(event.data)
         this.appendLogMessage(data)

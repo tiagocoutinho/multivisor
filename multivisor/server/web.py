@@ -23,36 +23,36 @@ app = Flask(__name__,
             template_folder='./dist')
 
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route('/api/', defaults={'path': ''})
+@app.route('/api/<path:path>')
 def catch_all(path):
     return render_template("index.html")
 
 
-@app.route("/admin/reload")
+@app.route("/api/admin/reload")
 def reload():
     app.multivisor.reload()
     return 'OK'
 
 
-@app.route("/refresh")
+@app.route("/api/refresh")
 def refresh():
     app.multivisor.refresh()
     return jsonify(app.multivisor.config)
 
 
-@app.route("/data")
+@app.route("/api/data")
 def data():
     return jsonify(app.multivisor.config)
 
 
-@app.route("/config/file")
+@app.route("/api/config/file")
 def config_file_content():
     content = app.multivisor.config_file_content
     return jsonify(dict(content=content))
 
 
-@app.route("/supervisor/update", methods=['POST'])
+@app.route("/api/supervisor/update", methods=['POST'])
 def update_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -60,7 +60,7 @@ def update_supervisor():
     return 'OK'
 
 
-@app.route("/supervisor/restart", methods=['POST'])
+@app.route("/api/supervisor/restart", methods=['POST'])
 def restart_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -68,7 +68,7 @@ def restart_supervisor():
     return 'OK'
 
 
-@app.route("/supervisor/reread", methods=['POST'])
+@app.route("/api/supervisor/reread", methods=['POST'])
 def reread_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -76,7 +76,7 @@ def reread_supervisor():
     return 'OK'
 
 
-@app.route("/supervisor/shutdown", methods=['POST'])
+@app.route("/api/supervisor/shutdown", methods=['POST'])
 def shutdown_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -84,40 +84,40 @@ def shutdown_supervisor():
     return 'OK'
 
 
-@app.route("/process/restart", methods=['POST'])
+@app.route("/api/process/restart", methods=['POST'])
 def restart_process():
     patterns = request.form['uid'].split(',')
     procs = app.multivisor.restart_processes(*patterns)
     return 'OK'
 
 
-@app.route("/process/stop", methods=['POST'])
+@app.route("/api/process/stop", methods=['POST'])
 def stop_process():
     patterns = request.form['uid'].split(',')
     app.multivisor.stop_processes(*patterns)
     return 'OK'
 
 
-@app.route("/process/list")
+@app.route("/api/process/list")
 def list_processes():
     return jsonify(tuple(app.multivisor.processes.keys()))
 
 
-@app.route("/process/info/<uid>")
+@app.route("/api/process/info/<uid>")
 def process_info(uid):
     process = app.multivisor.get_process(uid)
     process.refresh()
     return json.dumps(process)
 
 
-@app.route("/supervisor/info/<uid>")
+@app.route("/api/supervisor/info/<uid>")
 def supervisor_info(uid):
     supervisor = app.multivisor.get_supervisor(uid)
     supervisor.refresh()
     return json.dumps(supervisor)
 
 
-@app.route("/process/log/<stream>/tail/<uid>")
+@app.route("/api/process/log/<stream>/tail/<uid>")
 def process_log_tail(stream, uid):
     sname, pname = uid.split(':', 1)
     supervisor = app.multivisor.get_supervisor(sname)
@@ -142,7 +142,7 @@ def process_log_tail(stream, uid):
     return Response(event_stream(), mimetype="text/event-stream")
 
 
-@app.route('/stream')
+@app.route('/api/stream')
 def stream():
     def event_stream():
         client = queue.Queue()
