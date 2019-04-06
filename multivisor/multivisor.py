@@ -393,6 +393,19 @@ class Multivisor(object):
         return { puid: proc for sprocs in procs
                  for puid, proc in sprocs.items() }
 
+    @property
+    def use_authentication(self):
+        """
+        :return: whether authentication should be used
+        """
+        username = self.config.get('username')
+        password = self.config.get('password')
+        return username and password
+
+    @property
+    def secret_key(self):
+        return os.environ.get('MULTIVISOR_SECRET_KEY')
+
     def refresh(self):
         tasks = [spawn(supervisor.refresh)
                  for supervisor in self.supervisors.values()]

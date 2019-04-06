@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import hashlib
 
 import gevent
 from gevent.monkey import patch_all
@@ -10,10 +11,10 @@ import logging
 import louie
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify
+from flask import Flask, render_template, Response, request, json, jsonify, session
 
-from ..util import sanitize_url
-from ..multivisor import Multivisor
+from multivisor.util import sanitize_url, is_login_valid
+from multivisor.multivisor import Multivisor
 
 
 log = logging.getLogger('multivisor')
@@ -142,6 +143,24 @@ def process_log_tail(stream, uid):
     return Response(event_stream(), mimetype="text/event-stream")
 
 
+@app.route("/api/login", methods=['post'])
+def login():
+    print(session['sid'])
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if is_login_valid(app, username, password):
+        print("login valid")
+        session['username'] = username
+        return json.dumps({})
+    else:
+        response_data = {
+            'errors': {
+                'password': 'Invalid username or password'
+            }
+        }
+        return json.dumps(response_data), 400
+
+
 @app.route('/api/stream')
 def stream():
     def event_stream():
@@ -173,6 +192,23 @@ class Dispatcher(object):
             client.put(event)
 
 
+def set_secret_key():
+    """
+    In order to use flask sessions, secret_key must be set,
+    require "MULTIVISOR_SECRET_KEY" env variable only if
+    login and password is set in multivisor config
+    You can generate secret by invoking:
+    python -c 'import os; import binascii; print(binascii.hexlify(os.urandom(32)))'
+    """
+    print app.multivisor
+    if app.multivisor.use_authentication:
+        secret_key = os.environ.get('MULTIVISOR_SECRET_KEY')
+        if not secret_key:
+            raise Exception('"MULTIVISOR_SECRET_KEY" environmental variable must be set '
+                            'when authentication is enabled')
+        app.secret_key = secret_key
+
+
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
@@ -197,6 +233,12 @@ def main(args=None):
 
     app.dispatcher = Dispatcher()
     app.multivisor = Multivisor(options)
+    if app.multivisor.use_authentication:
+        secret_key = os.environ.get('MULTIVISOR_SECRET_KEY')
+        if not secret_key:
+            raise Exception('"MULTIVISOR_SECRET_KEY" environmental variable must be set '
+                            'when authentication is enabled')
+        app.secret_key = secret_key
 
     http_server = WSGIServer(bind, application=app)
     logging.info('Start accepting requests')
