@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import * as multivisor from '@/multivisor'
+import Router from '../router'
 
 Vue.use(Vuex)
 
@@ -76,6 +77,9 @@ export default new Vuex.Store({
             }
           }
           multivisor.streamTo(eventHandler)
+        })
+        .catch(function () {
+          Router.push({'name': 'login'})
         })
     },
     restartProcesses (context, uids) {

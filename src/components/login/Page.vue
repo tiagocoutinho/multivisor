@@ -8,13 +8,11 @@
                 <v-toolbar-title>Log in</v-toolbar-title>
               </v-toolbar>
               <v-card-text>
-                <input type="text" :model="username">
-                <p :bind="username"></p>
-                <v-form>
+                <v-form @keyup.native.enter="submit" v-model="valid" ref="form">
                   <v-text-field autofocus prepend-icon="person" name="username" label="Username" type="text"
-                                v-model="username" :rules="[rules.required]"></v-text-field>
+                                v-model="username" :rules="[rules.required]" :error-messages="errorMessages['username']"></v-text-field>
                   <v-text-field prepend-icon="lock" name="password" label="Password" type="password"
-                                v-model="password" :rules="[rules.required]"></v-text-field>
+                                v-model="password" :rules="[rules.required]" :error-messages="errorMessages['password']"></v-text-field>
                 </v-form>
               </v-card-text>
               <v-card-actions align="center">
@@ -39,18 +37,35 @@ export default {
       'password': '',
       'rules': {
         'required': value => !!value || 'This field is required'
+      },
+      'errorMessages': {
+        'username': [],
+        'password': []
       }
     }
   },
   methods: {
     submit () {
+      if (!this.$refs.form.validate()) {
+        return
+      }
       const form = new FormData()
       form.append('username', this.username)
       form.append('password', this.password)
       fetch('/api/login', {method: 'POST', body: form})
-        .then(response => response.json())
+        .then((response) => {
+          console.log(response)
+          if (response.status === 200) {
+            this.$router.push({'name': 'Home'})
+          } else {
+            response.json()
+              .then((data) => {
+                this.errorMessages = data.errors
+              })
+          }
+        })
         .catch(response => {
-          console.log('error!, invalid!')
+          console.log('error!', response)
         })
     }
   }

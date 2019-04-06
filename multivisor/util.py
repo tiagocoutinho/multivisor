@@ -1,6 +1,10 @@
+import functools
 import hashlib
+import json
 import re
 import fnmatch
+
+from flask import session, abort
 
 _PROTO_RE_STR = '(?P<protocol>\w+)\://'
 _HOST_RE_STR = '?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
@@ -83,3 +87,18 @@ def constant_time_compare(val1, val2):
     for x, y in zip(val1, val2):
         result |= ord(x) ^ ord(y)
     return result == 0
+
+
+def login_required(func):
+    """
+    Decorator to mark view as requiring being logged in
+    """
+    @functools.wraps(func)
+    def wrapper_login_required(*args, **kwargs):
+        if 'username' in session:
+            return func(*args, **kwargs)
+
+        # user not authenticated, return 401
+        abort(401)
+
+    return wrapper_login_required

@@ -13,7 +13,8 @@ from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify, session
 
-from multivisor.util import sanitize_url, is_login_valid
+
+from multivisor.util import sanitize_url, is_login_valid, login_required
 from multivisor.multivisor import Multivisor
 
 
@@ -31,29 +32,34 @@ def catch_all(path):
 
 
 @app.route("/api/admin/reload")
+@login_required
 def reload():
     app.multivisor.reload()
     return 'OK'
 
 
 @app.route("/api/refresh")
+@login_required
 def refresh():
     app.multivisor.refresh()
     return jsonify(app.multivisor.config)
 
 
 @app.route("/api/data")
+@login_required
 def data():
     return jsonify(app.multivisor.config)
 
 
 @app.route("/api/config/file")
+@login_required
 def config_file_content():
     content = app.multivisor.config_file_content
     return jsonify(dict(content=content))
 
 
 @app.route("/api/supervisor/update", methods=['POST'])
+@login_required
 def update_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -62,6 +68,7 @@ def update_supervisor():
 
 
 @app.route("/api/supervisor/restart", methods=['POST'])
+@login_required
 def restart_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -70,6 +77,7 @@ def restart_supervisor():
 
 
 @app.route("/api/supervisor/reread", methods=['POST'])
+@login_required
 def reread_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -78,6 +86,7 @@ def reread_supervisor():
 
 
 @app.route("/api/supervisor/shutdown", methods=['POST'])
+@login_required
 def shutdown_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -86,6 +95,7 @@ def shutdown_supervisor():
 
 
 @app.route("/api/process/restart", methods=['POST'])
+@login_required
 def restart_process():
     patterns = request.form['uid'].split(',')
     procs = app.multivisor.restart_processes(*patterns)
@@ -93,6 +103,7 @@ def restart_process():
 
 
 @app.route("/api/process/stop", methods=['POST'])
+@login_required
 def stop_process():
     patterns = request.form['uid'].split(',')
     app.multivisor.stop_processes(*patterns)
@@ -100,11 +111,13 @@ def stop_process():
 
 
 @app.route("/api/process/list")
+@login_required
 def list_processes():
     return jsonify(tuple(app.multivisor.processes.keys()))
 
 
 @app.route("/api/process/info/<uid>")
+@login_required
 def process_info(uid):
     process = app.multivisor.get_process(uid)
     process.refresh()
@@ -112,6 +125,7 @@ def process_info(uid):
 
 
 @app.route("/api/supervisor/info/<uid>")
+@login_required
 def supervisor_info(uid):
     supervisor = app.multivisor.get_supervisor(uid)
     supervisor.refresh()
@@ -119,6 +133,7 @@ def supervisor_info(uid):
 
 
 @app.route("/api/process/log/<stream>/tail/<uid>")
+@login_required
 def process_log_tail(stream, uid):
     sname, pname = uid.split(':', 1)
     supervisor = app.multivisor.get_supervisor(sname)
@@ -145,11 +160,9 @@ def process_log_tail(stream, uid):
 
 @app.route("/api/login", methods=['post'])
 def login():
-    print(session['sid'])
     username = request.form.get('username')
     password = request.form.get('password')
     if is_login_valid(app, username, password):
-        print("login valid")
         session['username'] = username
         return json.dumps({})
     else:
