@@ -1,7 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import * as multivisor from '@/multivisor'
-import Router from '../router'
 
 Vue.use(Vuex)
 
@@ -19,7 +18,8 @@ export default new Vuex.Store({
     processDetails: {
       process: multivisor.nullProcess,
       visible: false
-    }
+    },
+    isAuthenticated: localStorage.getItem('isAuthenticated') === 'true'
   },
   mutations: {
     updateMultivisor (state, multivisor) {
@@ -60,6 +60,14 @@ export default new Vuex.Store({
     },
     setProcessDetails (state, details) {
       state.processDetails = details
+    },
+    setIsAuthenticated (state, isAuthenticated) {
+      localStorage.setItem('isAuthenticated', 'true')
+      state.isAuthenticated = isAuthenticated
+    },
+    logout (state) {
+      localStorage.removeItem('isAuthenticated')
+      state.isAuthenticated = false
     }
   },
   actions: {
@@ -77,9 +85,6 @@ export default new Vuex.Store({
             }
           }
           multivisor.streamTo(eventHandler)
-        })
-        .catch(function () {
-          Router.push({'name': 'login'})
         })
     },
     restartProcesses (context, uids) {
@@ -109,6 +114,10 @@ export default new Vuex.Store({
     },
     restartSupervisor (context, uid) {
       multivisor.supervisorAction(uid, 'restart')
+    },
+    logout () {
+      this.commit('logout')
+      fetch('/api/logout', {method: 'POST'})
     }
   },
   getters: {

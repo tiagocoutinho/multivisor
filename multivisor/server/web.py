@@ -174,6 +174,12 @@ def login():
         return json.dumps(response_data), 400
 
 
+@app.route("/api/logout", methods=['post'])
+def logout():
+    session.clear()
+    return json.dumps({})
+
+
 @app.route('/api/stream')
 def stream():
     def event_stream():

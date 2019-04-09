@@ -54,8 +54,9 @@ export default {
       form.append('password', this.password)
       fetch('/api/login', {method: 'POST', body: form})
         .then((response) => {
-          console.log(response)
           if (response.status === 200) {
+            this.$store.commit('setIsAuthenticated', true)
+            this.$store.dispatch('init')
             this.$router.push({'name': 'Home'})
           } else {
             response.json()
@@ -63,9 +64,6 @@ export default {
                 this.errorMessages = data.errors
               })
           }
-        })
-        .catch(response => {
-          console.log('error!', response)
         })
     }
   }
