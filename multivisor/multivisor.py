@@ -1,19 +1,22 @@
 #!/usr/bin/env python
-
-import os
-import json
-import time
 import logging
+import time
 import weakref
 from ConfigParser import SafeConfigParser
 
-import louie
-import zerorpc
-from gevent import queue, spawn, sleep, joinall
-from supervisor.xmlrpc import Faults
-from supervisor.states import RUNNING_STATES
+from gevent import joinall
+from gevent import sleep
+from gevent import spawn
 
-from .util import sanitize_url, filter_patterns
+import louie
+
+from supervisor.states import RUNNING_STATES
+from supervisor.xmlrpc import Faults
+
+import zerorpc
+
+from .util import filter_patterns
+from .util import sanitize_url
 
 log = logging.getLogger('multivisor')
 

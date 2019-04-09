@@ -8,25 +8,33 @@ advantages: it avoids creating an eventlistener process just to forward events.
 
 The python environment where supervisor runs must have multivisor installed
 """
-
+import functools
+import logging
 import os
 import queue
-import logging
-import functools
 import threading
 
-from gevent import spawn, hub, sleep
+from gevent import hub
+from gevent import sleep
+from gevent import spawn
 from gevent.queue import Queue
-from zerorpc import stream, Server, LostRemote
 
+
+from supervisor.events import Event
+from supervisor.events import getEventNameByType
+from supervisor.events import subscribe
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
-from supervisor.events import subscribe, Event, getEventNameByType
 # unsubscribe only appears in supervisor > 3.3.4
 try:
     from supervisor.events import unsubscribe
-except:
-    unsubscribe = lambda x, y: None
+except ImportError:
+    def unsubscribe(*args):
+        pass
+
+from zerorpc import LostRemote
+from zerorpc import Server
+from zerorpc import stream
 
 from .util import sanitize_url
 
