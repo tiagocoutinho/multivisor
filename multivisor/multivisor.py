@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import copy
 import os
 import json
 import time
@@ -373,6 +373,19 @@ class Multivisor(object):
         if self._config is None:
             self._config = load_config(self.options.config_file)
         return self._config
+
+    @property
+    def safe_config(self):
+        """
+        :return: config dict without username and password
+        """
+        if not self.use_authentication:
+            return self.config
+
+        config = copy.copy(self.config)
+        config.pop('username', '')
+        config.pop('password', '')
+        return config
 
     @property
     def config_file_content(self):

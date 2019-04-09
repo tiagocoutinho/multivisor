@@ -42,13 +42,13 @@ def reload():
 @login_required
 def refresh():
     app.multivisor.refresh()
-    return jsonify(app.multivisor.config)
+    return jsonify(app.multivisor.safe_config)
 
 
 @app.route("/api/data")
 @login_required
 def data():
-    return jsonify(app.multivisor.config)
+    return jsonify(app.multivisor.safe_config)
 
 
 @app.route("/api/config/file")
