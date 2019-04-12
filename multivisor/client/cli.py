@@ -2,8 +2,9 @@ from __future__ import absolute_import
 
 import argparse
 
+from . import http
+from . import repl
 from .. import util
-from . import repl, http
 
 
 def parse_args(args=None):

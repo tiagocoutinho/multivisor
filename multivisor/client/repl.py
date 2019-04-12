@@ -1,21 +1,23 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import re
 import fnmatch
-import datetime
 import functools
 
-import maya
 import louie
-from prompt_toolkit import PromptSession, HTML, print_formatted_text
-from prompt_toolkit.styles import Style
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.validation import ValidationError
+
+import maya
+
+from prompt_toolkit import HTML
+from prompt_toolkit import PromptSession
+from prompt_toolkit import print_formatted_text
 from prompt_toolkit.application import run_in_terminal
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.styles import Style
+from prompt_toolkit.validation import ValidationError
 
 from . import util
 
@@ -236,4 +238,3 @@ class Repl(object):
                 continue
             except EOFError:
                 break
-

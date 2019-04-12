@@ -1,15 +1,18 @@
-import sys
 import logging
+import sys
 import xmlrpclib
-
-from os import environ
 from functools import partial
+from os import environ
 
 from gevent import spawn
 from gevent.lock import RLock
 from gevent.queue import Queue
-from zerorpc import stream, Server, LostRemote
+
 from supervisor.childutils import getRPCInterface
+
+from zerorpc import LostRemote
+from zerorpc import Server
+from zerorpc import stream
 
 
 READY = 'READY\n'

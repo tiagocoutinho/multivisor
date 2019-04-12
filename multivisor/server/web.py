@@ -1,19 +1,25 @@
 #!/usr/bin/env python
-
-import gevent
 from gevent.monkey import patch_all
-patch_all(thread=False)
+patch_all(thread=False)  # noqa
 
+import logging  # noqa
 import os
-import logging
+
+from flask import Flask
+from flask import Response
+from flask import json
+from flask import jsonify
+from flask import render_template
+from flask import request
+
+from gevent import queue
+from gevent import sleep
+from gevent.pywsgi import WSGIServer
 
 import louie
-from gevent import queue, sleep
-from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify
 
-from ..util import sanitize_url
 from ..multivisor import Multivisor
+from ..util import sanitize_url
 
 
 log = logging.getLogger('multivisor')

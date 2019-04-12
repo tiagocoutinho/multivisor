@@ -1,6 +1,12 @@
 from setuptools import find_packages
 from setuptools import setup
 
+server_requires = [
+    'flask',
+    'gevent',
+    ''
+]
+
 setup(
     name='multivisor',
     version='5.0.2',
@@ -17,14 +23,14 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'multivisor=multivisor.server.web:main',
-            'multivisor-cli=multivisor.client.cli:main'
+            'multivisor=multivisor.server.web:main [web]',
+            'multivisor-cli=multivisor.client.cli:main [cli]'
         ]
     },
     install_requires=[
         'flask',
         'gevent',
-        'supervisor',
+        'supervisor',  # keep
         'zerorpc',
         'louie',
         'maya',

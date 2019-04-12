@@ -1,5 +1,5 @@
-import re
 import fnmatch
+import re
 
 _PROTO_RE_STR = '(?P<protocol>\w+)\://'
 _HOST_RE_STR = '?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
@@ -51,4 +51,3 @@ def load_config(config_file):
         url = section_items.get('url', '')
         supervisors[name] = Supervisor(name, url)
     return config
-
