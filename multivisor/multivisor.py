@@ -69,7 +69,7 @@ class Supervisor(dict):
                 self.log.info('Lost remote')
             except zerorpc.TimeoutExpired:
                 self.log.info('Timeout expired')
-            except Exception as err:
+            except Exception:
                 self.log.info('Connection error')
             finally:
                 curr_time = time.time()
@@ -100,7 +100,7 @@ class Supervisor(dict):
     def read_info(self):
         info = self.create_base_info()
         server = self.server
-        info['pid']= pid = server.getPID()
+        info['pid'] = server.getPID()
         info['running'] = True
         info['identification'] = server.getIdentification()
         info['api_version'] = server.getAPIVersion()
@@ -126,7 +126,7 @@ class Supervisor(dict):
     def refresh(self):
         try:
             info = self.read_info()
-        except:
+        except Exception:
             info = self.create_base_info()
             raise
         finally:
@@ -209,9 +209,12 @@ class Supervisor(dict):
         except zerorpc.RemoteError as rerr:
             error(rerr.msg)
         else:
-            info('Reread config of {} ' \
-                            '({} added; {} changed; {} disappeared)'.format(
-                            self.name, len(added), len(changed), len(removed)))
+            info(
+                'Reread config of {} '
+                '({} added; {} changed; {} disappeared)'.format(
+                    self.name, len(added), len(changed), len(removed)
+                )
+            )
 
     def shutdown(self):
         result = self.server.shutdown()
@@ -266,7 +269,7 @@ class Process(dict):
                     send(self, event='process_changed')
                     if old_state != new_state:
                         info('{} changed from {} to {}'
-                                        .format(self, old_state, new_state))
+                             .format(self, old_state, new_state))
 
     def read_info(self):
         proc_info = dict(self.Null)
@@ -289,7 +292,7 @@ class Process(dict):
     def start(self):
         try:
             self.server.startProcess(self.full_name, False, timeout=30)
-        except:
+        except Exception:
             message = 'Error trying to start {}!'.format(self)
             error(message)
             self.log.exception(message)
@@ -297,7 +300,7 @@ class Process(dict):
     def stop(self):
         try:
             self.server.stopProcess(self.full_name)
-        except:
+        except Exception:
             message = 'Failed to stop {}'.format(self['uid'])
             warning(message)
             self.log.exception(message)
@@ -323,6 +326,7 @@ class Process(dict):
 
 # Configuration
 
+
 def load_config(config_file):
     parser = SafeConfigParser()
     parser.read(config_file)
@@ -331,7 +335,7 @@ def load_config(config_file):
     supervisors = {}
     config = dict(dft_global, supervisors=supervisors)
     config.update(parser.items('global'))
-    tasks = []
+
     for section in parser.sections():
         if not section.startswith('supervisor:'):
             continue
@@ -339,6 +343,7 @@ def load_config(config_file):
         section_items = dict(parser.items(section))
         url = section_items.get('url', '')
         supervisors[name] = Supervisor(name, url)
+
     return config
 
 
@@ -393,8 +398,10 @@ class Multivisor(object):
     @property
     def processes(self):
         procs = (svisor['processes'] for svisor in self.supervisors.values())
-        return { puid: proc for sprocs in procs
-                 for puid, proc in sprocs.items() }
+        return {
+            puid: proc for sprocs in procs
+            for puid, proc in sprocs.items()
+        }
 
     def refresh(self):
         tasks = [spawn(supervisor.refresh)

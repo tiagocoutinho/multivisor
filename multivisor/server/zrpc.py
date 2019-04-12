@@ -48,9 +48,11 @@ get_rpc = partial(getRPCInterface, environ)
 def build_method(name):
     subsystem_name, func_name = name.split('.', 1)
     fname = '{}_{}'.format(subsystem_name, func_name)
+
     def method(*args):
         subsystem = getattr(get_rpc(), subsystem_name)
         return getattr(subsystem, func_name)(*args)
+
     method.__name__ = fname
     return fname, method
 
@@ -73,7 +75,7 @@ class Supervisor(object):
             yield 'First event to trigger connection. Please ignore me!'
             for event in channel:
                 yield event
-        except LostRemote as e:
+        except LostRemote:
             logging.info('remote end of stream disconnected')
         finally:
             self.event_channels.remove(channel)
@@ -85,7 +87,10 @@ class Supervisor(object):
         event = dict(event)
         if name.startswith('PROCESS_STATE'):
             payload = event['payload']
-            pname = "{}:{}".format(payload['groupname'], payload['processname'])
+            pname = "{}:{}".format(
+                payload['groupname'],
+                payload['processname']
+            )
             logging.info('handling %s of %s', name, pname)
             try:
                 payload['process'] = self.rpc.supervisor.getProcessInfo(pname)
@@ -106,7 +111,7 @@ def run(bind=DEFAULT_BIND):
             try:
                 with lock:
                     supervisor.publish_event(event)
-            except:
+            except Exception:
                 logging.exception('Error processing %s', event)
     channel = Queue()
     supervisor = Supervisor(channel)

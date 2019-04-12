@@ -40,6 +40,7 @@ NOTIF_STYLE = {
   'ERROR': 'red'
 }
 
+
 def process_description(process):
     # TODO
     status = process['statename']
@@ -48,7 +49,8 @@ def process_description(process):
     elif process['running']:
         start = maya.MayaDT(process['start'])
         desc = 'pid {pid}, started {start} ({delta})' \
-               .format(pid=process['pid'], start=start.rfc2822(), delta=start.slang_time())
+               .format(pid=process['pid'], start=start.rfc2822(),
+                       delta=start.slang_time())
     else:
         stop = maya.MayaDT(process['stop'])
         desc = 'stopped on {stop} ({delta} ago)' \
@@ -68,7 +70,9 @@ def process_status(process, max_puid_len=10, group_by='group'):
 
 
 def processes_status(status, group_by='group', filter='*'):
-    filt = lambda p: fnmatch.fnmatch(p['uid'], filter)
+    def filt(p):
+        return fnmatch.fnmatch(p['uid'], filter)
+
     return util.processes_status(status, group_by=group_by, filter=filt,
                                  process_status=process_status)
 
@@ -158,7 +162,7 @@ class Commands(object):
         return getattr(self, method_name)
 
 
-def Prompt(**kwargs):
+def Prompt(**kwargs):  # noqa
     history = InMemoryHistory()
     auto_suggest = AutoSuggestFromHistory()
     prmpt = 'multivisor> '
@@ -206,7 +210,7 @@ class Repl(object):
         self.session.app.invalidate()
 
     @keys.add('f5')
-    def __on_refresh(event):
+    def __on_refresh(event):  # noqa
         run_in_terminal(event.app.commands.refresh_status())
 
     def parse_command_line(self, text):

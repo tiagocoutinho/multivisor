@@ -73,8 +73,8 @@ def sync(klass):
 # prevents supervisor from closing the gevent pipes and 0MQ sockets
 # This is a really agressive move but seems to work until the above
 # bug is solved
-from supervisor.options import ServerOptions
-ServerOptions.cleanup_fds = lambda options : None
+from supervisor.options import ServerOptions  # noqa
+ServerOptions.cleanup_fds = lambda options: None
 
 
 @sync
@@ -122,7 +122,10 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
             payload_str = str(event)
         payload = dict((x.split(':') for x in payload_str.split()))
         if event_name.startswith('PROCESS_STATE'):
-            pname = "{}:{}".format(payload['groupname'], payload['processname'])
+            pname = "{}:{}".format(
+                payload['groupname'],
+                payload['processname']
+            )
             payload['process'] = self.getProcessInfo(pname)
         # broadcast the event to clients
         server = self.supervisord.options.identifier
@@ -171,7 +174,7 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
                     self._log.info('stop: closing client')
                     return
                 yield event
-        except LostRemote as e:
+        except LostRemote:
             self._log.info('remote end of stream disconnected')
         finally:
             self._event_channels.remove(channel)
@@ -188,7 +191,7 @@ def start_rpc_server(multivisor, bind):
 
 def run_rpc_server(multivisor, bind, future_server):
     multivisor._log.info('0RPC: spawn server on {}...'.format(os.getpid()))
-    watcher = hub.get_hub().loop.async()
+    watcher = hub.get_hub().loop.async()  # noqa
     stop_event = threading.Event()
     watcher.start(lambda: spawn(multivisor._dispatch_event))
     try:
@@ -213,9 +216,9 @@ def run_rpc_server(multivisor, bind, future_server):
 
 def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
     # Uncomment following lines to configure python standard logging
-    #log_level = logging.INFO
-    #log_fmt = '%(asctime)-15s %(levelname)s %(threadName)-8s %(name)s: %(message)s'
-    #logging.basicConfig(level=log_level, format=log_fmt)
+    # log_level = logging.INFO
+    # log_fmt = '%(asctime)-15s %(levelname)s %(threadName)-8s %(name)s: %(message)s'  # noqa
+    # logging.basicConfig(level=log_level, format=log_fmt)
 
     url = sanitize_url(bind, protocol='tcp', host='*', port=9002)
     multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'])

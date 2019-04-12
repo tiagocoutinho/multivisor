@@ -93,7 +93,7 @@ def shutdown_supervisor():
 @app.route("/api/process/restart", methods=['POST'])
 def restart_process():
     patterns = request.form['uid'].split(',')
-    procs = app.multivisor.restart_processes(*patterns)
+    app.multivisor.restart_processes(*patterns)
     return 'OK'
 
 
@@ -132,6 +132,7 @@ def process_log_tail(stream, uid):
         tail = server.tailProcessStdoutLog
     else:
         tail = server.tailProcessStderrLog
+
     def event_stream():
         i, offset, length = 0, 0, 2**12
         while True:
@@ -170,7 +171,7 @@ class Dispatcher(object):
         self.clients.append(client)
 
     def remove_listener(self, client):
-        clients.clients.remove(client)
+        self.clients.remove(client)
 
     def on_multivisor_event(self, signal, payload):
         data = json.dumps(dict(payload=payload, event=signal))
@@ -197,7 +198,10 @@ def main(args=None):
     logging.basicConfig(level=log_level, format=log_fmt)
 
     if not os.path.exists(options.config_file):
-        parser.exit(status=2, message='configuration file does not exist. Bailing out!\n')
+        parser.exit(
+            status=2,
+            message='configuration file does not exist. Bailing out!\n'
+        )
 
     bind = sanitize_url(options.bind, host='0', port=22000)['url']
 

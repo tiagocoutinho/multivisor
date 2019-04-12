@@ -2,15 +2,17 @@ import collections
 
 
 def group_processes_status_by(processes, group_by='group', filter=None):
-    result = collections.defaultdict(lambda : dict(processes={}))
+    result = collections.defaultdict(lambda: dict(processes={}))
     if filter is None:
-        filter = lambda p: True
+        def filter(p):
+            return True
+
     for uid, process in processes.items():
         if not filter(process):
             continue
         name = process[group_by]
         order = result[name]
-        order['name']  = name
+        order['name'] = name
         order['processes'][uid] = process
     return result
 
@@ -33,7 +35,9 @@ def processes_status(status, group_by='process', filter=None,
         puid_len = 8
     result = []
     if filter is None:
-        filter = lambda p: True
+        def filter(p):
+            return True
+
     if group_by in (None, 'process'):
         for puid in sorted(processes):
             process = processes[puid]
@@ -49,4 +53,3 @@ def processes_status(status, group_by='process', filter=None,
                 result.append(process_status(process, max_puid_len=puid_len,
                                              group_by=group_by))
     return result
-

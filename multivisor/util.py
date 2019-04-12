@@ -1,13 +1,20 @@
 import fnmatch
 import re
+from ConfigParser import SafeConfigParser
 
-_PROTO_RE_STR = '(?P<protocol>\w+)\://'
-_HOST_RE_STR = '?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
-_PORT_RE_STR = '\:(?P<port>\d{1,5})'
+from multivisor import Supervisor
 
-URL_RE = re.compile('({protocol})?({host})?({port})?'.format(protocol=_PROTO_RE_STR,
-                                                             host=_HOST_RE_STR,
-                                                             port=_PORT_RE_STR))
+_PROTO_RE_STR = r'(?P<protocol>\w+)\://'
+_HOST_RE_STR = r'?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
+_PORT_RE_STR = r'\:(?P<port>\d{1,5})'
+
+URL_RE = re.compile(
+    '({protocol})?({host})?({port})?'.format(
+        protocol=_PROTO_RE_STR,
+        host=_HOST_RE_STR,
+        port=_PORT_RE_STR
+    )
+)
 
 
 def sanitize_url(url, protocol=None, host=None, port=None):
@@ -42,7 +49,7 @@ def load_config(config_file):
     supervisors = {}
     config = dict(dft_global, supervisors=supervisors)
     config.update(parser.items('global'))
-    tasks = []
+
     for section in parser.sections():
         if not section.startswith('supervisor:'):
             continue
@@ -50,4 +57,5 @@ def load_config(config_file):
         section_items = dict(parser.items(section))
         url = section_items.get('url', '')
         supervisors[name] = Supervisor(name, url)
+
     return config

@@ -27,13 +27,15 @@ class Multivisor(object):
     @staticmethod
     def _update_status_stats(status):
         supervisors, processes = status['supervisors'], status['processes']
-        s_stats = dict(running=sum((s['running']
-                                    for s in status['supervisors'].itervalues())),
+        s_stats = dict(running=sum(
+            (s['running']
+             for s in status['supervisors'].itervalues())),
                        total=len(supervisors))
         s_stats['stopped'] = s_stats['total'] - s_stats['running']
-        p_stats = dict(running=sum((p['running']
-                                    for p in status['processes'].itervalues())),
-                       total=len(processes))
+        p_stats = dict(
+            running=sum((p['running']
+                         for p in status['processes'].itervalues())),
+            total=len(processes))
         p_stats['stopped'] = p_stats['total'] - p_stats['running']
         stats = dict(supervisors=s_stats, processes=p_stats)
         status['stats'] = stats
