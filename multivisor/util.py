@@ -1,8 +1,5 @@
 import fnmatch
 import re
-from ConfigParser import SafeConfigParser
-
-from multivisor import Supervisor
 
 _PROTO_RE_STR = r'(?P<protocol>\w+)\://'
 _HOST_RE_STR = r'?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
@@ -39,23 +36,3 @@ def filter_patterns(names, patterns):
     sets = (fnmatch.filter(names, pattern) for pattern in patterns)
     map(result.update, sets)
     return result
-
-
-def load_config(config_file):
-    parser = SafeConfigParser()
-    parser.read(config_file)
-    dft_global = dict(name='multivisor')
-
-    supervisors = {}
-    config = dict(dft_global, supervisors=supervisors)
-    config.update(parser.items('global'))
-
-    for section in parser.sections():
-        if not section.startswith('supervisor:'):
-            continue
-        name = section[len('supervisor:'):]
-        section_items = dict(parser.items(section))
-        url = section_items.get('url', '')
-        supervisors[name] = Supervisor(name, url)
-
-    return config
