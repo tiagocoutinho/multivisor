@@ -411,9 +411,9 @@ class Multivisor(object):
         """
         :return: whether authentication should be used
         """
-        username = self.config.get('username')
-        password = self.config.get('password')
-        return username and password
+        username = self.config.get('username', False)
+        password = self.config.get('password', False)
+        return bool(username and password)
 
     @property
     def secret_key(self):

@@ -20,15 +20,24 @@ const router = new Router({
   mode: 'history'
 })
 
-router.beforeEach((to, from, next) => {
-  const authenticated = store.state.isAuthenticated
+router.beforeEach(async function (to, from, next) {
+  if (store.state.useAuthentication === undefined || store.state.isAuthenticated === undefined) {
+    const response = await fetch('/api/auth')
+    const data = await response.json()
+    store.commit('setUseAuthentication', data.use_authentication)
+    store.commit('setIsAuthenticated', data.is_authenticated)
+  }
+  if (!store.state.useAuthentication) {
+    if (to.name === 'Login') { return next({name: 'Home'}) }
+    return next()
+  }
   const loginRequiredRoute = to.matched.some(route => route.meta.requiresAuth)
-  // if user is not authenticated route requires login -> redirect to login page
-  if (!authenticated && loginRequiredRoute) {
+  // if user is not authenticated and route requires login -> redirect to login page
+  if (!store.state.isAuthenticated && loginRequiredRoute) {
     return next({name: 'Login'})
   }
   // if user is authenticated and navigates to login page -> redirect to home page
-  if (to.name === 'Login' && authenticated) {
+  if (to.name === 'Login' && store.state.isAuthenticated) {
     return next({name: 'Home'})
   }
   return next()

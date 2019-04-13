@@ -30,7 +30,6 @@ export const processAction = (uid, action) => {
 
 export const load = () => {
   return fetch('/api/data')
-    .then(response => response.json())
 }
 
 export const streamTo = (eventHandler) => {

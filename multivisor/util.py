@@ -89,16 +89,20 @@ def constant_time_compare(val1, val2):
     return result == 0
 
 
-def login_required(func):
+def login_required(app):
     """
     Decorator to mark view as requiring being logged in
     """
-    @functools.wraps(func)
-    def wrapper_login_required(*args, **kwargs):
-        if 'username' in session:
-            return func(*args, **kwargs)
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper_login_required(*args, **kwargs):
+            auth_on = app.multivisor.use_authentication
 
-        # user not authenticated, return 401
-        abort(401)
+            if not auth_on or 'username' in session:
+                return func(*args, **kwargs)
 
-    return wrapper_login_required
+            # user not authenticated, return 401
+            abort(401)
+
+        return wrapper_login_required
+    return decorator

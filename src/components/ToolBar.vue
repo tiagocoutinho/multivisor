@@ -1,6 +1,6 @@
 <template>
   <v-toolbar fixed dark app class="primary">
-    <v-menu offset-y nudge-bottom="15" v-show="isAuthenticated">
+    <v-menu offset-y nudge-bottom="15" v-show="isAuthenticated && useAuthentication">
       <template slot="activator">
         <v-btn icon slot="activator">
           <v-icon >menu</v-icon>
@@ -19,10 +19,10 @@
     <v-spacer></v-spacer>
     <v-text-field append-icon="search" clearable single-line hide-details
                   placeholder="Filter..." v-model="search"
-                  color="grey lighten-1" v-show="isAuthenticated">
+                  color="grey lighten-1" v-show="isAuthenticated || !useAuthentication">
     </v-text-field>
-    <ActionBar v-show="isAuthenticated"></ActionBar>
-    <v-toolbar-items v-show="isAuthenticated">
+    <ActionBar v-show="isAuthenticated || !useAuthentication"></ActionBar>
+    <v-toolbar-items v-show="isAuthenticated || !useAuthentication">
       <ProcessChip class="hidden-sm-and-down"></ProcessChip>
       <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
       <GroupChip class="hidden-sm-and-down"></GroupChip>
@@ -43,6 +43,7 @@ export default {
   computed: {
     ...mapGetters(['name']),
     isAuthenticated () { return this.$store.state.isAuthenticated },
+    useAuthentication () { return this.$store.state.useAuthentication },
     search: {
       get () { return this.$store.state.search },
       set (v) { this.$store.commit('updateSearch', v) }

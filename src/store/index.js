@@ -19,7 +19,8 @@ export default new Vuex.Store({
       process: multivisor.nullProcess,
       visible: false
     },
-    isAuthenticated: localStorage.getItem('isAuthenticated') === 'true'
+    isAuthenticated: undefined,
+    useAuthentication: undefined
   },
   mutations: {
     updateMultivisor (state, multivisor) {
@@ -62,30 +63,33 @@ export default new Vuex.Store({
       state.processDetails = details
     },
     setIsAuthenticated (state, isAuthenticated) {
-      localStorage.setItem('isAuthenticated', 'true')
       state.isAuthenticated = isAuthenticated
     },
+    setUseAuthentication (state, useAuthentication) {
+      state.useAuthentication = useAuthentication
+    },
     logout (state) {
-      localStorage.removeItem('isAuthenticated')
       state.isAuthenticated = false
     }
   },
   actions: {
-    init ({ commit }) {
-      multivisor.load()
-        .then((data) => {
-          commit('updateMultivisor', data)
-          const eventHandler = (event) => {
-            if (event.event === 'process_changed') {
-              commit('updateProcess', event.payload)
-            } else if (event.event === 'supervisor_changed') {
-              commit('updateSupervisor', event.payload)
-            } else if (event.event === 'notification') {
-              commit('newNotification', event.payload)
-            }
-          }
-          multivisor.streamTo(eventHandler)
-        })
+    async init ({ commit }) {
+      const response = await multivisor.load()
+      if (response.status === 401) {
+        return
+      }
+      const data = await response.json()
+      commit('updateMultivisor', data)
+      const eventHandler = (event) => {
+        if (event.event === 'process_changed') {
+          commit('updateProcess', event.payload)
+        } else if (event.event === 'supervisor_changed') {
+          commit('updateSupervisor', event.payload)
+        } else if (event.event === 'notification') {
+          commit('newNotification', event.payload)
+        }
+      }
+      multivisor.streamTo(eventHandler)
     },
     restartProcesses (context, uids) {
       multivisor.processAction(uids, 'restart')
