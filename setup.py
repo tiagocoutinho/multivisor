@@ -1,10 +1,16 @@
 from setuptools import find_packages
 from setuptools import setup
 
-server_requires = [
+web_requires = [
     'flask',
-    'gevent',
-    ''
+    'louie',
+]
+
+client_requires = [
+    'maya',
+    'louie',
+    'requests',
+    'prompt_toolkit>=2.0.0,<2.1.0',
 ]
 
 setup(
@@ -21,20 +27,19 @@ setup(
             'dist/static/js/*'
         ]
     },
+    install_requires=[
+        'gevent',
+        'supervisor',
+        'zerorpc',
+    ],
+    extras_require={
+        'web': web_requires,
+        'cli': client_requires,
+    },
     entry_points={
         'console_scripts': [
             'multivisor=multivisor.server.web:main [web]',
             'multivisor-cli=multivisor.client.cli:main [cli]'
         ]
-    },
-    install_requires=[
-        'flask',
-        'gevent',
-        'supervisor',  # keep
-        'zerorpc',
-        'louie',
-        'maya',
-        'requests',
-        'prompt_toolkit>=2.0.0,<2.1.0'
-    ]
+    }
 )
