@@ -23,12 +23,6 @@ app = Flask(__name__,
             template_folder='./dist')
 
 
-@app.route('/api/', defaults={'path': ''})
-@app.route('/api/<path:path>')
-def catch_all(path):
-    return render_template("index.html")
-
-
 @app.route("/api/admin/reload")
 def reload():
     app.multivisor.reload()
@@ -152,6 +146,12 @@ def stream():
         app.dispatcher.remove_listener(client)
     return Response(event_stream(),
                     mimetype="text/event-stream")
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    return render_template("index.html")
 
 
 class Dispatcher(object):
