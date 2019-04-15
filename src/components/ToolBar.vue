@@ -6,7 +6,7 @@
     <v-spacer></v-spacer>
     <v-text-field append-icon="search" clearable single-line hide-details
                   placeholder="Filter..." v-model="search"
-                  color="grey lighten-1">
+                  color="grey lighten-1" class="no-padding">
     </v-text-field>
     <ActionBar></ActionBar>
     <v-toolbar-items>
@@ -36,3 +36,8 @@ export default {
   }
 }
 </script>
+<style scoped>
+  .no-padding {
+    padding: 0;
+  }
+</style>
