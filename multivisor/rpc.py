@@ -183,6 +183,7 @@ def run_rpc_server(multivisor, bind, future_server):
     watcher = hub.get_hub().loop.async()
     stop_event = threading.Event()
     watcher.start(lambda: spawn(multivisor._dispatch_event))
+    server = None
     try:
         server = Server(multivisor)
         server._stop_event = stop_event
