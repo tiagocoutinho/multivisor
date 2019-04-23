@@ -18,7 +18,7 @@
     </v-toolbar-title>
     <v-spacer></v-spacer>
     <v-text-field append-icon="search" clearable single-line hide-details
-                  placeholder="Filter..." v-model="search"
+                  placeholder="Filter..." v-model="search" class="no-padding"
                   color="grey lighten-1" v-show="isAuthenticated || !useAuthentication">
     </v-text-field>
     <ActionBar v-show="isAuthenticated || !useAuthentication"></ActionBar>
@@ -56,3 +56,8 @@ export default {
   }
 }
 </script>
+<style scoped>
+  .no-padding {
+    padding: 0;
+  }
+</style>
