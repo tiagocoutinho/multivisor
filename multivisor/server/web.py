@@ -1,7 +1,10 @@
 #!/usr/bin/env python
+import functools
 
-import gevent
 from gevent.monkey import patch_all
+from werkzeug.debug import DebuggedApplication
+from werkzeug.serving import run_with_reloader
+
 patch_all(thread=False)
 
 import os
@@ -173,6 +176,17 @@ class Dispatcher(object):
             client.put(event)
 
 
+def run_with_reloader_if_debug(func):
+    @functools.wraps(func)
+    def wrapper_login_required(*args, **kwargs):
+        if not app.debug:
+            return func(*args, **kwargs)
+        return run_with_reloader(func, *args, **kwargs)
+
+    return wrapper_login_required
+
+
+@run_with_reloader_if_debug
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
@@ -197,8 +211,8 @@ def main(args=None):
 
     app.dispatcher = Dispatcher()
     app.multivisor = Multivisor(options)
-
-    http_server = WSGIServer(bind, application=app)
+    application = DebuggedApplication(app, evalex=True) if app.debug else app
+    http_server = WSGIServer(bind, application=application)
     logging.info('Start accepting requests')
     try:
         http_server.serve_forever()
