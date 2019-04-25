@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import hashlib
 
 import gevent
 from gevent.monkey import patch_all
@@ -10,10 +11,11 @@ import logging
 import louie
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify
+from flask import Flask, render_template, Response, request, json, jsonify, session
 
-from ..util import sanitize_url
-from ..multivisor import Multivisor
+
+from multivisor.util import sanitize_url, is_login_valid, login_required
+from multivisor.multivisor import Multivisor
 
 
 log = logging.getLogger('multivisor')
@@ -24,29 +26,34 @@ app = Flask(__name__,
 
 
 @app.route("/api/admin/reload")
+@login_required(app)
 def reload():
     app.multivisor.reload()
     return 'OK'
 
 
 @app.route("/api/refresh")
+@login_required(app)
 def refresh():
     app.multivisor.refresh()
-    return jsonify(app.multivisor.config)
+    return jsonify(app.multivisor.safe_config)
 
 
 @app.route("/api/data")
+@login_required(app)
 def data():
-    return jsonify(app.multivisor.config)
+    return jsonify(app.multivisor.safe_config)
 
 
 @app.route("/api/config/file")
+@login_required(app)
 def config_file_content():
     content = app.multivisor.config_file_content
     return jsonify(dict(content=content))
 
 
 @app.route("/api/supervisor/update", methods=['POST'])
+@login_required(app)
 def update_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -55,6 +62,7 @@ def update_supervisor():
 
 
 @app.route("/api/supervisor/restart", methods=['POST'])
+@login_required(app)
 def restart_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -63,6 +71,7 @@ def restart_supervisor():
 
 
 @app.route("/api/supervisor/reread", methods=['POST'])
+@login_required(app)
 def reread_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -71,6 +80,7 @@ def reread_supervisor():
 
 
 @app.route("/api/supervisor/shutdown", methods=['POST'])
+@login_required(app)
 def shutdown_supervisor():
     names = (unicode.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
@@ -79,6 +89,7 @@ def shutdown_supervisor():
 
 
 @app.route("/api/process/restart", methods=['POST'])
+@login_required(app)
 def restart_process():
     patterns = request.form['uid'].split(',')
     procs = app.multivisor.restart_processes(*patterns)
@@ -86,6 +97,7 @@ def restart_process():
 
 
 @app.route("/api/process/stop", methods=['POST'])
+@login_required(app)
 def stop_process():
     patterns = request.form['uid'].split(',')
     app.multivisor.stop_processes(*patterns)
@@ -93,11 +105,13 @@ def stop_process():
 
 
 @app.route("/api/process/list")
+@login_required(app)
 def list_processes():
     return jsonify(tuple(app.multivisor.processes.keys()))
 
 
 @app.route("/api/process/info/<uid>")
+@login_required(app)
 def process_info(uid):
     process = app.multivisor.get_process(uid)
     process.refresh()
@@ -105,6 +119,7 @@ def process_info(uid):
 
 
 @app.route("/api/supervisor/info/<uid>")
+@login_required(app)
 def supervisor_info(uid):
     supervisor = app.multivisor.get_supervisor(uid)
     supervisor.refresh()
@@ -112,6 +127,7 @@ def supervisor_info(uid):
 
 
 @app.route("/api/process/log/<stream>/tail/<uid>")
+@login_required(app)
 def process_log_tail(stream, uid):
     sname, pname = uid.split(':', 1)
     supervisor = app.multivisor.get_supervisor(sname)
@@ -134,6 +150,39 @@ def process_log_tail(stream, uid):
             sleep(1)
             i += 1
     return Response(event_stream(), mimetype="text/event-stream")
+
+
+@app.route("/api/login", methods=['post'])
+def login():
+    if not app.multivisor.use_authentication:
+        return "Authentication is not required"
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if is_login_valid(app, username, password):
+        session['username'] = username
+        return json.dumps({})
+    else:
+        response_data = {
+            'errors': {
+                'password': 'Invalid username or password'
+            }
+        }
+        return json.dumps(response_data), 400
+
+
+@app.route("/api/auth", methods=['get'])
+def auth():
+    response_data = {
+        'use_authentication': app.multivisor.use_authentication,
+        'is_authenticated': 'username' in session,
+    }
+    return json.dumps(response_data)
+
+
+@app.route("/api/logout", methods=['post'])
+def logout():
+    session.clear()
+    return json.dumps({})
 
 
 @app.route('/api/stream')
@@ -173,6 +222,28 @@ class Dispatcher(object):
             client.put(event)
 
 
+def set_secret_key():
+    """
+    In order to use flask sessions, secret_key must be set,
+    require "MULTIVISOR_SECRET_KEY" env variable only if
+    login and password is set in multivisor config
+    You can generate secret by invoking:
+    python -c 'import os; import binascii; print(binascii.hexlify(os.urandom(32)))'
+    """
+    if app.multivisor.use_authentication:
+        secret_key = os.environ.get('MULTIVISOR_SECRET_KEY')
+        if not secret_key:
+            raise Exception('"MULTIVISOR_SECRET_KEY" environmental variable must be set '
+                            'when authentication is enabled')
+        app.secret_key = secret_key
+
+
+@app.errorhandler(401)
+def custom_401(error):
+    response_data = {'message': 'Authenthication is required to access this endpoint'}
+    return Response(json.dumps(response_data), 401, {'content-type': 'application/json'})
+
+
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
@@ -197,6 +268,12 @@ def main(args=None):
 
     app.dispatcher = Dispatcher()
     app.multivisor = Multivisor(options)
+    if app.multivisor.use_authentication:
+        secret_key = os.environ.get('MULTIVISOR_SECRET_KEY')
+        if not secret_key:
+            raise Exception('"MULTIVISOR_SECRET_KEY" environmental variable must be set '
+                            'when authentication is enabled')
+        app.secret_key = secret_key
 
     http_server = WSGIServer(bind, application=app)
     logging.info('Start accepting requests')

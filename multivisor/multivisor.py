@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import copy
 import os
 import json
 import time
@@ -375,6 +375,19 @@ class Multivisor(object):
         return self._config
 
     @property
+    def safe_config(self):
+        """
+        :return: config dict without username and password
+        """
+        if not self.use_authentication:
+            return self.config
+
+        config = copy.copy(self.config)
+        config.pop('username', '')
+        config.pop('password', '')
+        return config
+
+    @property
     def config_file_content(self):
         with open(self.options.config_file) as config_file:
             return config_file.read()
@@ -392,6 +405,19 @@ class Multivisor(object):
         procs = (svisor['processes'] for svisor in self.supervisors.values())
         return { puid: proc for sprocs in procs
                  for puid, proc in sprocs.items() }
+
+    @property
+    def use_authentication(self):
+        """
+        :return: whether authentication should be used
+        """
+        username = self.config.get('username', False)
+        password = self.config.get('password', False)
+        return bool(username and password)
+
+    @property
+    def secret_key(self):
+        return os.environ.get('MULTIVISOR_SECRET_KEY')
 
     def refresh(self):
         tasks = [spawn(supervisor.refresh)
