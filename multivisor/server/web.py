@@ -57,7 +57,7 @@ def config_file_content():
 @app.route("/api/supervisor/update", methods=['POST'])
 @login_required(app)
 def update_supervisor():
-    names = (unicode.strip(supervisor)
+    names = (str.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
     app.multivisor.update_supervisors(*names)
     return 'OK'
@@ -66,7 +66,7 @@ def update_supervisor():
 @app.route("/api/supervisor/restart", methods=['POST'])
 @login_required(app)
 def restart_supervisor():
-    names = (unicode.strip(supervisor)
+    names = (str.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
     app.multivisor.restart_supervisors(*names)
     return 'OK'
@@ -75,7 +75,7 @@ def restart_supervisor():
 @app.route("/api/supervisor/reread", methods=['POST'])
 @login_required(app)
 def reread_supervisor():
-    names = (unicode.strip(supervisor)
+    names = (str.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
     app.multivisor.reread_supervisors(*names)
     return 'OK'
@@ -84,7 +84,7 @@ def reread_supervisor():
 @app.route("/api/supervisor/shutdown", methods=['POST'])
 @login_required(app)
 def shutdown_supervisor():
-    names = (unicode.strip(supervisor)
+    names = (str.strip(supervisor)
              for supervisor in request.form['supervisor'].split(','))
     app.multivisor.shutdown_supervisors(*names)
     return 'OK'

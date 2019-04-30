@@ -28,11 +28,11 @@ class Multivisor(object):
     def _update_status_stats(status):
         supervisors, processes = status['supervisors'], status['processes']
         s_stats = dict(running=sum((s['running']
-                                    for s in status['supervisors'].itervalues())),
+                                    for s in status['supervisors'].values())),
                        total=len(supervisors))
         s_stats['stopped'] = s_stats['total'] - s_stats['running']
         p_stats = dict(running=sum((p['running']
-                                    for p in status['processes'].itervalues())),
+                                    for p in status['processes'].values())),
                        total=len(processes))
         p_stats['stopped'] = p_stats['total'] - p_stats['running']
         stats = dict(supervisors=s_stats, processes=p_stats)
@@ -43,7 +43,7 @@ class Multivisor(object):
         status = self.get('/api/refresh').json()
         # reorganize status per process
         status['processes'] = processes = {}
-        for supervisor in status['supervisors'].values():
+        for supervisor in list(status['supervisors'].values()):
             processes.update(supervisor['processes'])
         self._update_status_stats(status)
         return status
@@ -78,7 +78,7 @@ class Multivisor(object):
                     try:
                         yield json.loads(line)
                     except ValueError:
-                        print 'error', line
+                        print('error', line)
 
     def run(self):
         for event in self.events():

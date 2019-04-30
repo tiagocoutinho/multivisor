@@ -7,7 +7,7 @@ name = ' '.join([sys.argv[0].rsplit('/', 1)[1]] + sys.argv[1:])
 
 i = 0
 while True:
-  print '%s %d' % (name, i)
+  print('%s %d' % (name, i))
   i += 1
   time.sleep(0.25)
 

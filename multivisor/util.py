@@ -35,7 +35,7 @@ def filter_patterns(names, patterns):
                 for p in patterns]
     result = set()
     sets = (fnmatch.filter(names, pattern) for pattern in patterns)
-    map(result.update, sets)
+    list(map(result.update, sets))
     return result
 
 

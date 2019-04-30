@@ -1,6 +1,6 @@
 import sys
 import logging
-import xmlrpclib
+import xmlrpc.client
 
 from os import environ
 from functools import partial
@@ -86,7 +86,7 @@ class Supervisor(object):
             logging.info('handling %s of %s', name, pname)
             try:
                 payload['process'] = self.rpc.supervisor.getProcessInfo(pname)
-            except xmlrpclib.Fault:
+            except xmlrpc.client.Fault:
                 # probably supervisor is shutting down
                 logging.warn('probably shutting down...')
                 return
