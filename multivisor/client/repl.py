@@ -1,6 +1,3 @@
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import re
 import fnmatch
 import datetime
@@ -136,7 +133,7 @@ class Commands(object):
         cmd = self.get_command(args[0])
         cmds = '  '.join(self.get_commands())
         raw_text = cmd.__doc__.format(cmds=cmds)
-        text = '\n'.join(map(unicode.strip, raw_text.split('\n')))
+        text = '\n'.join(map(str.strip, raw_text.split('\n')))
         print_formatted_text(text)
 
     @classmethod

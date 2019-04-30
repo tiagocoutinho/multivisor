@@ -5,7 +5,10 @@ import json
 import time
 import logging
 import weakref
-from ConfigParser import SafeConfigParser
+try:
+    from ConfigParser import SafeConfigParser
+except ImportError:
+    from configparser import SafeConfigParser
 
 import louie
 import zerorpc
@@ -49,7 +52,7 @@ class Supervisor(dict):
         this, other = dict(self), dict(other)
         this_p = this.pop('processes')
         other_p = other.pop('processes')
-        return this == other and this_p.keys() == other_p.keys()
+        return this == other and list(this_p.keys()) == list(other_p.keys())
 
     def run(self):
         last_retry = time.time()
@@ -112,7 +115,7 @@ class Supervisor(dict):
         if self == info:
             this_p, info_p = self['processes'], info['processes']
             if this_p != info_p:
-                for name, process in info_p.items():
+                for name, process in list(info_p.items()):
                     if process != this_p[name]:
                         send(process, 'process_changed')
             self.update(info)
@@ -233,7 +236,7 @@ class Process(dict):
             self.update(args[0])
         self.update(kwargs)
         supervisor_name = supervisor['name']
-        full_name = self['group'] + ':' + self['name']
+        full_name = self.get('group', '') + ':' + self.get('name', '')
         uid = '{}:{}'.format(supervisor_name, full_name)
         self.log = log.getChild(uid)
         self.supervisor = weakref.proxy(supervisor)
@@ -402,9 +405,9 @@ class Multivisor(object):
 
     @property
     def processes(self):
-        procs = (svisor['processes'] for svisor in self.supervisors.values())
+        procs = (svisor['processes'] for svisor in list(self.supervisors.values()))
         return { puid: proc for sprocs in procs
-                 for puid, proc in sprocs.items() }
+                 for puid, proc in list(sprocs.items()) }
 
     @property
     def use_authentication(self):
@@ -421,7 +424,7 @@ class Multivisor(object):
 
     def refresh(self):
         tasks = [spawn(supervisor.refresh)
-                 for supervisor in self.supervisors.values()]
+                 for supervisor in list(self.supervisors.values())]
         joinall(tasks)
 
     def get_supervisor(self, name):

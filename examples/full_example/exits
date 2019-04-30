@@ -12,7 +12,7 @@ start = time.time()
 while True:
   if die_in < time.time() - start:
     exit(123)
-  print '%s %d' % (name, i)
+  print('%s %d' % (name, i))
   i += 1
   time.sleep(0.1)
 

@@ -5,8 +5,8 @@ def group_processes_status_by(processes, group_by='group', filter=None):
     result = collections.defaultdict(lambda : dict(processes={}))
     if filter is None:
         filter = lambda p: True
-    for uid, process in processes.items():
-        if not filter(process):
+    for uid, process in list(processes.items()):
+        if not list(filter(process)):
             continue
         name = process[group_by]
         order = result[name]
@@ -28,7 +28,7 @@ def processes_status(status, group_by='process', filter=None,
                      process_status=default_process_status):
     processes = status['processes']
     if processes:
-        puid_len = max(map(len, processes))
+        puid_len = max(list(map(len, processes)))
     else:
         puid_len = 8
     result = []
@@ -37,7 +37,7 @@ def processes_status(status, group_by='process', filter=None,
     if group_by in (None, 'process'):
         for puid in sorted(processes):
             process = processes[puid]
-            if filter(process):
+            if list(filter(process)):
                 result.append(process_status(process, max_puid_len=puid_len,
                                              group_by=group_by))
     else:
@@ -45,7 +45,7 @@ def processes_status(status, group_by='process', filter=None,
                                             filter=filter)
         for name in sorted(grouped):
             result.append(name + ':')
-            for process in grouped[name]['processes'].values():
+            for process in list(grouped[name]['processes'].values()):
                 result.append(process_status(process, max_puid_len=puid_len,
                                              group_by=group_by))
     return result

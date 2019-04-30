@@ -5,6 +5,6 @@ import time
 i = 0
 
 while True:
-  print "%d - The kick brown fox... you know the drill. I am just trying to fill in some bytes for the test. Well bye!" % i
+  print("%d - The kick brown fox... you know the drill. I am just trying to fill in some bytes for the test. Well bye!" % i)
   time.sleep(0.1)
   i += 1
