@@ -23,6 +23,9 @@ const router = new Router({
 router.beforeEach(async function (to, from, next) {
   if (store.state.useAuthentication === undefined || store.state.isAuthenticated === undefined) {
     const response = await fetch('/api/auth')
+    if (response.status === 504) {
+      return next()
+    }
     const data = await response.json()
     store.commit('setUseAuthentication', data.use_authentication)
     store.commit('setIsAuthenticated', data.is_authenticated)
