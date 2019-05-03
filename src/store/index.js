@@ -7,6 +7,7 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     multivisor: multivisor.nullMultivisor,
+    error: '',
     notifications: [],
     selectedProcesses: [],
     search: '',
@@ -70,6 +71,9 @@ export default new Vuex.Store({
     },
     logout (state) {
       state.isAuthenticated = false
+    },
+    setError (state, error) {
+      state.error = error
     }
   },
   actions: {
@@ -77,9 +81,12 @@ export default new Vuex.Store({
       const response = await multivisor.load()
       if (response.status === 401) {
         return
+      } else if (response.status === 504) {  // server down
+        commit('setError', 'Couldn\'t connect to multivisor server, make sure it is running')
+      } else {
+        const data = await response.json()
+        commit('updateMultivisor', data)
       }
-      const data = await response.json()
-      commit('updateMultivisor', data)
       const eventHandler = (event) => {
         if (event.event === 'process_changed') {
           commit('updateProcess', event.payload)
