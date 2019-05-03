@@ -37,9 +37,7 @@ export default {
           }
           return groups
         }, {}))
-        if (groups.length) {
-          supervisors.push({...supervisor, groups: groups})
-        }
+        supervisors.push({...supervisor, groups: groups})
         return supervisors
       }, [])
     }

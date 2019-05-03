@@ -1,7 +1,7 @@
 <template>
   <v-card>
-    <v-toolbar dense color="indigo" dark>
-      <v-toolbar-title>{{ supervisor.name }}</v-toolbar-title>
+    <v-toolbar dense :color="toolbarColor" dark>
+      <v-toolbar-title>{{ supervisor.name }} <span v-if="inactive">(offline)</span></v-toolbar-title>
       <v-spacer></v-spacer>
 
       <v-tooltip top>
@@ -33,7 +33,7 @@
         <span>Select all</span>
       </v-tooltip>
 
-      <v-menu bottom left>
+      <v-menu v-if="!inactive" bottom left>
         <v-btn icon slot="activator">
           <v-icon>more_vert</v-icon>
         </v-btn>
@@ -62,6 +62,8 @@ export default {
   },
   computed: {
     supervisor () { return this.item.item },
+    inactive () { return !this.supervisor.running },
+    toolbarColor () { return this.inactive ? 'grey lighten-1' : 'indigo' },
     selectedProcesses () {
       let procs = this.$store.state.selectedProcesses.reduce((processes, puid) => {
         let supervisor = puid.split(':', 1)[0]
