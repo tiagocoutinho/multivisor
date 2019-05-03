@@ -13,10 +13,10 @@ class Multivisor(object):
         self.notifications = []
 
     def stop_processes(self, *names):
-        return self.post('/process/stop', data=dict(uid=[','.join(names)]))
+        return self.post('/api/process/stop', data=dict(uid=[','.join(names)]))
 
     def restart_processes(self, *names):
-        return self.post('/process/restart', data=dict(uid=[','.join(names)]))
+        return self.post('/api/process/restart', data=dict(uid=[','.join(names)]))
 
     @property
     def status(self):
@@ -40,7 +40,7 @@ class Multivisor(object):
         return stats
 
     def get_status(self):
-        status = self.get('/refresh').json()
+        status = self.get('/api/refresh').json()
         # reorganize status per process
         status['processes'] = processes = {}
         for supervisor in status['supervisors'].values():
@@ -69,7 +69,7 @@ class Multivisor(object):
         self.post(item, data=value)
 
     def events(self):
-        stream = self.get('/stream', stream=True)
+        stream = self.get('/api/stream', stream=True)
         for line in stream.iter_lines():
             if line:
                 line = line.decode('utf-8')
