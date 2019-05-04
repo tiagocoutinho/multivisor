@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import hashlib
+import functools
 
 import gevent
 from gevent.monkey import patch_all
@@ -12,7 +13,8 @@ import louie
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify, session
-
+from werkzeug.debug import DebuggedApplication
+from werkzeug.serving import run_with_reloader
 
 from multivisor.util import sanitize_url, is_login_valid, login_required
 from multivisor.multivisor import Multivisor
@@ -244,6 +246,17 @@ def custom_401(error):
     return Response(json.dumps(response_data), 401, {'content-type': 'application/json'})
 
 
+def run_with_reloader_if_debug(func):
+    @functools.wraps(func)
+    def wrapper_login_required(*args, **kwargs):
+        if not app.debug:
+            return func(*args, **kwargs)
+        return run_with_reloader(func, *args, **kwargs)
+
+    return wrapper_login_required
+
+
+@run_with_reloader_if_debug
 def main(args=None):
     import argparse
     parser = argparse.ArgumentParser()
@@ -268,6 +281,7 @@ def main(args=None):
 
     app.dispatcher = Dispatcher()
     app.multivisor = Multivisor(options)
+
     if app.multivisor.use_authentication:
         secret_key = os.environ.get('MULTIVISOR_SECRET_KEY')
         if not secret_key:
@@ -275,7 +289,8 @@ def main(args=None):
                             'when authentication is enabled')
         app.secret_key = secret_key
 
-    http_server = WSGIServer(bind, application=app)
+    application = DebuggedApplication(app, evalex=True) if app.debug else app
+    http_server = WSGIServer(bind, application=application)
     logging.info('Start accepting requests')
     try:
         http_server.serve_forever()
@@ -285,3 +300,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+
