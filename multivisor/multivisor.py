@@ -16,7 +16,7 @@ from gevent import queue, spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
-from .util import sanitize_url, filter_patterns, parse_str, parse_dict_str
+from .util import sanitize_url, filter_patterns
 
 log = logging.getLogger('multivisor')
 
@@ -79,12 +79,7 @@ class Supervisor(dict):
                 last_retry = time.time()
 
     def handle_event(self, event):
-        print(event)
-        event = parse_dict_str(event)
-        event['payload'] = parse_dict_str(event['payload'])
-        if 'process' in event['payload']:
-            event['payload']['process'] = parse_dict_str(event['payload']['process'])
-        print(event)
+        print("event", event)
         name = event['eventname']
         self.log.info('handling %s...', name)
         if name.startswith('SUPERVISOR_STATE'):
@@ -108,13 +103,13 @@ class Supervisor(dict):
         server = self.server
         info['pid']= pid = server.getPID()
         info['running'] = True
-        info['identification'] = parse_str(server.getIdentification())
-        info['api_version'] = parse_str(server.getAPIVersion())
-        info['supervisor_version'] = parse_str(server.getSupervisorVersion())
+        info['identification'] = server.getIdentification()
+        info['api_version'] = server.getAPIVersion()
+        info['supervisor_version'] = server.getSupervisorVersion()
         info['processes'] = processes = {}
         procInfo = server.getAllProcessInfo()
+        print("all", procInfo)
         for proc in procInfo:
-            proc = parse_dict_str(proc)
             process = Process(self, proc)
             processes[process['uid']] = process
         return info

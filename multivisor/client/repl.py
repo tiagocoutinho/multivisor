@@ -79,7 +79,8 @@ def print_processes_status(status, *args):
 def cmd(f=None, name=None):
     if f is None:
         return functools.partial(cmd, name=name)
-    f.__cmd__ = (name or f.__name__).decode()
+    name = name or f.__name__
+    f.__cmd__ = name.decode() if isinstance(name, bytes) else name
     return f
 
 
