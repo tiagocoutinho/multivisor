@@ -119,7 +119,6 @@ def parse_str(value):
 
 def parse_dict_str(obj):
     if not isinstance(obj, dict):
-        print('not a dict')
-        return obj
+        return parse_str(obj)
 
     return {parse_str(key): parse_str(value) for key, value in obj.items()}
