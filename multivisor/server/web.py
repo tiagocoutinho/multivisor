@@ -188,6 +188,7 @@ def logout():
 
 
 @app.route('/api/stream')
+@login_required(app)
 def stream():
     def event_stream():
         client = queue.Queue()
@@ -256,8 +257,7 @@ def run_with_reloader_if_debug(func):
     return wrapper_login_required
 
 
-@run_with_reloader_if_debug
-def main(args=None):
+def get_parser(args):
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--bind', help='[host][:port] (default: 0:22000)',
@@ -268,6 +268,12 @@ def main(args=None):
     parser.add_argument('--log-level', help='log level', type=str,
                         default='INFO',
                         choices=['DEBUG', 'INFO', 'WARN', 'ERROR'])
+    return parser
+
+
+@run_with_reloader_if_debug
+def main(args=None):
+    parser = get_parser(args)
     options = parser.parse_args(args)
 
     log_level = getattr(logging, options.log_level.upper())
