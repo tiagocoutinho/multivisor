@@ -132,6 +132,24 @@ url=daffyduck.acme.org:9007
 Of course the multivisor itself can be configured in supervisor as a normal
 program.
 
+### Authenthication
+To protect multivisor from unwanted access, you can enable required authentication.
+Specify `username` and `password` parameters in `global` section of your configuration file e.g.:
+```bash
+[global]
+username=test
+password=test
+```
+You can also specify `password` as SHA-1 hash in hex, with `{SHA}` prefix: e.g.
+`{SHA}a94a8fe5ccb19ba61c4c0873d391e987982fbbd3` (example hash is `test` in SHA-1).
+
+In order to use this feature, you also need to set `MULTIVISOR_SECRET_KEY` environmental variable,
+as flask sessions module needs some secret value to create secure session.
+You can generate some random hash easily using python:
+`python -c 'import os; import binascii; print(binascii.hexlify(os.urandom(32)))'`
+
+Remember to restart the server after changes in configuration file.
+
 ## Build & Install
 
 ```bash
