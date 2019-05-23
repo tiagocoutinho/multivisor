@@ -74,6 +74,9 @@ export default new Vuex.Store({
     },
     setError (state, error) {
       state.error = error
+    },
+    setMultivisorError (state) {
+      state.error = 'Couldn\'t connect to multivisor server, make sure it is running'
     }
   },
   actions: {
@@ -82,13 +85,16 @@ export default new Vuex.Store({
       if (response.status === 401) {
         return
       } else if (response.status === 504) {  // server down
-        commit('setError', 'Couldn\'t connect to multivisor server, make sure it is running')
+        commit('setMultivisorError')
       } else {
         const data = await response.json()
         commit('updateMultivisor', data)
       }
       const eventHandler = (event) => {
-        if (event.event === 'process_changed') {
+        if (event === 'error' || event === 'close') {
+          commit('setMultivisorError')
+          commit('updateMultivisor', multivisor.nullMultivisor)
+        } else if (event.event === 'process_changed') {
           commit('updateProcess', event.payload)
         } else if (event.event === 'supervisor_changed') {
           commit('updateSupervisor', event.payload)

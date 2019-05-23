@@ -38,6 +38,12 @@ export const streamTo = (eventHandler) => {
     let data = JSON.parse(event.data)
     eventHandler(data)
   }
+  eventSource.onerror = () => {
+    eventHandler('error')
+  }
+  eventSource.onclose = () => {
+    eventHandler('close')
+  }
   return eventSource
 }
 
