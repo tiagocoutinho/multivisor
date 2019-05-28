@@ -50,8 +50,8 @@ def supervisor_test001():
 
 @pytest.fixture(autouse=True, scope='session')
 def server(supervisor_test001, base_url):
-    p = subprocess.Popen('multivisor -c tests/multivisor_test.conf', shell=True, stdout=subprocess.PIPE,
-                         preexec_fn=os.setsid)
+    p = subprocess.Popen('python -m multivisor.server.web -c tests/multivisor_test.conf', shell=True,
+                         stdout=subprocess.PIPE, preexec_fn=os.setsid)
     retires = 0
     max_retries = 10
     while retires < max_retries:
