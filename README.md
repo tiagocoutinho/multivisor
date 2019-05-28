@@ -1,4 +1,5 @@
 # Multivisor
+[![Build Status](https://travis-ci.org/guy881/multivisor.svg?branch=develop)](https://travis-ci.org/guy881/multivisor)
 
 A centralized supervisor UI (Web & CLI)
 
