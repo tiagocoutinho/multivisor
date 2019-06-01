@@ -164,7 +164,7 @@ development cycle:
 First, start multivisor (which listens on 22000 by default):
 
 ```bash
-python -m multivisor.server -c multivisor.conf
+python -m multivisor.server.web -c multivisor.conf
 ```
 
 Now, in another console, run the webpack dev server (it will
