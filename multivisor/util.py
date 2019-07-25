@@ -1,8 +1,7 @@
+import fnmatch
 import functools
 import hashlib
-import json
 import re
-import fnmatch
 
 from flask import session, abort
 
@@ -37,25 +36,6 @@ def filter_patterns(names, patterns):
     sets = (fnmatch.filter(names, pattern) for pattern in patterns)
     list(map(result.update, sets))
     return result
-
-
-def load_config(config_file):
-    parser = SafeConfigParser()
-    parser.read(config_file)
-    dft_global = dict(name='multivisor')
-
-    supervisors = {}
-    config = dict(dft_global, supervisors=supervisors)
-    config.update(parser.items('global'))
-    tasks = []
-    for section in parser.sections():
-        if not section.startswith('supervisor:'):
-            continue
-        name = section[len('supervisor:'):]
-        section_items = dict(parser.items(section))
-        url = section_items.get('url', '')
-        supervisors[name] = Supervisor(name, url)
-    return config
 
 
 def is_login_valid(app, username, password):

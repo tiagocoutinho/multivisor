@@ -3,13 +3,16 @@ import hashlib
 import functools
 
 import gevent
+from blinker import signal
 from gevent.monkey import patch_all
+
+from multivisor.signals import SIGNALS
+
 patch_all(thread=False)
 
 import os
 import logging
 
-import louie
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify, session
@@ -210,13 +213,14 @@ class Dispatcher(object):
 
     def __init__(self):
         self.clients = []
-        louie.connect(self.on_multivisor_event, sender='multivisor')
+        for signal_name in SIGNALS:
+            signal(signal_name).connect(self.on_multivisor_event)
 
     def add_listener(self, client):
         self.clients.append(client)
 
     def remove_listener(self, client):
-        clients.clients.remove(client)
+        self.clients.remove(client)
 
     def on_multivisor_event(self, signal, payload):
         data = json.dumps(dict(payload=payload, event=signal))
