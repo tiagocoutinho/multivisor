@@ -9,20 +9,20 @@ advantages: it avoids creating an eventlistener process just to forward events.
 The python environment where supervisor runs must have multivisor installed
 """
 
+import functools
+import logging
 import os
 import queue
-import logging
-import functools
 import threading
 
 from gevent import spawn, hub, sleep
 from gevent.queue import Queue
 from six import text_type
-from zerorpc import stream, Server, LostRemote, Context
-
+from supervisor.events import subscribe, Event, getEventNameByType
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
-from supervisor.events import subscribe, Event, getEventNameByType
+from zerorpc import stream, Server, LostRemote
+
 # unsubscribe only appears in supervisor > 3.3.4
 try:
     from supervisor.events import unsubscribe
@@ -174,19 +174,6 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
             self._event_channels.remove(channel)
 
 
-class ServerMiddleware(object):
-
-    def server_after_exec(self, request_event, reply_event):
-        data = reply_event.args
-        if data and len(data):
-            data = data[0]
-            if isinstance(data, list):
-                data = [parse_dict_str(value) for value in data]
-            else:
-                data = parse_dict_str(data)
-            reply_event._args = (data,)
-
-
 def start_rpc_server(multivisor, bind):
     future_server = queue.Queue(1)
     th = threading.Thread(target=run_rpc_server, name='RPCServer',
@@ -203,9 +190,7 @@ def run_rpc_server(multivisor, bind, future_server):
     watcher.start(lambda: spawn(multivisor._dispatch_event))
     server = None
     try:
-        context = Context()
-        context.register_middleware(ServerMiddleware())
-        server = Server(multivisor, context=context)
+        server = Server(multivisor)
         server._stop_event = stop_event
         server.bind(bind)
         future_server.put((server, watcher))

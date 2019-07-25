@@ -1,8 +1,7 @@
 import json
-import time
 
-import louie
 import requests
+from blinker import signal
 
 
 class Multivisor(object):
@@ -89,4 +88,5 @@ class Multivisor(object):
                 self._update_status_stats(status)
             elif name == 'notification':
                 self.notifications.append(payload)
-            louie.send(signal=name, sender=self, payload=payload)
+            event_signal = signal(name)
+            event_signal.send(name, payload=payload)

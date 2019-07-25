@@ -1,24 +1,45 @@
 #!/usr/bin/env python
 import copy
-import os
-import json
-import time
 import logging
+import os
+import time
 import weakref
+
+from blinker import signal
+
 try:
     from ConfigParser import SafeConfigParser
 except ImportError:
     from configparser import SafeConfigParser
 
-import louie
 import zerorpc
-from gevent import queue, spawn, sleep, joinall
+from gevent import spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
-from .util import sanitize_url, filter_patterns
+from .util import sanitize_url, filter_patterns, parse_dict_str
 
 log = logging.getLogger('multivisor')
+
+
+class ClientMiddleware(object):
+    """
+    zerorpc middleware to decode received bytes to unicode,
+    in case when one of the supervisors is running on python 2
+    and multivisor is running on python 3, client is receiving bytes instead of str
+    https://github.com/tiagocoutinho/multivisor/issues/31
+    """
+
+    def client_after_request(self, request_event, reply_event, exception=None):
+        if not exception and reply_event:
+            data = reply_event.args
+            if data and len(data):
+                data = data[0]
+                if isinstance(data, list):
+                    data = [parse_dict_str(value) for value in data]
+                else:
+                    data = parse_dict_str(data)
+                reply_event._args = (data,)
 
 
 class Supervisor(dict):
@@ -41,7 +62,9 @@ class Supervisor(dict):
         addr = sanitize_url(url, protocol='tcp', host=name, port=9002)
         self.address = addr['url']
         self.host = self['host'] = addr['host']
-        self.server = zerorpc.Client(self.address)
+        context = zerorpc.Context()
+        context.register_middleware(ClientMiddleware())
+        self.server = zerorpc.Client(self.address, context=context)
         # fill supervisor info before events start coming in
         self.event_loop = spawn(self.run)
 
@@ -79,7 +102,6 @@ class Supervisor(dict):
                 last_retry = time.time()
 
     def handle_event(self, event):
-        print("event", event)
         name = event['eventname']
         self.log.info('handling %s...', name)
         if name.startswith('SUPERVISOR_STATE'):
@@ -101,14 +123,13 @@ class Supervisor(dict):
     def read_info(self):
         info = self.create_base_info()
         server = self.server
-        info['pid']= pid = server.getPID()
+        info['pid'] = server.getPID()
         info['running'] = True
         info['identification'] = server.getIdentification()
         info['api_version'] = server.getAPIVersion()
         info['supervisor_version'] = server.getSupervisorVersion()
         info['processes'] = processes = {}
         procInfo = server.getAllProcessInfo()
-        print("all", procInfo)
         for proc in procInfo:
             process = Process(self, proc)
             processes[process['uid']] = process
@@ -346,7 +367,8 @@ def load_config(config_file):
 
 
 def send(payload, event):
-    louie.send(signal=event, sender='multivisor', payload=payload)
+    event_signal = signal(event)
+    return event_signal.send(event, payload=payload)
 
 
 def notification(message, level):
