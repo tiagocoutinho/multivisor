@@ -50,7 +50,7 @@ def supervisor_test001():
 
 @pytest.fixture(autouse=True, scope='session')
 def server(supervisor_test001, base_url):
-    p = subprocess.Popen('python -m multivisor.server.web -c tests/multivisor_test.conf', shell=True,
+    p = subprocess.Popen('python -m multivisor.server.web -c tests/multivisor_test.conf --bind 0:22001', shell=True,
                          stdout=subprocess.PIPE, preexec_fn=os.setsid)
     retires = 0
     max_retries = 10
@@ -71,7 +71,7 @@ def server(supervisor_test001, base_url):
 
 @pytest.fixture(scope='session')
 def base_url():
-    return 'http://localhost:22000'
+    return 'http://localhost:22001'
 
 
 @pytest.fixture(scope='session')
