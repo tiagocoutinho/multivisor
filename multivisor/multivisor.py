@@ -19,9 +19,23 @@ from supervisor.states import RUNNING_STATES
 from supervisor.xmlrpc import Faults
 
 from . import zerorpc
-from .util import filter_patterns, parse_dict, sanitize_url
+from .util import compute_signature, filter_patterns, parse_dict, sanitize_url
 
 log = logging.getLogger("multivisor")
+
+
+class ClientAuthenticationMiddleware(object):
+    """
+    zerorpc level authentication which adds signature
+    as event header
+    """
+
+    def __init__(self, key):
+        self.key = key.encode() if isinstance(key, str) else key
+
+    def client_before_request(self, event):
+        if "signature" not in event.header:
+            event.header["signature"] = compute_signature(event, self.key)
 
 
 class Supervisor(dict):
@@ -36,11 +50,19 @@ class Supervisor(dict):
         "pid": None,
     }
 
-    def __init__(self, name, url):
+    def __init__(self, name, url, multivisor_key=""):
         super(Supervisor, self).__init__(self.Null)
         self.name = self["name"] = name
         self.url = self["url"] = url
         self.log = log.getChild(name)
+        # created once and reused across reconnects: each zmq context owns
+        # an I/O thread, so a fresh one per client would leak threads
+        self.context = None
+        if multivisor_key:
+            self.context = zerorpc.Context()
+            self.context.register_middleware(
+                ClientAuthenticationMiddleware(multivisor_key)
+            )
         addr = sanitize_url(url, protocol="tcp", host=name, port=9002)
         self.address = addr["url"]
         self.host = self["host"] = addr["host"]
@@ -69,7 +91,7 @@ class Supervisor(dict):
         about. LINGER=0 makes close() drop any unsent data and release the
         fd immediately instead.
         """
-        client = zerorpc.Client()
+        client = zerorpc.Client(context=self.context)
         socket = client._events._socket
         socket.setsockopt(zmq.RECONNECT_IVL, self.MIN_RETRY_DELAY * 1000)
         socket.setsockopt(zmq.RECONNECT_IVL_MAX, self.MAX_RETRY_DELAY * 1000)
@@ -107,7 +129,10 @@ class Supervisor(dict):
             except zerorpc.TimeoutExpired:
                 self.log.info("Timeout expired")
             except Exception as err:
-                self.log.warning("Unexpected error %r", err)
+                if getattr(err, "name", None) == "InvalidSignatureError":
+                    self.log.warning("Invalid authentication details")
+                else:
+                    self.log.warning("Unexpected error %r", err)
             finally:
                 # A flapping host that connects and drops again right
                 # away would otherwise reset the backoff to MIN_RETRY_DELAY
@@ -426,7 +451,8 @@ def load_config(config_file):
         name = section[len("supervisor:") :]
         section_items = dict(parser.items(section))
         url = section_items.get("url", "")
-        supervisors[name] = Supervisor(name, url)
+        multivisor_key = section_items.get("multivisor_key", "")
+        supervisors[name] = Supervisor(name, url, multivisor_key=multivisor_key)
     return config
 
 

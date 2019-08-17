@@ -12,7 +12,8 @@ from gevent.lock import RLock
 from gevent.queue import Queue
 from supervisor.childutils import getRPCInterface
 
-from ..zerorpc import LostRemote, Server, stream
+from ..util import ServerAuthenticationMiddleware, parse_keys
+from ..zerorpc import Context, LostRemote, Server, stream
 
 READY = "READY\n"
 ACKNOWLEDGED = "RESULT 2\nOK"
@@ -109,12 +110,20 @@ class Supervisor(object):
             channel.put(event)
 
 
-def run(xml_rpc, bind=DEFAULT_BIND):
+def run(xml_rpc, bind=DEFAULT_BIND, keys=""):
     channel = Queue()
     supervisor = Supervisor(xml_rpc)
     spawn(event_consumer_loop, channel, supervisor.publish_event)
     spawn(event_producer_loop, channel.put)
-    server = Server(supervisor)
+    context = Context()
+    keys = parse_keys(keys)
+    if keys:
+        context.register_middleware(ServerAuthenticationMiddleware(keys))
+    else:
+        logging.warning(
+            "Authentication not enabled! Please set --keys or MULTIVISOR_KEYS"
+        )
+    server = Server(supervisor, context=context)
     server.bind(bind)
     server.run()
 
@@ -128,6 +137,12 @@ def main(args=None):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--bind", help="bind address", default=DEFAULT_BIND)
+    parser.add_argument(
+        "--keys",
+        help="comma-separated list of secret keys allowed to connect "
+        "(defaults to the MULTIVISOR_KEYS environment variable)",
+        default=environ.get("MULTIVISOR_KEYS", ""),
+    )
     parser.add_argument(
         "--log-level",
         help="log level",
@@ -149,7 +164,7 @@ def main(args=None):
     except KeyError:
         print("multivisor-rpc can only run as supervisor eventlistener", file=sys.stderr)
         exit(1)
-    run(rpc, bind)
+    run(rpc, bind, options.keys)
 
 
 if __name__ == "__main__":

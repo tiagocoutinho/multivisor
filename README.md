@@ -68,9 +68,14 @@ to your *supervisord.conf*:
 [rpcinterface:multivisor]
 supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
 bind=*:9002
+multivisor_keys=<some_secret_key>
 ```
-
-If no *bind* is given, it defaults to `*:9002`.
+Parameters:
+* `bind` - address and port on which multivisor rpc interface will listen to multivisor server connections, 
+it defaults to `*:9002`.
+* `multivisor_keys` - comma-separated list of secret keys (much like `authorized_keys` in SSH) which will restrict 
+access to multivisor servers which have this key provided in supervisor section config. More about this in 
+security section.
 
 Repeat the above procedure for every supervisor you have running.
 
@@ -86,6 +91,18 @@ events=PROCESS_STATE,SUPERVISOR_STATE_CHANGE
 ```
 
 If no *bind* is given, it defaults to `*:9002`.
+
+To restrict access to multivisor servers holding a secret key, pass a
+comma-separated list of keys with `--keys` or, to keep them out of the process
+list, with the `MULTIVISOR_KEYS` environment variable (more about this in the
+[security](#security) section):
+
+```ini
+[eventlistener:multivisor-rpc]
+command=multivisor-rpc --bind 0:9002
+events=PROCESS_STATE,SUPERVISOR_STATE_CHANGE
+environment=MULTIVISOR_KEYS="<some_secret_key>"
+```
 
 You are free to choose the event listener name. As a convention we propose
 `multivisor-rpc`.
@@ -136,6 +153,11 @@ url=bugsbunny.acme.org
 
 [supervisor:daffyduck]
 url=daffyduck.acme.org:9007
+
+[supervisor:secured]
+url=:9002
+# same as multivisor secret key provided in rpc_interface config
+multivisor_key=<some_secret_key>
 ```
 
 <img width="40%" align="right" alt="multivisor web on mobile"
@@ -173,8 +195,10 @@ You can also specify `password` as SHA-1 hash in hex, with `{SHA}` prefix: e.g.
 
 In order to use authentication, you also need to set `MULTIVISOR_SECRET_KEY` environmental variable,
 as flask sessions module needs some secret value to create secure session.
-You can generate some random hash easily using python:
-`python -c 'import os; import binascii; print(binascii.hexlify(os.urandom(32)))'`
+You can generate some random hash easily using included script: `generate_secret_key.py`.
+
+**Warning**: this authentication on its own doesn't protect your supervisors rpc interface
+from other multivisor connecting to it, read more about this in the [security](#security) section.
 
 ### CLI
 
@@ -255,6 +279,45 @@ The frontend is based on [vue](https://vuejs.org/) +
 # Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
+# Security
+The project uses [zerorpc library](https://github.com/0rpc/zerorpc-python/) to invoke commands on supervisors instances.
+That's why it is required to specify custom rpc interface in supervisor config. However, zerorpc should be used only in 
+private networks, as it doesn't come with any kind of authentication. So you can add a supervisor to your multivisor
+instance if you know IP and port of exposed multivisor RPC interface and control processes on another machine. That 
+can be a security issue if those ports are open on the server.
+
+To address this issue, the project uses a special header with the signature of the send message, generated using 
+security key provided in both supervisor and multivisor config. The secret key can be generated using the script 
+`generate_secret_key.py`.
+
+See example configuration below.
+
+**supervisor** (rpcinterface):
+```ini
+[rpcinterface:multivisor]
+supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
+multivisor_keys=<some_secret_key>,<another_secret_key>
+```
+
+**supervisor** (eventlistener):
+```ini
+[eventlistener:multivisor-rpc]
+command=multivisor-rpc --bind 0:9002
+events=PROCESS_STATE,SUPERVISOR_STATE_CHANGE
+environment=MULTIVISOR_KEYS="<some_secret_key>,<another_secret_key>"
+```
+
+**multivisor**:
+```ini
+[supervisor:lid001]
+url=localhost:9012
+multivisor_key=<some_secret_key>
+```
+
+In above example only multivisors which provided `multivisor_key` as `<some_secret_key>` or `<another_secret_key>` can
+connect to the specified supervisor.
 
 
 [pypi-python-versions]: https://img.shields.io/pypi/pyversions/multivisor.svg

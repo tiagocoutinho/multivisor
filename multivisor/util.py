@@ -1,5 +1,7 @@
 import fnmatch
+import hmac
 import re
+from hashlib import sha256
 
 try:
     from collections import abc
@@ -71,3 +73,37 @@ def parse_obj(obj):
     elif isinstance(obj, abc.Container):
         return type(obj)(parse_obj(i) for i in obj)
     return obj
+
+
+def compute_signature(event, key):
+    string = event.name
+    if event.args:
+        string += ";".join([str(arg) for arg in event.args])
+    string = string.encode()
+    return hmac.new(key, string, sha256).digest()
+
+
+def parse_keys(keys):
+    """Parse a comma-separated list of secret keys into a list of bytes"""
+    if keys:
+        return [key.strip().encode() for key in str(keys).split(",") if key.strip()]
+    return []
+
+
+class InvalidSignatureError(Exception):
+    """
+    Occurs when authentication is on, but signature header wasn't send or
+    was incorrect.
+    """
+
+
+class ServerAuthenticationMiddleware(object):
+    def __init__(self, keys):
+        self.keys = keys
+
+    def server_before_exec(self, event):
+        signature = event.header.get("signature", None)
+        allowed_signatures = [compute_signature(event, key) for key in self.keys]
+        if signature and signature in allowed_signatures:
+            return
+        raise InvalidSignatureError
