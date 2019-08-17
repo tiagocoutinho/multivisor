@@ -17,7 +17,8 @@ import threading
 
 from gevent import spawn, hub, sleep
 from gevent.queue import Queue
-from zerorpc import stream, Server, LostRemote
+from six import text_type
+from zerorpc import stream, Server, LostRemote, Context
 
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
@@ -28,8 +29,7 @@ try:
 except:
     unsubscribe = lambda x, y: None
 
-from .util import sanitize_url
-
+from .util import sanitize_url, compute_signature
 
 DEFAULT_BIND = 'tcp://*:9002'
 
@@ -72,7 +72,7 @@ ServerOptions.cleanup_fds = lambda options : None
 @sync
 class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
 
-    def __init__(self, supervisord, bind):
+    def __init__(self, supervisord, bind, keys):
         SupervisorNamespaceRPCInterface.__init__(self, supervisord)
         self._bind = bind
         self._channel = queue.Queue()
@@ -81,6 +81,19 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         self._watcher = None
         self._shutting_down = False
         self._log = logging.getLogger('MVRPC')
+        self._keys = self._parse_keys(keys)
+
+    @staticmethod
+    def _parse_keys(keys):
+        if keys:
+            keys = text_type(keys).split(',')
+            keys = [key.encode() for key in keys]
+            return keys
+        return []
+
+    @property
+    def authentication_enabled(self):
+        return len(self._keys) > 0
 
     def _start(self):
         subscribe(Event, self._handle_event)
@@ -178,6 +191,25 @@ def start_rpc_server(multivisor, bind):
     return future_server.get()
 
 
+class InvalidSignatureError(Exception):
+    """
+    Occurs when authentication is on, but signature header wasn't send or
+    was incorrect.
+    """
+
+
+class ServerAuthenticationMiddleware(object):
+    def __init__(self, keys):
+        self.keys = keys
+
+    def server_before_exec(self, event):
+        signature = event.header.get(b'signature', None)
+        allowed_signatures = [compute_signature(event, key) for key in self.keys]
+        if signature and signature in allowed_signatures:
+            return
+        raise InvalidSignatureError
+
+
 def run_rpc_server(multivisor, bind, future_server):
     multivisor._log.info('0RPC: spawn server on {}...'.format(os.getpid()))
     watcher = hub.get_hub().loop.async()
@@ -185,7 +217,12 @@ def run_rpc_server(multivisor, bind, future_server):
     watcher.start(lambda: spawn(multivisor._dispatch_event))
     server = None
     try:
-        server = Server(multivisor)
+        context = Context()
+        if multivisor.authentication_enabled:
+            context.register_middleware(ServerAuthenticationMiddleware(multivisor._keys))
+        else:
+            multivisor._log.warning('Authentication not enabled! Please set multivisor_keys config variable')
+        server = Server(multivisor, context=context)
         server._stop_event = stop_event
         server.bind(bind)
         future_server.put((server, watcher))
@@ -204,13 +241,13 @@ def run_rpc_server(multivisor, bind, future_server):
     stop_event.set()
 
 
-def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
+def make_rpc_interface(supervisord, bind=DEFAULT_BIND, multivisor_keys=''):
     # Uncomment following lines to configure python standard logging
     #log_level = logging.INFO
     #log_fmt = '%(asctime)-15s %(levelname)s %(threadName)-8s %(name)s: %(message)s'
     #logging.basicConfig(level=log_level, format=log_fmt)
 
     url = sanitize_url(bind, protocol='tcp', host='*', port=9002)
-    multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'])
+    multivisor = MultivisorNamespaceRPCInterface(supervisord, url['url'], keys=multivisor_keys)
     multivisor._start()
     return multivisor
