@@ -13,5 +13,5 @@ setup(
     entry_points=dict(console_scripts=[
         'multivisor=multivisor.server.web:main',
         'multivisor-cli=multivisor.client.cli:main']),
-    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'louie',
+    install_requires=['flask', 'gevent', 'supervisor', 'zerorpc', 'louie<2.0',
                       'maya', 'requests', 'prompt_toolkit>=2.0.0,<2.1.0'])
