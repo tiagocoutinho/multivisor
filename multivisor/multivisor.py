@@ -13,9 +13,22 @@ from gevent import queue, spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
-from .util import sanitize_url, filter_patterns
+from .util import sanitize_url, filter_patterns, compute_signature
 
 log = logging.getLogger('multivisor')
+
+
+class ClientAuthenticationMiddleware(object):
+    """
+    zerorpc level authentication which adds signature
+    as event header
+    """
+    def __init__(self, key):
+        self.key = key
+
+    def client_before_request(self, event):
+        if 'signature' not in event.header:
+            event.header['signature'] = compute_signature(event, self.key)
 
 
 class Supervisor(dict):
@@ -30,7 +43,7 @@ class Supervisor(dict):
         'pid': None
     }
 
-    def __init__(self, name, url):
+    def __init__(self, name, url, multivisor_key=''):
         super(Supervisor, self).__init__(self.Null)
         self.name = self['name'] = name
         self.url = self['url'] = url
@@ -38,7 +51,10 @@ class Supervisor(dict):
         addr = sanitize_url(url, protocol='tcp', host=name, port=9002)
         self.address = addr['url']
         self.host = self['host'] = addr['host']
-        self.server = zerorpc.Client(self.address)
+        context = zerorpc.Context()
+        if multivisor_key:
+            context.register_middleware(ClientAuthenticationMiddleware(multivisor_key))
+        self.server = zerorpc.Client(self.address, context=context)
         # fill supervisor info before events start coming in
         self.event_loop = spawn(self.run)
 
@@ -67,7 +83,10 @@ class Supervisor(dict):
             except zerorpc.TimeoutExpired:
                 self.log.info('Timeout expired')
             except Exception as err:
-                self.log.info('Connection error')
+                if hasattr(err, 'name') and err.name == 'InvalidSignatureError':
+                    self.log.warning('Invalid authentication details')
+                else:
+                    self.log.info('Connection error')
             finally:
                 curr_time = time.time()
                 delta = curr_time - last_retry
@@ -320,6 +339,7 @@ class Process(dict):
 
 # Configuration
 
+
 def load_config(config_file):
     parser = SafeConfigParser()
     parser.read(config_file)
@@ -335,7 +355,8 @@ def load_config(config_file):
         name = section[len('supervisor:'):]
         section_items = dict(parser.items(section))
         url = section_items.get('url', '')
-        supervisors[name] = Supervisor(name, url)
+        multivisor_key = section_items.get('multivisor_key', '')
+        supervisors[name] = Supervisor(name, url, multivisor_key=multivisor_key)
     return config
 
 

@@ -82,13 +82,18 @@ Make sure multivisor is installed in the same environment as the one supervisor(
 Then, configure the multivisor rpc interface by adding the following lines
 to your supervisord.conf:
 
-```
+```ini
 [rpcinterface:multivisor]
 supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
 bind=*:9002
+multivisor_keys=<some_secret_key>
 ```
-
-If no *bind* is given, it defaults to `*:9002`.
+Parameters:
+* `bind` - address and port on which multivisor rpc interface will listen to multivisor server connections, 
+it defaults to `*:9002`.
+* `multivisor_keys` - comma-separated list of secret keys (much like `authorized_keys` in SSH) which will restrict 
+access to multivisor servers which have this key provided in supervisor section config. More about this in 
+security section.
 
 Repeat the above procedure for every supervisor you have running.
 
@@ -111,7 +116,7 @@ is `<name>:9002`.
 
 Here is some basic example:
 
-```
+```ini
 [global]
 name=ACME
 
@@ -128,6 +133,11 @@ url=bugsbunny.acme.org
 
 [supervisor:daffyduck]
 url=daffyduck.acme.org:9007
+
+[supervisor:secured]
+url=:9002
+# same as multivisor secret key provided in rpc_interface config
+multivisor_key=<some_secret_key>
 ```
 
 Of course the multivisor itself can be configured in supervisor as a normal
@@ -136,7 +146,7 @@ program.
 ### Authentication
 To protect multivisor from unwanted access, you can enable required authentication.
 Specify `username` and `password` parameters in `global` section of your configuration file e.g.:
-```bash
+```ini
 [global]
 username=test
 password=test
@@ -146,10 +156,12 @@ You can also specify `password` as SHA-1 hash in hex, with `{SHA}` prefix: e.g.
 
 In order to use authentication, you also need to set `MULTIVISOR_SECRET_KEY` environmental variable,
 as flask sessions module needs some secret value to create secure session.
-You can generate some random hash easily using python:
-`python -c 'import os; import binascii; print(binascii.hexlify(os.urandom(32)))'`
+You can generate some random hash easily using included script: `generate_secret_key.py`.
 
 Remember to restart the server after changes in configuration file.
+
+**Warning**: this authentication on its own doesn't protect your supervisors rpc interface
+from other multivisor connecting to it, read more about this in the security section.
 
 ## Build & Install
 
@@ -195,3 +207,34 @@ npm run dev
 
 That's it. If you modify `App.vue` for example, you should see the changes
 directly on your browser.
+
+
+## Security
+The project uses [zerorpc library](https://github.com/0rpc/zerorpc-python/) to invoke commands on supervisors instances.
+That's why it is required to specify custom rpc interface in supervisor config. However, zerorpc should be used only in 
+private networks, as it doesn't come with any kind of authentication. So you can add a supervisor to your multivisor
+instance if you know IP and port of exposed multivisor RPC interface and control processes on another machine. That 
+can be a security issue if those ports are open on the server.
+
+To address this issue, the project uses a special header with the signature of the send message, generated using 
+security key provided in both supervisor and multivisor config. The secret key can be generated using the script 
+`generate_secret_key`.
+
+See example configuration below.
+
+**supervisor**:
+```ini
+[rpcinterface:multivisor]
+supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
+multivisor_keys=<some_secret_key>,<another_secret_key>
+```
+
+**multivisor**:
+```ini
+[supervisor:lid001]
+url=localhost:9012
+multivisor_key=<some_secret_key>
+```
+
+In above example only multivisors which provided `multivisor_key` as `<some_secret_key>` or `<another_secret_key>` can
+connect to the specified supervisor.

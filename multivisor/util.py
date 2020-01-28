@@ -1,10 +1,13 @@
 import functools
 import hashlib
+import hmac
 import json
 import re
+from hashlib import sha256
 import fnmatch
 
 from flask import session, abort
+from six import text_type
 
 _PROTO_RE_STR = '(?P<protocol>\w+)\://'
 _HOST_RE_STR = '?P<host>([\w\-_]+\.)*[\w\-_]+|\*'
@@ -37,25 +40,6 @@ def filter_patterns(names, patterns):
     sets = (fnmatch.filter(names, pattern) for pattern in patterns)
     map(result.update, sets)
     return result
-
-
-def load_config(config_file):
-    parser = SafeConfigParser()
-    parser.read(config_file)
-    dft_global = dict(name='multivisor')
-
-    supervisors = {}
-    config = dict(dft_global, supervisors=supervisors)
-    config.update(parser.items('global'))
-    tasks = []
-    for section in parser.sections():
-        if not section.startswith('supervisor:'):
-            continue
-        name = section[len('supervisor:'):]
-        section_items = dict(parser.items(section))
-        url = section_items.get('url', '')
-        supervisors[name] = Supervisor(name, url)
-    return config
 
 
 def is_login_valid(app, username, password):
@@ -109,3 +93,11 @@ def login_required(app):
 
         return wrapper_login_required
     return decorator
+
+
+def compute_signature(event, key):
+    string = event.name
+    if event.args:
+        string += ';'.join([text_type(arg) for arg in event.args])
+    string = string.encode()
+    return hmac.new(key, string, sha256).digest()
