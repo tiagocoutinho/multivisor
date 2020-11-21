@@ -9,27 +9,27 @@ advantages: it avoids creating an eventlistener process just to forward events.
 The python environment where supervisor runs must have multivisor installed
 """
 
-import functools
-import logging
 import os
 import queue
+import logging
+import functools
 import threading
 
 from gevent import spawn, hub, sleep
 from gevent.queue import Queue
 from six import text_type
-from supervisor.events import subscribe, Event, getEventNameByType
+from zerorpc import stream, Server, LostRemote, Context
+
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
-from zerorpc import stream, Server, LostRemote
-
+from supervisor.events import subscribe, Event, getEventNameByType
 # unsubscribe only appears in supervisor > 3.3.4
 try:
     from supervisor.events import unsubscribe
 except:
     unsubscribe = lambda x, y: None
 
-from .util import sanitize_url, parse_dict_str
+from .util import sanitize_url, parse_obj
 
 DEFAULT_BIND = 'tcp://*:9002'
 
@@ -115,7 +115,7 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         payload = dict((x.split(':') for x in payload_str.split()))
         if event_name.startswith('PROCESS_STATE'):
             pname = "{}:{}".format(payload['groupname'], payload['processname'])
-            payload[u'process'] = parse_dict_str(self.getProcessInfo(pname))
+            payload[u'process'] = parse_obj(self.getProcessInfo(pname))
         # broadcast the event to clients
         server = self.supervisord.options.identifier
         new_event = {
@@ -174,6 +174,13 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
             self._event_channels.remove(channel)
 
 
+class ServerMiddleware(object):
+
+    def server_after_exec(self, request_event, reply_event):
+        if reply_event.args:
+            reply_event._args = parse_obj(reply_event.args)
+
+
 def start_rpc_server(multivisor, bind):
     future_server = queue.Queue(1)
     th = threading.Thread(target=run_rpc_server, name='RPCServer',
@@ -190,7 +197,9 @@ def run_rpc_server(multivisor, bind, future_server):
     watcher.start(lambda: spawn(multivisor._dispatch_event))
     server = None
     try:
-        server = Server(multivisor)
+        context = Context()
+        context.register_middleware(ServerMiddleware())
+        server = Server(multivisor, context=context)
         server._stop_event = stop_event
         server.bind(bind)
         future_server.put((server, watcher))
