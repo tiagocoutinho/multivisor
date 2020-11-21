@@ -42,7 +42,7 @@ class Multivisor(object):
         status = self.get('/api/data').json()
         # reorganize status per process
         status['processes'] = processes = {}
-        for supervisor in list(status['supervisors'].values()):
+        for supervisor in status['supervisors'].values():
             processes.update(supervisor['processes'])
         self._update_status_stats(status)
         return status
