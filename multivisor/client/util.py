@@ -5,7 +5,7 @@ def group_processes_status_by(processes, group_by='group', process_filter=None):
     result = collections.defaultdict(lambda: dict(processes={}))
     if process_filter is None:
         process_filter = lambda p: True
-    for uid, process in list(processes.items()):
+    for uid, process in processes.items():
         if not process_filter(process):
             continue
         name = process[group_by]
@@ -49,4 +49,3 @@ def processes_status(status, group_by='process', process_filter=None,
                 result.append(process_status(process, max_puid_len=puid_len,
                                              group_by=group_by))
     return result
-

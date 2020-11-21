@@ -1,5 +1,8 @@
 import argparse
 
+import gevent.monkey
+gevent.monkey.patch_all(thread=False)
+
 from .. import util
 from . import repl, http
 
@@ -12,9 +15,6 @@ def parse_args(args=None):
 
 
 def main(args=None):
-    import gevent.monkey
-    gevent.monkey.patch_all(thread=False)
-
     options = parse_args(args)
     url = util.sanitize_url(options.url, protocol='http', port=22000)['url']
     multivisor = http.Multivisor(url)
