@@ -28,7 +28,7 @@ def processes_status(status, group_by='process', process_filter=None,
                      process_status=default_process_status):
     processes = status['processes']
     if processes:
-        puid_len = max(list(map(len, processes)))
+        puid_len = max(map(len, processes))
     else:
         puid_len = 8
     result = []
@@ -45,7 +45,7 @@ def processes_status(status, group_by='process', process_filter=None,
                                             process_filter=process_filter)
         for name in sorted(grouped):
             result.append(name + ':')
-            for process in list(grouped[name]['processes'].values()):
+            for process in grouped[name]['processes'].values():
                 result.append(process_status(process, max_puid_len=puid_len,
                                              group_by=group_by))
     return result

@@ -117,7 +117,7 @@ class Supervisor(dict):
         if self == info:
             this_p, info_p = self['processes'], info['processes']
             if this_p != info_p:
-                for name, process in list(info_p.items()):
+                for name, process in info_p.items():
                     if process != this_p[name]:
                         send(process, 'process_changed')
             self.update(info)
@@ -408,9 +408,9 @@ class Multivisor(object):
 
     @property
     def processes(self):
-        procs = (svisor['processes'] for svisor in list(self.supervisors.values()))
+        procs = (svisor['processes'] for svisor in self.supervisors.values())
         return { puid: proc for sprocs in procs
-                 for puid, proc in list(sprocs.items()) }
+                 for puid, proc in sprocs.items() }
 
     @property
     def use_authentication(self):
@@ -427,7 +427,7 @@ class Multivisor(object):
 
     def refresh(self):
         tasks = [spawn(supervisor.refresh)
-                 for supervisor in list(self.supervisors.values())]
+                 for supervisor in self.supervisors.values()]
         joinall(tasks)
 
     def get_supervisor(self, name):
