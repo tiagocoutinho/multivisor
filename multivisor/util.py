@@ -3,6 +3,12 @@ import functools
 import hashlib
 import re
 
+try:
+    from collections import abc
+except ImportError:
+    import collections as abc
+
+import six
 from flask import session, abort
 
 _PROTO_RE_STR = '(?P<protocol>\w+)\://'
@@ -91,14 +97,13 @@ def login_required(app):
     return decorator
 
 
-def parse_str(value):
-    if isinstance(value, bytes):
-        return value.decode('utf-8')
-    return value
-
-
-def parse_dict_str(obj):
-    if not isinstance(obj, dict):
-        return parse_str(obj)
-
-    return {parse_str(key): parse_str(value) for key, value in obj.items()}
+def parse_obj(obj):
+    if isinstance(obj, bytes):
+        return obj.decode()
+    elif isinstance(obj, six.text_type):
+        return obj
+    elif isinstance(obj, abc.Mapping):
+        return {parse_obj(k): parse_obj(v) for k, v in obj.items()}
+    elif isinstance(obj, abc.Container):
+        return type(obj)(parse_obj(i) for i in obj)
+    return obj
