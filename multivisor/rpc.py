@@ -108,9 +108,9 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         elif event_name.startswith('TICK'):
             return
         try:
-            # old supervisor version
-            payload_str = event.payload()
+            payload_str = text_type(event.payload())
         except AttributeError:
+            # old supervisor version
             payload_str = text_type(event)
         payload = dict((x.split(':') for x in payload_str.split()))
         if event_name.startswith('PROCESS_STATE'):
