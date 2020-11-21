@@ -39,7 +39,7 @@ class Multivisor(object):
         return stats
 
     def get_status(self):
-        status = self.get('/api/refresh').json()
+        status = self.get('/api/data').json()
         # reorganize status per process
         status['processes'] = processes = {}
         for supervisor in list(status['supervisors'].values()):

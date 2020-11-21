@@ -14,4 +14,4 @@ setup(
         'multivisor=multivisor.server.web:main',
         'multivisor-cli=multivisor.client.cli:main']),
     install_requires=['flask', 'gevent>=1.3', 'supervisor', 'zerorpc', 'blinker',
-                      'maya', 'requests', 'prompt_toolkit>=2.0.0,<2.1.0'])
+                      'maya', 'requests', 'prompt_toolkit>=2'])
