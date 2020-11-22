@@ -8,9 +8,11 @@ def is_login_valid(app, username, password):
     username = username.strip()
     password = password.strip()
 
-    correct_username = app.multivisor.config['username']
-    correct_password = app.multivisor.config['password']
-    return constant_time_compare(username, correct_username) and constant_time_compare(password, correct_password)
+    correct_username = app.multivisor.config["username"]
+    correct_password = app.multivisor.config["password"]
+    return constant_time_compare(username, correct_username) and constant_time_compare(
+        password, correct_password
+    )
 
 
 def constant_time_compare(val1, val2):
@@ -26,8 +28,8 @@ def constant_time_compare(val1, val2):
     Taken from Django Source Code
     """
     val1 = hashlib.sha1(val1).hexdigest()
-    if val2.startswith('{SHA}'):  # password can be specified as SHA-1 hash in config
-        val2 = val2.split('{SHA}')[1]
+    if val2.startswith("{SHA}"):  # password can be specified as SHA-1 hash in config
+        val2 = val2.split("{SHA}")[1]
     else:
         val2 = hashlib.sha1(val2).hexdigest()
     if len(val1) != len(val2):
@@ -42,16 +44,18 @@ def login_required(app):
     """
     Decorator to mark view as requiring being logged in
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper_login_required(*args, **kwargs):
             auth_on = app.multivisor.use_authentication
 
-            if not auth_on or 'username' in session:
+            if not auth_on or "username" in session:
                 return func(*args, **kwargs)
 
             # user not authenticated, return 401
             abort(401)
 
         return wrapper_login_required
+
     return decorator

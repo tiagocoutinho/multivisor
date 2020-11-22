@@ -1,5 +1,5 @@
 SIGNALS = [
-    'process_changed',
-    'supervisor_changed',
-    'notification',
+    "process_changed",
+    "supervisor_changed",
+    "notification",
 ]

@@ -1,7 +1,7 @@
 import collections
 
 
-def group_processes_status_by(processes, group_by='group', process_filter=None):
+def group_processes_status_by(processes, group_by="group", process_filter=None):
     result = collections.defaultdict(lambda: dict(processes={}))
     if process_filter is None:
         process_filter = lambda p: True
@@ -10,23 +10,27 @@ def group_processes_status_by(processes, group_by='group', process_filter=None):
             continue
         name = process[group_by]
         order = result[name]
-        order['name'] = name
-        order['processes'][uid] = process
+        order["name"] = name
+        order["processes"][uid] = process
     return result
 
 
-def default_process_status(process, max_puid_len=10, group_by='group'):
-    nuid = '{{uid:{}}}'.format(max_puid_len).format(uid=process['uid'])
-    if group_by in (None, 'process'):
-        template = '{nuid} {statename:8} {description}'
+def default_process_status(process, max_puid_len=10, group_by="group"):
+    nuid = "{{uid:{}}}".format(max_puid_len).format(uid=process["uid"])
+    if group_by in (None, "process"):
+        template = "{nuid} {statename:8} {description}"
     else:
-        template = '  {nuid} {statename:8} {description}'
+        template = "  {nuid} {statename:8} {description}"
     return template.format(nuid=nuid, **process)
 
 
-def processes_status(status, group_by='process', process_filter=None,
-                     process_status=default_process_status):
-    processes = status['processes']
+def processes_status(
+    status,
+    group_by="process",
+    process_filter=None,
+    process_status=default_process_status,
+):
+    processes = status["processes"]
     if processes:
         puid_len = max(map(len, processes))
     else:
@@ -34,18 +38,21 @@ def processes_status(status, group_by='process', process_filter=None,
     result = []
     if process_filter is None:
         process_filter = lambda p: True
-    if group_by in (None, 'process'):
+    if group_by in (None, "process"):
         for puid in sorted(processes):
             process = processes[puid]
             if process_filter(process):
-                result.append(process_status(process, max_puid_len=puid_len,
-                                             group_by=group_by))
+                result.append(
+                    process_status(process, max_puid_len=puid_len, group_by=group_by)
+                )
     else:
-        grouped = group_processes_status_by(processes, group_by=group_by,
-                                            process_filter=process_filter)
+        grouped = group_processes_status_by(
+            processes, group_by=group_by, process_filter=process_filter
+        )
         for name in sorted(grouped):
-            result.append(name + ':')
-            for process in grouped[name]['processes'].values():
-                result.append(process_status(process, max_puid_len=puid_len,
-                                             group_by=group_by))
+            result.append(name + ":")
+            for process in grouped[name]["processes"].values():
+                result.append(
+                    process_status(process, max_puid_len=puid_len, group_by=group_by)
+                )
     return result

@@ -5,17 +5,16 @@ from blinker import signal
 
 
 class Multivisor(object):
-
     def __init__(self, url):
         self.url = url
         self._status = None
         self.notifications = []
 
     def stop_processes(self, *names):
-        return self.post('/api/process/stop', data=dict(uid=[','.join(names)]))
+        return self.post("/api/process/stop", data=dict(uid=[",".join(names)]))
 
     def restart_processes(self, *names):
-        return self.post('/api/process/restart', data=dict(uid=[','.join(names)]))
+        return self.post("/api/process/restart", data=dict(uid=[",".join(names)]))
 
     @property
     def status(self):
@@ -25,25 +24,27 @@ class Multivisor(object):
 
     @staticmethod
     def _update_status_stats(status):
-        supervisors, processes = status['supervisors'], status['processes']
-        s_stats = dict(running=sum((s['running']
-                                    for s in status['supervisors'].values())),
-                       total=len(supervisors))
-        s_stats['stopped'] = s_stats['total'] - s_stats['running']
-        p_stats = dict(running=sum((p['running']
-                                    for p in status['processes'].values())),
-                       total=len(processes))
-        p_stats['stopped'] = p_stats['total'] - p_stats['running']
+        supervisors, processes = status["supervisors"], status["processes"]
+        s_stats = dict(
+            running=sum((s["running"] for s in status["supervisors"].values())),
+            total=len(supervisors),
+        )
+        s_stats["stopped"] = s_stats["total"] - s_stats["running"]
+        p_stats = dict(
+            running=sum((p["running"] for p in status["processes"].values())),
+            total=len(processes),
+        )
+        p_stats["stopped"] = p_stats["total"] - p_stats["running"]
         stats = dict(supervisors=s_stats, processes=p_stats)
-        status['stats'] = stats
+        status["stats"] = stats
         return stats
 
     def get_status(self):
-        status = self.get('/api/data').json()
+        status = self.get("/api/data").json()
         # reorganize status per process
-        status['processes'] = processes = {}
-        for supervisor in status['supervisors'].values():
-            processes.update(supervisor['processes'])
+        status["processes"] = processes = {}
+        for supervisor in status["supervisors"].values():
+            processes.update(supervisor["processes"])
         self._update_status_stats(status)
         return status
 
@@ -68,25 +69,25 @@ class Multivisor(object):
         self.post(item, data=value)
 
     def events(self):
-        stream = self.get('/api/stream', stream=True)
+        stream = self.get("/api/stream", stream=True)
         for line in stream.iter_lines():
             if line:
-                line = line.decode('utf-8')
-                if line.startswith('data:'):
+                line = line.decode("utf-8")
+                if line.startswith("data:"):
                     line = line[5:]
                     try:
                         yield json.loads(line)
                     except ValueError:
-                        print('error', line)
+                        print("error", line)
 
     def run(self):
         for event in self.events():
             status = self.status
-            name, payload = event['event'], event['payload']
-            if name == 'process_changed':
-                status['processes'][payload['uid']].update(payload)
+            name, payload = event["event"], event["payload"]
+            if name == "process_changed":
+                status["processes"][payload["uid"]].update(payload)
                 self._update_status_stats(status)
-            elif name == 'notification':
+            elif name == "notification":
                 self.notifications.append(payload)
             event_signal = signal(name)
             event_signal.send(name, payload=payload)

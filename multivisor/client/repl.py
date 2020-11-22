@@ -15,62 +15,65 @@ from prompt_toolkit.validation import ValidationError
 from multivisor.signals import SIGNALS
 from . import util
 
-STYLE = Style.from_dict({
-    'stopped': 'ansired',
-    'starting': 'ansiblue',
-    'running': 'ansigreen',
-    'backoff': 'orange',
-    'stopping': 'ansiblue',
-    'exited': 'ansired bold',
-    'fatal': 'violet',
-    'unknown': 'grey',
-})
+STYLE = Style.from_dict(
+    {
+        "stopped": "ansired",
+        "starting": "ansiblue",
+        "running": "ansigreen",
+        "backoff": "orange",
+        "stopping": "ansiblue",
+        "exited": "ansired bold",
+        "fatal": "violet",
+        "unknown": "grey",
+    }
+)
 
-NOTIF_STYLE = {
-  'DEBUG': 'grey',
-  'INFO': 'blue',
-  'WARNING': 'orange',
-  'ERROR': 'red'
-}
+NOTIF_STYLE = {"DEBUG": "grey", "INFO": "blue", "WARNING": "orange", "ERROR": "red"}
 
 
 def process_description(process):
     # TODO
-    status = process['statename']
-    if status == 'FATAL':
-        return process['description']
-    elif process['running']:
-        start = maya.MayaDT(process['start'])
-        desc = 'pid {pid}, started {start} ({delta})' \
-               .format(pid=process['pid'], start=start.rfc2822(), delta=start.slang_time())
+    status = process["statename"]
+    if status == "FATAL":
+        return process["description"]
+    elif process["running"]:
+        start = maya.MayaDT(process["start"])
+        desc = "pid {pid}, started {start} ({delta})".format(
+            pid=process["pid"], start=start.rfc2822(), delta=start.slang_time()
+        )
     else:
-        stop = maya.MayaDT(process['stop'])
-        desc = 'stopped on {stop} ({delta} ago)' \
-               .format(stop=stop.rfc2822(), delta=stop.slang_time())
+        stop = maya.MayaDT(process["stop"])
+        desc = "stopped on {stop} ({delta} ago)".format(
+            stop=stop.rfc2822(), delta=stop.slang_time()
+        )
     return desc
 
 
-def process_status(process, max_puid_len=10, group_by='group'):
-    state = process['statename']
-    uid = u'{{uid:{}}}'.format(max_puid_len).format(uid=process['uid'])
+def process_status(process, max_puid_len=10, group_by="group"):
+    state = process["statename"]
+    uid = u"{{uid:{}}}".format(max_puid_len).format(uid=process["uid"])
     desc = process_description(process)
-    text = u'{p}{uid} <{lstate}>{state:8}</{lstate}> {description}' \
-           .format(p=('' if group_by in (None, 'process') else '  '),
-                   uid=uid, state=state, lstate=state.lower(),
-                   description=desc)
+    text = u"{p}{uid} <{lstate}>{state:8}</{lstate}> {description}".format(
+        p=("" if group_by in (None, "process") else "  "),
+        uid=uid,
+        state=state,
+        lstate=state.lower(),
+        description=desc,
+    )
     return HTML(text)
 
 
-def processes_status(status, group_by='group', filter='*'):
-    filt = lambda p: fnmatch.fnmatch(p['uid'], filter)
-    return util.processes_status(status, group_by=group_by, process_filter=filt,
-                                 process_status=process_status)
+def processes_status(status, group_by="group", filter="*"):
+    filt = lambda p: fnmatch.fnmatch(p["uid"], filter)
+    return util.processes_status(
+        status, group_by=group_by, process_filter=filt, process_status=process_status
+    )
 
 
 def print_processes_status(status, *args):
     kwargs = {}
     if args:
-        kwargs['filter'] = args[0]
+        kwargs["filter"] = args[0]
     for text in processes_status(status, **kwargs):
         print_formatted_text(text, style=STYLE)
 
@@ -87,7 +90,7 @@ class Commands(object):
     def __init__(self, multivisor):
         self.multivisor = multivisor
 
-    @cmd(name='refresh-status')
+    @cmd(name="refresh-status")
     def refresh_status(self):
         """
         refresh              Refresh status (eq of Ctrl+F5 in browser)
@@ -108,7 +111,7 @@ class Commands(object):
         restart <pattern> <pattern>*    Restart a list of process patterns
         """
         if not args:
-            raise ValidationError(message='Need at least one process')
+            raise ValidationError(message="Need at least one process")
         self.multivisor.restart_processes(*args)
 
     @cmd
@@ -117,7 +120,7 @@ class Commands(object):
         stop <pattern> <pattern>*    Stop a list of process patterns
         """
         if not args:
-            raise ValidationError(message='Need at least one process')
+            raise ValidationError(message="Need at least one process")
         self.multivisor.stop_processes(*args)
 
     @cmd
@@ -129,11 +132,11 @@ class Commands(object):
         {cmds}
         """
         if not args:
-            args = 'help',
+            args = ("help",)
         cmd = self.get_command(args[0])
-        cmds = '  '.join(self.get_commands())
+        cmds = "  ".join(self.get_commands())
         raw_text = cmd.__doc__.format(cmds=cmds)
-        text = '\n'.join(map(str.strip, raw_text.split('\n')))
+        text = "\n".join(map(str.strip, raw_text.split("\n")))
         print_formatted_text(text)
 
     @classmethod
@@ -141,7 +144,7 @@ class Commands(object):
         result = {}
         for name in dir(cls):
             member = getattr(cls, name)
-            cmd = getattr(member, '__cmd__', None)
+            cmd = getattr(member, "__cmd__", None)
             if cmd:
                 result[cmd] = name
         return result
@@ -156,9 +159,8 @@ class Commands(object):
 def Prompt(**kwargs):
     history = InMemoryHistory()
     auto_suggest = AutoSuggestFromHistory()
-    prmpt = u'multivisor> '
-    return PromptSession(prmpt, history=history, auto_suggest=auto_suggest,
-                         **kwargs)
+    prmpt = u"multivisor> "
+    return PromptSession(prmpt, history=history, auto_suggest=auto_suggest, **kwargs)
 
 
 class Repl(object):
@@ -169,11 +171,12 @@ class Repl(object):
         self.multivisor = multivisor
         self.commands = Commands(multivisor)
         status = self.multivisor.status
-        words = list(status['processes'].keys())
+        words = list(status["processes"].keys())
         words.extend(self.commands.get_commands())
         completer = WordCompleter(words)
-        self.session = Prompt(completer=completer, bottom_toolbar=self.toolbar,
-                              key_bindings=self.keys)
+        self.session = Prompt(
+            completer=completer, bottom_toolbar=self.toolbar, key_bindings=self.keys
+        )
         self.session.app.commands = self.commands
         self.__update_toolbar()
         for signal_name in SIGNALS:
@@ -181,27 +184,32 @@ class Repl(object):
 
     def __update_toolbar(self, *args, **kwargs):
         status = self.multivisor.status
-        stats = status['stats']
-        s_stats, p_stats = stats['supervisors'], stats['processes']
+        stats = status["stats"]
+        s_stats, p_stats = stats["supervisors"], stats["processes"]
         notifications = self.multivisor.notifications
         if notifications:
             notif = notifications[-1]
         else:
-            notif = dict(level='INFO', message='Welcome to multivisor CLI')
-        html = u'{name} | Supervisors: {s[total]} (' \
-               u'<b><style bg="green">{s[running]}</style></b>/' \
-               u'<b><style bg="red">{s[stopped]}</style></b>) ' \
-               u'| Processes: {p[total]} (' \
-               u'<b><style bg="green">{p[running]}</style></b>/' \
-               u'<b><style bg="red">{p[stopped]}</style></b>) ' \
-               u'| <style bg="{notif_color}">{notif_msg}</style>' \
-               .format(name=status['name'], s=s_stats, p=p_stats,
-                       notif_color=NOTIF_STYLE[notif['level']],
-                       notif_msg=notif['message'])
+            notif = dict(level="INFO", message="Welcome to multivisor CLI")
+        html = (
+            u"{name} | Supervisors: {s[total]} ("
+            u'<b><style bg="green">{s[running]}</style></b>/'
+            u'<b><style bg="red">{s[stopped]}</style></b>) '
+            u"| Processes: {p[total]} ("
+            u'<b><style bg="green">{p[running]}</style></b>/'
+            u'<b><style bg="red">{p[stopped]}</style></b>) '
+            u'| <style bg="{notif_color}">{notif_msg}</style>'.format(
+                name=status["name"],
+                s=s_stats,
+                p=p_stats,
+                notif_color=NOTIF_STYLE[notif["level"]],
+                notif_msg=notif["message"],
+            )
+        )
         self.__toolbar = HTML(html)
         self.session.app.invalidate()
 
-    @keys.add(u'f5')
+    @keys.add(u"f5")
     def __on_refresh(self):
         run_in_terminal(self.app.commands.refresh_status())
 
@@ -217,7 +225,7 @@ class Repl(object):
         except KeyboardInterrupt:
             raise
         except Exception as err:
-            print_formatted_text(HTML(u'<red>Error:</red> {}'.format(err)))
+            print_formatted_text(HTML(u"<red>Error:</red> {}".format(err)))
 
     def toolbar(self):
         return self.__toolbar
@@ -234,4 +242,3 @@ class Repl(object):
                 continue
             except EOFError:
                 break
-
