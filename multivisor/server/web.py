@@ -264,8 +264,8 @@ def run_with_reloader_if_debug(func):
 def get_parser(args):
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--bind', help='[host][:port] (default: 0:22000)',
-                        default='0:22000')
+    parser.add_argument('--bind', help='[host][:port] (default: *:22000)',
+                        default='*:22000')
     parser.add_argument('-c', help='configuration file',
                         dest='config_file',
                         default='/etc/multivisor.conf')
@@ -287,7 +287,7 @@ def main(args=None):
     if not os.path.exists(options.config_file):
         parser.exit(status=2, message='configuration file does not exist. Bailing out!\n')
 
-    bind = sanitize_url(options.bind, host='0', port=22000)['url']
+    bind = sanitize_url(options.bind, host='*', port=22000)['url']
 
     app.dispatcher = Dispatcher()
     app.multivisor = Multivisor(options)
@@ -310,4 +310,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-
