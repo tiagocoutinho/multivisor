@@ -1,12 +1,9 @@
-#!/usr/bin/env python
 import hashlib
 import functools
 
 import gevent
 from blinker import signal
 from gevent.monkey import patch_all
-
-from multivisor.signals import SIGNALS
 
 patch_all(thread=False)
 
@@ -19,8 +16,10 @@ from flask import Flask, render_template, Response, request, json, jsonify, sess
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_with_reloader
 
-from multivisor.util import sanitize_url, is_login_valid, login_required
+from multivisor.signals import SIGNALS
+from multivisor.util import sanitize_url
 from multivisor.multivisor import Multivisor
+from .util import is_login_valid, login_required
 
 
 log = logging.getLogger('multivisor')
