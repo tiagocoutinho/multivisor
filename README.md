@@ -6,6 +6,7 @@
 />
 
 [![Multivisor](https://img.shields.io/pypi/v/multivisor.svg)](https://pypi.python.org/pypi/multivisor)
+[![Python Versions](https://img.shields.io/pypi/pyversions/multivisor.svg)](https://pypi.python.org/pypi/multivisor)
 [![Build Status](https://travis-ci.org/guy881/multivisor.svg?branch=develop)](https://travis-ci.org/guy881/multivisor)
 
 A centralized supervisor UI (Web & CLI)
@@ -49,7 +50,7 @@ pip install multivisor[rpc]
 Configure the multivisor rpc interface by adding the following lines
 to your *supervisord.conf*:
 
-```toml
+```ini
 [rpcinterface:multivisor]
 supervisor.rpcinterface_factory = multivisor.rpc:make_rpc_interface
 bind=*:9002
@@ -83,7 +84,7 @@ is `<name>:9002`.
 
 Here is an example:
 
-```toml
+```ini
 [global]
 name=ACME
 
@@ -126,7 +127,7 @@ To protect multivisor from unwanted access, you can enable authentication.
 
 Specify `username` and `password` parameters in `global` section of your configuration file e.g.:
 
-```toml
+```ini
 [global]
 username=test
 password=test
