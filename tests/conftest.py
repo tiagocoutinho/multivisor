@@ -1,3 +1,8 @@
+from gevent.monkey import patch_all
+
+patch_all(thread=False)
+
+
 import os
 import signal
 import subprocess
