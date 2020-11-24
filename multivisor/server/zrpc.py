@@ -8,59 +8,69 @@ from functools import partial
 from gevent import spawn
 from gevent.lock import RLock
 from gevent.queue import Queue
+from gevent.fileobject import FileObject
 from zerorpc import stream, Server, LostRemote
 from supervisor.childutils import getRPCInterface
 
 
 READY = "READY\n"
 ACKNOWLEDGED = "RESULT 2\nOK"
-
 DEFAULT_BIND = "tcp://*:9002"
 
 
-def signal(msg):
-    sys.stdout.write(msg)
-    sys.stdout.flush()
+def signal(stream, msg):
+    stream.write(msg)
+    stream.flush()
 
 
-def wait_for_event():
-    header_line = sys.stdin.readline()
+def wait_for_event(stream):
+    header_line = stream.readline()
     event = dict((x.split(":") for x in header_line.split()))
-    payload_str = sys.stdin.read(int(event["len"]))
+    payload_str = stream.read(int(event["len"]))
     event["payload"] = dict((x.split(":") for x in payload_str.split()))
     return event
 
 
-def event_dispatcher_loop(handler):
+def event_producer_loop(dispatch):
+    istream = FileObject(sys.stdin)
+    ostream = FileObject(sys.stdout, mode='w')
     while True:
-        signal(READY)
-        event = wait_for_event()
-        handler(event)
-        signal(ACKNOWLEDGED)
+        signal(ostream, READY)
+        event = wait_for_event(istream)
+        dispatch(event)
+        signal(ostream, ACKNOWLEDGED)
+
+
+def event_consumer_loop(queue, handler):
+    for event in queue:
+        try:
+            handler(event)
+        except:
+            logging.exception("Error processing %s", event)
 
 
 get_rpc = partial(getRPCInterface, environ)
 
 
-def build_method(name):
+def build_method(supervisor, name):
     subsystem_name, func_name = name.split(".", 1)
-    fname = "{}_{}".format(subsystem_name, func_name)
-
     def method(*args):
-        subsystem = getattr(get_rpc(), subsystem_name)
-        return getattr(subsystem, func_name)(*args)
-
-    method.__name__ = fname
-    return fname, method
+        subsystem = getattr(supervisor.rpc, subsystem_name)
+        with supervisor.lock:
+            return getattr(subsystem, func_name)(*args)
+    method.__name__ = func_name
+    return func_name, method
 
 
 class Supervisor(object):
-    def __init__(self, channel):
-        self.channel = channel
+
+
+    def __init__(self):
         self.event_channels = set()
+        self.lock = RLock()
         self.rpc = get_rpc()
         for name in self.rpc.system.listMethods():
-            setattr(self, *build_method(name))
+            setattr(self, *build_method(self, name))
 
     @stream
     def event_stream(self):
@@ -86,31 +96,22 @@ class Supervisor(object):
             pname = "{}:{}".format(payload["groupname"], payload["processname"])
             logging.info("handling %s of %s", name, pname)
             try:
-                payload["process"] = self.rpc.supervisor.getProcessInfo(pname)
+                payload["process"] = self.getProcessInfo(pname)
             except xmlrpc.client.Fault:
                 # probably supervisor is shutting down
                 logging.warn("probably shutting down...")
                 return
+        else:
+            logging.warning("ignored %r", event)
         for channel in self.event_channels:
             channel.put(event)
 
 
 def run(bind=DEFAULT_BIND):
-    def event_consumer_loop():
-        # xmlrpclib is not reentrant. We might have several greenlets accessing
-        # supervisor at the same time so we serialize event treatment here
-        lock = RLock()
-        for event in channel:
-            try:
-                with lock:
-                    supervisor.publish_event(event)
-            except:
-                logging.exception("Error processing %s", event)
-
     channel = Queue()
-    supervisor = Supervisor(channel)
-    spawn(event_consumer_loop)
-    spawn(event_dispatcher_loop, channel.put)
+    supervisor = Supervisor()
+    t1 = spawn(event_consumer_loop, channel, supervisor.publish_event)
+    t2 = spawn(event_producer_loop, channel.put)
     server = Server(supervisor)
     server.bind(bind)
     server.run()
@@ -143,3 +144,7 @@ def main(args=None):
         bind = "tcp://" + bind
     logging.info("Supervisor: %s", environ["SUPERVISOR_SERVER_URL"])
     run(bind)
+
+
+if __name__ == "__main__":
+    main()
