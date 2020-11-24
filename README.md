@@ -51,6 +51,16 @@ From within the same python environment as your supervisord process, type:
 pip install multivisor[rpc]
 ```
 
+There are two options to configure multivisor RPC: 1) as an extra
+[rpcinterface](http://supervisord.org/configuration.html#rpcinterface-x-section-settings)
+to supervisord or 2) an [eventlistener](http://supervisord.org/configuration.html#eventlistener-x-section-settings) process managed by supervisord.
+
+The first option has the advantage of not requiring an extra process but it's
+implementation relies on internal supervisord details. Therefore, the multivisor
+author recommends using the 2nd approach.
+
+#### Option 1: rpcinterface
+
 Configure the multivisor rpc interface by adding the following lines
 to your *supervisord.conf*:
 
@@ -64,9 +74,28 @@ If no *bind* is given, it defaults to `*:9002`.
 
 Repeat the above procedure for every supervisor you have running.
 
+#### Option 2: eventlistener
+
+Configure the multivisor rpc interface by adding the following lines
+to your *supervisord.conf*:
+
+```ini
+[eventlistener:multivisor-rpc]
+command=multivisor-rpc --bind 0:9002
+events=PROCESS_STATE,SUPERVISOR_STATE
+```
+
+If no *bind* is given, it defaults to `*:9002`.
+
+You are free to choose the event listener name. As a convention we propose
+`multivisor-rpc`.
+
+Repeat the above procedure for every supervisor you have running.
+
+
 ### Web server
 
-The multivisor webserver requires a python 3.x environment. It must be
+The multivisor web server requires a python 3.x environment. It must be
 installed on a machine with a network access to the different supervisors.
 This is achieved with:
 
