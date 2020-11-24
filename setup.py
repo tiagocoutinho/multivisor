@@ -32,7 +32,8 @@ setup(
     entry_points=dict(
         console_scripts=[
             "multivisor=multivisor.server.web:main [web]",
-            "multivisor-cli=multivisor.client.cli:main [cli]",
+            "multivisor-rpc=multivisor.server.rpc:main [rpc]",
+            "multivisor-cli=multivisor.client.cli:main [cli]"
         ]
     ),
     extras_require=extras,
