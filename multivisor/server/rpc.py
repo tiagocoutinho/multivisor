@@ -100,8 +100,9 @@ class Supervisor(object):
                 # probably supervisor is shutting down
                 logging.warn("probably shutting down...")
                 return
-        else:
-            logging.warning("ignored %r", event)
+        elif not name.startswith("SUPERVISOR_STATE"):
+            logging.warning("ignored %s", name)
+            return
         for channel in self.event_channels:
             channel.put(event)
 
