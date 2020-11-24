@@ -5,9 +5,12 @@
  src="doc/multivisor_desktop.png"
 />
 
-[![Multivisor](https://img.shields.io/pypi/v/multivisor.svg)](https://pypi.python.org/pypi/multivisor)
-[![Python Versions](https://img.shields.io/pypi/pyversions/multivisor.svg)](https://pypi.python.org/pypi/multivisor)
-[![Build Status](https://travis-ci.org/guy881/multivisor.svg?branch=develop)](https://travis-ci.org/guy881/multivisor)
+
+[![Multivisor][pypi-version]](https://pypi.python.org/pypi/multivisor)
+[![Python Versions][pypi-python-versions]](https://pypi.python.org/pypi/multivisor)
+[![Pypi status][pypi-status]](https://pypi.python.org/pypi/multivisor)
+![License][license]
+[![Build Status][build]](https://travis-ci.org/guy881/multivisor)
 
 A centralized supervisor UI (Web & CLI)
 
@@ -33,7 +36,8 @@ Multivisor is comprised of 3 components:
 The installation and configuration steps are exactly the same on Linux and
 Windows.
 
-Thanks to the [ESRF](https://esrf.eu) sponsorship, multivisor is able to work well with [supervisor-win](https://pypi.org/project/supervisor-win/).
+Thanks to the [ESRF](https://esrf.eu) sponsorship, multivisor is able to work
+well with [supervisor-win](https://pypi.org/project/supervisor-win/).
 
 ### RPC
 
@@ -252,3 +256,10 @@ npm run dev
 
 That's it. If you modify `App.vue` for example, you should see the changes
 directly on your browser.
+
+
+[pypi-python-versions]: https://img.shields.io/pypi/pyversions/multivisor.svg
+[pypi-version]: https://img.shields.io/pypi/v/multivisor.svg
+[pypi-status]: https://img.shields.io/pypi/status/multivisor.svg
+[license]: https://img.shields.io/pypi/l/multivisor.svg
+[build]: https://travis-ci.org/guy881/multivisor.svg?branch=develop
