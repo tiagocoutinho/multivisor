@@ -71,7 +71,7 @@ class Supervisor(dict):
             except zerorpc.TimeoutExpired:
                 self.log.info("Timeout expired")
             except Exception as err:
-                self.log.info("Connection error")
+                self.log.warning("Unexpected error %r", err)
             finally:
                 curr_time = time.time()
                 delta = curr_time - last_retry
