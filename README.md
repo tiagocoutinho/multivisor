@@ -82,7 +82,7 @@ to your *supervisord.conf*:
 ```ini
 [eventlistener:multivisor-rpc]
 command=multivisor-rpc --bind 0:9002
-events=PROCESS_STATE,SUPERVISOR_STATE
+events=PROCESS_STATE,SUPERVISOR_STATE_CHANGE
 ```
 
 If no *bind* is given, it defaults to `*:9002`.
