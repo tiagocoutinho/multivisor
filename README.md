@@ -90,6 +90,8 @@ If no *bind* is given, it defaults to `*:9002`.
 You are free to choose the event listener name. As a convention we propose
 `multivisor-rpc`.
 
+NB: Make sure that `multivisor-rpc` command is accessible or provide full PATH.
+
 Repeat the above procedure for every supervisor you have running.
 
 
