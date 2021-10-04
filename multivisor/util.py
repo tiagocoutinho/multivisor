@@ -48,6 +48,18 @@ def filter_patterns(names, patterns):
     return result
 
 
+def parse_dict(obj):
+    """Returns a copy of `obj` where bytes from key/values was replaced by str"""
+    decoded = {}
+    for k, v in obj.items():
+        if isinstance(k, bytes):
+            k = k.decode("utf-8")
+        if isinstance(v, bytes):
+            v = v.decode("utf-8")
+        decoded[k] = v
+    return decoded
+
+
 def parse_obj(obj):
     if isinstance(obj, bytes):
         return obj.decode()
