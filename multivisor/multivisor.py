@@ -8,9 +8,9 @@ import weakref
 from blinker import signal
 
 try:
-    from ConfigParser import SafeConfigParser
+    from ConfigParser import SafeConfigParser as ConfigParser
 except ImportError:
-    from configparser import SafeConfigParser
+    from configparser import ConfigParser
 
 import zerorpc
 from gevent import spawn, sleep, joinall
@@ -328,7 +328,7 @@ class Process(dict):
 
 
 def load_config(config_file):
-    parser = SafeConfigParser()
+    parser = ConfigParser()
     parser.read(config_file)
     dft_global = dict(name="multivisor")
 
