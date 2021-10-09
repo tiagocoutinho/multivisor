@@ -112,8 +112,8 @@ class Supervisor(object):
 def run(xml_rpc, bind=DEFAULT_BIND):
     channel = Queue()
     supervisor = Supervisor(xml_rpc)
-    t1 = spawn(event_consumer_loop, channel, supervisor.publish_event)
-    t2 = spawn(event_producer_loop, channel.put)
+    spawn(event_consumer_loop, channel, supervisor.publish_event)
+    spawn(event_producer_loop, channel.put)
     server = Server(supervisor)
     server.bind(bind)
     server.run()

@@ -1,3 +1,5 @@
+import gevent
+import pytest
 import requests
 
 from tests.functions import assert_fields_in_object
@@ -152,7 +154,7 @@ def test_stop_process_view(api_base_url, multivisor_instance):
     while not process["running"]:
         multivisor_instance.refresh()
         process = multivisor_instance.get_process(uid)
-        sleep(0.5)
+        gevent.sleep(0.5)
         if index == max_retries:
             raise AssertionError("Process {} is not running".format(uid))
         index += 1
@@ -167,7 +169,7 @@ def test_stop_process_view(api_base_url, multivisor_instance):
     while process["running"]:
         multivisor_instance.refresh()
         process = multivisor_instance.get_process(uid)
-        sleep(0.5)
+        gevent.sleep(0.5)
         if index == max_retries:
             raise AssertionError("Process {} is not stopped".format(uid))
         index += 1

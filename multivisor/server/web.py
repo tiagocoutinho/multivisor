@@ -1,7 +1,5 @@
-import hashlib
 import functools
 
-import gevent
 from blinker import signal
 from gevent.monkey import patch_all
 
@@ -98,7 +96,7 @@ def shutdown_supervisor():
 @login_required(app)
 def restart_process():
     patterns = request.form["uid"].split(",")
-    procs = app.multivisor.restart_processes(*patterns)
+    app.multivisor.restart_processes(*patterns)
     return "OK"
 
 
@@ -316,6 +314,7 @@ def main(args=None):
 
     application = DebuggedApplication(app, evalex=True) if app.debug else app
     http_server = WSGIServer(bind, application=application)
+    http_server.start()
     logging.info("Start accepting requests")
     try:
         http_server.serve_forever()

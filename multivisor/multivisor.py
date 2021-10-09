@@ -17,7 +17,7 @@ from gevent import spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
-from .util import sanitize_url, filter_patterns, parse_obj
+from .util import sanitize_url, filter_patterns
 
 log = logging.getLogger("multivisor")
 
@@ -335,7 +335,6 @@ def load_config(config_file):
     supervisors = {}
     config = dict(dft_global, supervisors=supervisors)
     config.update(parser.items("global"))
-    tasks = []
     for section in parser.sections():
         if not section.startswith("supervisor:"):
             continue

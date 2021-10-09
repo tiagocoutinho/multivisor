@@ -170,7 +170,7 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
                     return
                 # self._log.info(event)
                 yield event
-        except LostRemote as e:
+        except LostRemote:
             self._log.info("remote end of stream disconnected")
         finally:
             self._event_channels.remove(channel)
