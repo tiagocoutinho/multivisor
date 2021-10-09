@@ -64,7 +64,9 @@ def process_status(process, max_puid_len=10, group_by="group"):
 
 
 def processes_status(status, group_by="group", filter="*"):
-    filt = lambda p: fnmatch.fnmatch(p["uid"], filter)
+    def filt(p):
+        return fnmatch.fnmatch(p["uid"], filter)
+
     return util.processes_status(
         status, group_by=group_by, process_filter=filt, process_status=process_status
     )

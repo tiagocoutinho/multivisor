@@ -27,8 +27,11 @@ from supervisor.events import subscribe, Event, getEventNameByType
 # unsubscribe only appears in supervisor > 3.3.4
 try:
     from supervisor.events import unsubscribe
-except:
-    unsubscribe = lambda x, y: None
+except ImportError:
+
+    def unsubscribe(x, y):
+        pass
+
 
 from .util import sanitize_url, parse_obj
 

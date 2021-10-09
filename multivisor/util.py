@@ -8,9 +8,9 @@ except ImportError:
 
 import six
 
-_PROTO_RE_STR = "(?P<protocol>\w+)\://"
-_HOST_RE_STR = "?P<host>([\w\-_]+\.)*[\w\-_]+|\*"
-_PORT_RE_STR = "\:(?P<port>\d{1,5})"
+_PROTO_RE_STR = "(?P<protocol>\w+)\://"  # noqa: W605
+_HOST_RE_STR = "?P<host>([\w\-_]+\.)*[\w\-_]+|\*"  # noqa: W605
+_PORT_RE_STR = "\:(?P<port>\d{1,5})"  # noqa: W605
 
 URL_RE = re.compile(
     "({protocol})?({host})?({port})?".format(

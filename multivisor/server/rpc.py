@@ -35,7 +35,7 @@ def wait_for_event(stream):
 
 def event_producer_loop(dispatch):
     istream = FileObject(sys.stdin)
-    ostream = FileObject(sys.stdout, mode='w')
+    ostream = FileObject(sys.stdout, mode="w")
     while True:
         signal(ostream, READY)
         event = wait_for_event(istream)
@@ -47,7 +47,7 @@ def event_consumer_loop(queue, handler):
     for event in queue:
         try:
             handler(event)
-        except:
+        except Exception:
             logging.exception("Error processing %s", event)
 
 
@@ -56,16 +56,17 @@ get_rpc = partial(getRPCInterface, environ)
 
 def build_method(supervisor, name):
     subsystem_name, func_name = name.split(".", 1)
+
     def method(*args):
         subsystem = getattr(supervisor.rpc, subsystem_name)
         with supervisor.lock:
             return getattr(subsystem, func_name)(*args)
+
     method.__name__ = func_name
     return func_name, method
 
 
 class Supervisor(object):
-
     def __init__(self, xml_rpc):
         self.event_channels = set()
         self.lock = RLock()
@@ -82,7 +83,7 @@ class Supervisor(object):
             yield "First event to trigger connection. Please ignore me!"
             for event in channel:
                 yield event
-        except LostRemote as e:
+        except LostRemote:
             logging.info("remote end of stream disconnected")
         finally:
             self.event_channels.remove(channel)
@@ -147,7 +148,9 @@ def main(args=None):
     try:
         rpc = get_rpc()
     except KeyError:
-        print("multivisor-rpc can only run as supervisor eventlistener", file=sys.stderr)
+        print(
+            "multivisor-rpc can only run as supervisor eventlistener", file=sys.stderr
+        )
         exit(1)
     run(rpc, bind)
 

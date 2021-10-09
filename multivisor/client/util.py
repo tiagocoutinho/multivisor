@@ -4,7 +4,10 @@ import collections
 def group_processes_status_by(processes, group_by="group", process_filter=None):
     result = collections.defaultdict(lambda: dict(processes={}))
     if process_filter is None:
-        process_filter = lambda p: True
+
+        def process_filter(p):
+            return True
+
     for uid, process in processes.items():
         if not process_filter(process):
             continue
@@ -37,7 +40,10 @@ def processes_status(
         puid_len = 8
     result = []
     if process_filter is None:
-        process_filter = lambda p: True
+
+        def process_filter(p):
+            return True
+
     if group_by in (None, "process"):
         for puid in sorted(processes):
             process = processes[puid]
