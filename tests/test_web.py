@@ -2,8 +2,7 @@ import gevent
 import pytest
 import requests
 
-from tests.functions import assert_fields_in_object
-from tests.conftest import *
+from .functions import assert_fields_in_object
 
 
 @pytest.mark.usefixtures("api_base_url")

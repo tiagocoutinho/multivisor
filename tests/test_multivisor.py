@@ -1,7 +1,7 @@
+import gevent
 import pytest
 
-from tests.conftest import *
-from tests.functions import assert_fields_in_object
+from .functions import assert_fields_in_object
 
 
 @pytest.mark.usefixtures("supervisor_test001")
@@ -107,7 +107,7 @@ def test_stop_process(multivisor_instance):
     while not process["running"]:  # make sure process is running
         multivisor_instance.refresh()
         process = multivisor_instance.get_process(uid)
-        sleep(0.5)
+        gevent.sleep(0.5)
         if index == max_retries:
             raise AssertionError("Process {} is not running".format(uid))
         index += 1

@@ -1,5 +1,13 @@
--r requirements.txt
-pytest==4.4.1
+Flask==1.1.4
+blinker==1.4
+gevent==21.8.0
+zerorpc==0.6.3
+supervisor==4.2.2
 requests==2.21.0
 isort==4.3.20
-flake8==3.7.7
+bumpversion==0.6.0
+pytest==6.2.5
+pytest-asyncio==0.15.1
+pytest-cov==2.12.1
+tox==3.24.4
+flake8==3.9.2

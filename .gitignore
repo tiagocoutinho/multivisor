@@ -3,10 +3,11 @@ node_modules/
 multivisor/dist/
 build_py/
 dist/
+htmlcov/
 npm-debug.log*
 *.egg-info
 .pytest_cache/
-
+.tox/
 *.pyc
 *.log*
 *.pid
