@@ -4,7 +4,6 @@ import logging
 import os
 import time
 import weakref
-import requests
 
 from blinker import signal
 
@@ -245,7 +244,6 @@ class Process(dict):
         self["supervisor"] = supervisor_name
         self["host"] = supervisor["host"]
         self["uid"] = uid
-        self["gui_url"] = self.get_gui_url()
 
     @property
     def server(self):
@@ -254,14 +252,6 @@ class Process(dict):
     @property
     def full_name(self):
         return self["full_name"]
-
-    def get_gui_url(self):
-        try:
-            response = requests.post('http://circus.lab/services/supervisor',
-                json={'host': self["host"], 'process': self["name"]})
-            return response.json()
-        except: # JSON error (no process) or can't communicate with server
-            return ''
 
     def handle_event(self, event):
         event_name = event["eventname"]
