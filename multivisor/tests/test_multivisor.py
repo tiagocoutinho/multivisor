@@ -2,6 +2,7 @@ import pytest
 
 from tests.conftest import *
 from tests.functions import assert_fields_in_object
+import contextlib
 
 
 @pytest.mark.usefixtures("supervisor_test001")
@@ -34,6 +35,52 @@ def test_supervisor_info(multivisor_instance):
     assert len(info["processes"]) == 10
     assert info["name"] == "test001"
     assert info["identification"] == "supervisor"
+
+
+@pytest.mark.usefixtures("supervisor_test001")
+def test_supervisor_info_from_bytes(multivisor_instance):
+    supervisor = multivisor_instance.get_supervisor("test001")
+
+    @contextlib.contextmanager
+    def patched_getAllProcessInfo(s):
+        try:
+            getAllProcessInfo = s.server.getAllProcessInfo
+
+            def mockedAllProcessInfo():
+                processesInfo = getAllProcessInfo()
+                for info in processesInfo:
+                    info[b"name"] = info.pop("name").encode("ascii")
+                    info[b"description"] = info.pop("description").encode("ascii")
+                return processesInfo
+
+            s.server.getAllProcessInfo = mockedAllProcessInfo
+            yield
+        finally:
+            s.server.getAllProcessInfo = getAllProcessInfo
+
+    # Mock getAllProcessInfo with binary data
+    with patched_getAllProcessInfo(supervisor):
+        info = supervisor.read_info()
+        assert_fields_in_object(
+            [
+                "running",
+                "host",
+                "version",
+                "identification",
+                "name",
+                "url",
+                "supervisor_version",
+                "pid",
+                "processes",
+                "api_version",
+            ],
+            info,
+        )
+        assert info["running"]
+        assert info["host"] == "localhost"
+        assert len(info["processes"]) == 10
+        assert info["name"] == "test001"
+        assert info["identification"] == "supervisor"
 
 
 @pytest.mark.usefixtures("supervisor_test001")
