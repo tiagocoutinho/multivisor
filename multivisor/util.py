@@ -61,6 +61,9 @@ def parse_dict(obj):
 
 
 def parse_obj(obj):
+    """Returns `obj` or a copy replacing recursively bytes by str
+
+    `obj` can be any objects, including list and dictionary"""
     if isinstance(obj, bytes):
         return obj.decode()
     elif isinstance(obj, six.text_type):
