@@ -17,7 +17,7 @@ from gevent import spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
 
-from .util import sanitize_url, filter_patterns, parse_obj
+from .util import sanitize_url, filter_patterns, parse_dict
 
 log = logging.getLogger("multivisor")
 
@@ -109,11 +109,12 @@ class Supervisor(dict):
         info["processes"] = processes = {}
         procInfo = server.getAllProcessInfo()
         for proc in procInfo:
-            process = Process(self, proc)
+            process = Process(self, parse_dict(proc))
             processes[process["uid"]] = process
         return info
 
     def update_info(self, info):
+        info = parse_dict(info)
         if self == info:
             this_p, info_p = self["processes"], info["processes"]
             if this_p != info_p:
@@ -259,6 +260,7 @@ class Process(dict):
             payload = event["payload"]
             proc_info = payload.get("process")
             if proc_info is not None:
+                proc_info = parse_dict(proc_info)
                 old = self.update_info(proc_info)
                 if old != self:
                     old_state, new_state = old["statename"], self["statename"]
@@ -273,7 +275,8 @@ class Process(dict):
     def read_info(self):
         proc_info = dict(self.Null)
         try:
-            proc_info.update(self.server.getProcessInfo(self.full_name))
+            from_serv = parse_dict(self.server.getProcessInfo(self.full_name))
+            proc_info.update(from_serv)
         except Exception as err:
             self.log.warn("Failed to read info from %s: %s", self["uid"], err)
         return proc_info
@@ -286,6 +289,7 @@ class Process(dict):
 
     def refresh(self):
         proc_info = self.read_info()
+        proc_info = parse_dict(proc_info)
         self.update_info(proc_info)
 
     def start(self):
