@@ -1,8 +1,8 @@
-import sys
+import platform
 from setuptools import setup, find_packages
 
 
-supervisor = "supervisor-win" if "win" in sys.platform else "supervisor"
+supervisor = "supervisor-win" if platform.system() == "Windows" else "supervisor"
 
 extras = {
     "rpc": ["zerorpc", supervisor],
