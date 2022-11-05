@@ -1,0 +1,29 @@
+# multivisor demonstration
+# $ docker-compose build --parallel
+# $ docker-compose up
+# Point your web browser to http://localhost:22000
+
+version: '3'
+services:
+  lid001:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["supervisord", "-c", "/etc/supervisord/lid001.conf"]
+    ports:
+      - 9011:9001
+      - 22000:22000
+  lid002:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["supervisord", "-c", "/etc/supervisord/lid002.conf"]
+    ports:
+      - 9021:9001
+  baslid001:
+    build: 
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["supervisord", "-c", "/etc/supervisord/baslid001.conf"]
+    ports:
+      - 9031:9001
