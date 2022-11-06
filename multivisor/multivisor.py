@@ -417,6 +417,18 @@ class Multivisor(object):
         return {puid: proc for sprocs in procs for puid, proc in sprocs.items()}
 
     @property
+    def groups(self):
+        groups = {}
+        for supervisor in self.supervisors.values():
+            for puid, process in supervisor["processes"].items():
+                gname = process["group"]
+                group = groups.get(gname)
+                if group is None:
+                    groups[gname] = group = {"name": gname, "processes": {}}
+                group["processes"][puid] = process
+        return groups
+
+    @property
     def use_authentication(self):
         """
         :return: whether authentication should be used

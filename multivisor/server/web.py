@@ -1,20 +1,15 @@
-import hashlib
-import functools
-
-import gevent
-from blinker import signal
 from gevent.monkey import patch_all
-
 patch_all(thread=False)
 
-import os
+import functools
 import logging
+import os
 
+from blinker import signal
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify, session
+from flask import Flask, render_template, Response, request, json, jsonify, session, redirect, url_for
 from werkzeug.debug import DebuggedApplication
-from werkzeug.serving import run_with_reloader
 
 from multivisor.signals import SIGNALS
 from multivisor.util import sanitize_url
@@ -22,9 +17,49 @@ from multivisor.multivisor import Multivisor
 from .util import is_login_valid, login_required
 
 
+STATES_TRANSITIONS = {
+    "RUNNING": ["STOPPING", "EXITED"],
+    "STARTING": ["STOPPING", "RUNNING", "BACKOFF"],
+    "STOPPED": ["STARTING"],
+    "STOPPING": ["STOPPED"],
+    "BACKOFF": ["STARTING", "FATAL"],
+    "FATAL": ["STARTING"],
+    "EXITED": ["STARTING"],
+}
+
+
+STATES_ACTIONS = {
+    "RUNNING": ["STOP", "KILL", "RESTART"],
+    "STARTING": ["STOP", "KILL"],
+    "STOPPED": ["START",],
+    "STOPPING": ["KILL"],
+    "BACKOFF": ["START"],
+    "FATAL": ["START"],
+    "EXITED": ["START"],
+}
+
+
+STATES_COLORS = {
+    "RUNNING": "success",
+    "STARTING": "primary",
+    "STOPPED": "danger",
+    "STOPPING": "dark",
+    "BACKOFF": "warning",
+    "FATAL": "danger",
+    "EXITED": "secondary",
+}
+
+
+STATIC_DATA = {
+    "STATES": STATES_TRANSITIONS,
+    "STATES_ACTIONS": STATES_ACTIONS,
+    "STATES_COLORS": STATES_COLORS,
+}
+
+
 log = logging.getLogger("multivisor")
 
-app = Flask(__name__, static_folder="./dist/static", template_folder="./dist")
+app = Flask(__name__)
 
 
 @app.route("/api/admin/reload")
@@ -196,16 +231,125 @@ def stream():
         client = queue.Queue()
         app.dispatcher.add_listener(client)
         for event in client:
-            yield event
+            data = json.dumps(event)
+            yield "data: {0}\n\n".format(data)
         app.dispatcher.remove_listener(client)
 
     return Response(event_stream(), mimetype="text/event-stream")
 
 
+# ----------------------------------------------------------------------------
+# User Interface
+# ----------------------------------------------------------------------------
+
+TEMPLATES = {
+    None: "index.html",
+    "groups": "groups/index.html",
+    "processes": "processes/index.html",
+    "supervisors": "supervisors/index.html",
+}
+
+def render_view(view=None, **kwargs):
+    if view is None:
+        kwargs["view"] = request.path.rsplit("/", 1)[-1]
+    view = TEMPLATES.get(view)
+    if view is None:
+        view = TEMPLATES[None]
+    print(view, kwargs)
+    kwargs["multivisor"] = app.multivisor
+    kwargs.update(STATIC_DATA)
+    return render_template(view, **kwargs)
+
+
+def ui_render(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        htmx = request.headers.get("HX-Request") == "true"
+        if not htmx:
+            return render_view()
+        return func(*args, **kwargs)
+    return wrapper
+
+
+@app.get("/ui/processes")
+@ui_render
+def view_processes():
+    return render_view("processes")
+
+
+@app.get("/ui/processes/body")
+def view_processes_body():
+    return render_template("processes/table_body.html", multivisor=app.multivisor, **STATIC_DATA)
+
+
+@app.get("/ui/processes/<uid>")
+def process_row(uid):
+    process = app.multivisor.get_process(uid)
+    return render_template("processes/row.html", process=process, **STATIC_DATA)
+
+
+@app.get("/ui/groups")
+@ui_render
+def view_groups():
+    return render_view("groups")
+
+
+@app.get("/ui/groups/<uid>")
+def groups_row(uid):
+    process = app.multivisor.get_process(uid)
+    return render_template("groups/row.html", process=process, **STATIC_DATA)
+
+
+@app.get("/ui/supervisors")
+@ui_render
+def view_supervisors():
+    return render_view("supervisors")
+
+
+@app.get("/ui/supervisors/<uid>")
+def supervisors_row(uid):
+    process = app.multivisor.get_process(uid)
+    return render_template("supervisors/row.html", process=process, **STATIC_DATA)
+
+    
+@app.get("/ui/stream")
+def ui_stream():
+    def event_stream():
+        client = queue.Queue()
+        app.dispatcher.add_listener(client)
+        for event in client:
+            name = event["event"]
+            if name == "process_changed":
+                name = f"{name}/{event['payload']['uid']}"
+            payload = f"event: {name}\ndata: \n\n"
+            yield payload
+        app.dispatcher.remove_listener(client)
+
+    return Response(event_stream(), mimetype="text/event-stream")
+
+
+@app.post("/ui/process/<uid>/start")
+def process_start(uid):
+    app.multivisor.restart_processes(uid)
+    return "OK"
+
+
+@app.post("/ui/process/<uid>/stop")
+def process_stop(uid):
+    app.multivisor.stop_processes(uid)
+    return "OK"
+
+
+@app.post("/ui/process/<uid>/kill")
+def process_kill(uid):
+    app.multivisor.kill_processes(uid)
+    return "OK"
+
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-def catch_all(path):
-    return render_template("index.html")
+def root(path):
+    return render_template("index.html", view="groups", multivisor=app.multivisor, **STATIC_DATA)
 
 
 class Dispatcher(object):
@@ -221,8 +365,7 @@ class Dispatcher(object):
         self.clients.remove(client)
 
     def on_multivisor_event(self, signal, payload):
-        data = json.dumps(dict(payload=payload, event=signal))
-        event = "data: {0}\n\n".format(data)
+        event = dict(payload=payload, event=signal)
         for client in self.clients:
             client.put(event)
 

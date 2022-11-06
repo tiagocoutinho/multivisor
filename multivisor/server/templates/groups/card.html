@@ -1,0 +1,15 @@
+<div class="card">
+    <h5 class="card-header text-bg-primary">
+        {{ group["name"] }}
+    </h5>
+    <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+        {% for process in group["processes"].values() %}
+        <li class="list-group-item d-flex justify-content-between align-items-center"
+        hx-trigger="sse:process_changed/{{ process["uid"] }}" hx-get="/ui/groups/{{ process["uid"] }}">
+            {% include 'groups/row.html' %}
+        </li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,5 @@
+<th scope="row">{{ process['name'] }}</th>
+<td>{{ process["group"] }}</td>
+<td>{{ process["supervisor"] }}</td>
+<td>{% include 'state.html' %}</td>
+<td>{% include 'actions.html' %}</td>

@@ -1,0 +1,4 @@
+{% set state = process["statename"] %}
+<div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+    <div class="btn btn-{{ STATES_COLORS[state] }} pe-none">{{ state }}</div>
+</div>

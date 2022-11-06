@@ -1,0 +1,7 @@
+<div class="row" data-masonry='{"percentPosition": true }'>
+{% for supervisor in multivisor.supervisors.values() %}
+<div class="col-sm-12 col-md-6 col-lg-6 col-xl-4 col-xxl-3 p-1">
+{% include 'supervisors/card.html' %}
+</div>
+{% endfor %}
+</div>
