@@ -195,6 +195,17 @@ multivisor-cli --url localhost:22000
 
 ![CLI in action](doc/cli.svg)
 
+# Running the docker demo
+
+```bash
+$ docker-compose build --parallel
+$ docker-compose up
+```
+
+That's it!
+
+Start a browser pointing to [localhost:22000](http://localhost:22000).
+
 # Running the example from scratch
 
 ```bash
