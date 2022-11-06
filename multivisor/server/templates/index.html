@@ -5,9 +5,9 @@
     <title>{{ multivisor.safe_config["name"] }} process supervision</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/htmx.org@1.8.2"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+    <script src="{{ url_for('static', filename='htmx.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons.min.css') }}">
     <style>
       .cursor-pointer { cursor: pointer; }
     </style>
@@ -16,7 +16,7 @@
   <body>
     <nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-primary">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">{{ multivisor.safe_config["name"] }}</a>
+        <a class="navbar-brand" href="/">{{ multivisor.safe_config["name"] }}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#views" aria-controls="views" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -50,7 +50,7 @@
         {% endif %}
       </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"></script>
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='masonry.pkgd.min.js') }}"></script>
   </body>
 </html>
