@@ -1,23 +1,19 @@
 # syntax=docker/dockerfile:1
 FROM python:3.11-alpine as build
 
-WORKDIR /usr/app
-RUN python -m venv /usr/app/venv
-ENV PATH="/usr/app/venv/bin:$PATH"
-
-COPY . multivisor/
-WORKDIR /usr/app/multivisor
-
-RUN --mount=type=cache,target=/root/.cache/pip pip install --disable-pip-version-check supervisor .[rpc,web]
-
-FROM python:3.11-alpine
-
 RUN mkdir /var/log/supervisord
 
-COPY --from=build /usr/app/venv /usr/app/venv
-
-ENV PATH=/usr/app/venv/bin:$PATH
-
+WORKDIR /usr/app/multivisor
+COPY multivisor ./multivisor
+COPY setup.cfg setup.py README.md requirements.txt requirements-dev.txt ./
 COPY docker/multivisor/multivisor.conf /etc/
 COPY docker/supervisord/ /etc/supervisord
 COPY docker/bin/* /usr/local/bin/
+
+RUN python -m venv /usr/app/venv
+ENV PATH=/usr/app/venv/bin:$PATH
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements-dev.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --disable-pip-version-check --no-deps -e .[all]

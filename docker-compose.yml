@@ -12,7 +12,6 @@ services:
     command: ["supervisord", "-c", "/etc/supervisord/lid001.conf"]
     ports:
       - 9011:9001
-      - 22000:22000
   lid002:
     build: 
       context: .
@@ -27,3 +26,23 @@ services:
     command: ["supervisord", "-c", "/etc/supervisord/baslid001.conf"]
     ports:
       - 9031:9001
+  multivisor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    #command: ["multivisor", "-c", "/etc/multivisor.conf"]
+    command:
+    - watchmedo
+    - auto-restart
+    - -Rv
+    - --patterns
+    - '*.py;*.html'
+    - multivisor
+    - --
+    - -c
+    - /etc/multivisor.conf
+    ports:
+      - 22000:22000
+    volumes:
+      - ./docker/multivisor/multivisor.conf:/etc/multivisor.conf
+      - ./multivisor/:/usr/app/multivisor/multivisor

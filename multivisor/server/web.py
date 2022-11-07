@@ -438,6 +438,8 @@ def main(args=None):
     log_fmt = "%(levelname)s %(asctime)-15s %(name)s: %(message)s"
     logging.basicConfig(level=log_level, format=log_fmt)
 
+    logging.info("Bootstraping %d...", os.getpid())
+
     if not os.path.exists(options.config_file):
         parser.exit(
             status=2, message="configuration file does not exist. Bailing out!\n"
