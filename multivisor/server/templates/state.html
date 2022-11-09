@@ -1,4 +1,9 @@
 {% set state = process["statename"] %}
 <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
-    <div class="btn btn-{{ STATES_COLORS[state] }} pe-none">{{ state }}</div>
+    <button class="btn btn-{{ STATES_COLORS[state] }} pe-none">
+        {% if state in ["STARTING", "STOPPING"] %}
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        {% endif %}
+        {{ state }}
+    </button>
 </div>
