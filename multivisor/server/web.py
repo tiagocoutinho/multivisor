@@ -346,9 +346,8 @@ def process_kill(uid):
     return "OK"
 
 
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def root(path):
+@app.route("/")
+def root():
     return render_template("index.html", view="groups", multivisor=app.multivisor, **STATIC_DATA)
 
 
