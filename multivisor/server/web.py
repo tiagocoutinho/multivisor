@@ -60,6 +60,7 @@ STATIC_DATA = {
 log = logging.getLogger("multivisor")
 
 app = Flask(__name__)
+app.jinja_env.line_statement_prefix = '#'
 
 
 @app.route("/api/admin/reload")

@@ -4,12 +4,12 @@
     </h5>
     <div class="card-body p-0">
         <ul class="list-group list-group-flush">
-        {% for process in group["processes"].values() %}
+        # for process in group["processes"].values()
         <li class="list-group-item d-flex justify-content-between align-items-center"
         hx-trigger="sse:process_changed/{{ process["uid"] }}" hx-get="/ui/groups/{{ process["uid"] }}">
-            {% include 'groups/row.html' %}
+            # include 'groups/row.html'
         </li>
-        {% endfor %}
+        # endfor
         </ul>
     </div>
 </div>

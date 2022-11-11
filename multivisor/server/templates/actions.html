@@ -1,8 +1,8 @@
-{% set state = process["statename"] %}
-{% set uid = process['uid'] %}
-{% set actions_allowed = STATES_ACTIONS[state] %}
-{% set action = "start" if "START" in actions_allowed else "stop" %}
-{% set action_icon = "arrow-clockwise" if "START" in actions_allowed else "stop-fill" %}
+# set state = process["statename"]
+# set uid = process['uid']
+# set actions_allowed = STATES_ACTIONS[state]
+# set action = "start" if "START" in actions_allowed else "stop"
+# set action_icon = "arrow-clockwise" if "START" in actions_allowed else "stop-fill"
 
 <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
     <button type="button" class="btn btn-primary bi-{{ action_icon }}"
