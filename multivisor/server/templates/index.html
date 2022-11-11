@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
   <head>
     <title>{{ multivisor.safe_config["name"] }} process supervision</title>
     <meta charset="UTF-8">
@@ -15,42 +14,7 @@
   </head>
 
   <body>
-    <nav class="navbar sticky-top navbar-expand-md navbar-dark bg-primary">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="/">{{ multivisor.safe_config["name"] }}</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#views" aria-controls="views" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="views">
-          <ul class="navbar-nav nav-tabs me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link cursor-pointer" hx-get="/ui/groups" hx-target="#view" hx-push-url="true">Groups</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link cursor-pointer" hx-get="/ui/supervisors" hx-target="#view" hx-push-url="true">Supervisors</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link cursor-pointer" hx-get="/ui/processes" hx-target="#view" hx-push-url="true">Processes</a>
-            </li>
-          </ul>
-          <form class="d-flex" role="search">
-            <input class="form-control me-2" type="search" placeholder="Filter" aria-label="Filter">
-          </form>
-        </div>
-      </div>
-    </nav>
-    
-    <div class="container-fluid py-4" hx-sse="connect:/ui/stream">
-      <div class="container-fluid" id="view" >
-        {% if view == "groups" %}
-          {% include 'groups/index.html' %}
-        {% elif view == "supervisors" %}
-          {% include 'supervisors/index.html' %}
-        {% elif view == "processes" %}
-          {% include 'processes/index.html' %}
-        {% endif %}
-      </div>
-    </div>
+    {% include 'view.html' %}
     <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='masonry.pkgd.min.js') }}"></script>
   </body>

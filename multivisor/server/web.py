@@ -8,7 +8,7 @@ import os
 from blinker import signal
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify, session, redirect, url_for
+from flask import Flask, render_template, Response, request, json, jsonify, session
 from werkzeug.debug import DebuggedApplication
 
 from multivisor.signals import SIGNALS
@@ -251,14 +251,14 @@ TEMPLATES = {
 
 def render_view(view=None, **kwargs):
     if view is None:
-        kwargs["view"] = request.path.rsplit("/", 1)[-1]
-    view = TEMPLATES.get(view)
-    if view is None:
-        view = TEMPLATES[None]
-    print(view, kwargs)
+        view = request.path.rsplit("/", 1)[-1]
+        template = "index.html"
+    else:
+        template = "view.html"
+    kwargs["view"] = view
     kwargs["multivisor"] = app.multivisor
     kwargs.update(STATIC_DATA)
-    return render_template(view, **kwargs)
+    return render_template(template, **kwargs)
 
 
 def ui_render(func):
@@ -395,16 +395,6 @@ def custom_401(error):
     )
 
 
-def run_with_reloader_if_debug(func):
-    @functools.wraps(func)
-    def wrapper_login_required(*args, **kwargs):
-        if not app.debug:
-            return func(*args, **kwargs)
-        return run_with_reloader(func, *args, **kwargs)
-
-    return wrapper_login_required
-
-
 def get_parser(args):
     import argparse
 
@@ -428,7 +418,6 @@ def get_parser(args):
     return parser
 
 
-@run_with_reloader_if_debug
 def main(args=None):
     parser = get_parser(args)
     options = parser.parse_args(args)
