@@ -2,20 +2,45 @@
 # set uid = process['uid']
 # set actions_allowed = STATES_ACTIONS[state]
 # set action = "start" if "START" in actions_allowed else "stop"
-# set action_icon = "arrow-clockwise" if "START" in actions_allowed else "stop-fill"
+# set action_icon = "play-fill" if "START" in actions_allowed else "stop-fill"
+# set is_signal_action_allowed = state in ["RUNNING", "STOPPING", "STARTING"]
 
-<div class="btn-group btn-group-sm" role="group" aria-label="Actions">
-    <button type="button" class="btn btn-primary bi-{{ action_icon }}"
-        hx-post="/ui/process/{{ uid }}/{{ action }}" hx-swap="none"
-    >
-    </button>
-    <div class="btn-group btn-group-sm" role="group">
-        <ul class="dropdown-menu">
-            <li class="dropdown-item" hx-post="/ui/process/{{ uid }}/kill" hx-swap="none"
-                {{"disabled" if "KILL" not in actions_allowed else ""}}>
-                Kill
-            </li>
-        </ul>
-        <button type="button" class="btn btn-primary bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></button>
+<div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+    <div class="btn-group btn-group-sm me-2" role="group" aria-label="Actions">
+        <button type="button" class="btn btn-primary bi-{{ action_icon }}"
+            data-bs-toggle="tooltip" data-bs-title="{{ action }} the process"
+            hx-post="/ui/process/{{ uid }}/{{ action }}" hx-swap="none"
+        >
+        </button>
+        <button type="button" class="btn btn-primary bi-exclamation-octagon-fill"
+            data-bs-toggle="tooltip" data-bs-title="kill the process"
+            hx-post="/ui/process/{{ uid }}/kill" hx-swap="none"
+            {{"disabled" if "KILL" not in actions_allowed else ""}}>
+        </button>
+        <div class="btn-group btn-group-sm" role="group">
+            <ul class="dropdown-menu" >
+                # for signal, n in OS_SIGNALS|dictsort 
+                <li class="dropdown-item" hx-post="/ui/process/{{ uid }}/signal/{{ signal }}" hx-swap="none">
+                    {{ signal }}( {{ n }} )
+                </li>
+                # endfor
+            </ul>
+            <button type="button" class="btn btn-primary bi-stoplights-fill" data-bs-toggle="dropdown" aria-expanded="false"
+                {{"" if is_signal_action_allowed else "disabled"}}>
+            </button>
+        </div>
+    </div>
+
+    <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+        <button type="button" class="btn btn-secondary bi-info-lg"
+            data-bs-toggle="modal" data-bs-target="#modal-{{ uid }}"
+            hx-get="/ui/process/{{ uid }}/info" hx-target="#content-{{ uid }}"" hx-trigger="click" hx-swap="innerHTML"
+        >
+        </button>
+    </div>
+    <div id="modal-{{ uid }}" class="modal fade" tabindex="-1" aria-labelledby="modal-label-{{ uid }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" id="content-{{ uid }}">
+            # include 'process.html'
+        </div>
     </div>
 </div>

@@ -20,7 +20,7 @@ ACKNOWLEDGED = "RESULT 2\nOK"
 DEFAULT_BIND = "tcp://*:9002"
 
 
-def signal(stream, msg):
+def notify(stream, msg):
     stream.write(msg)
     stream.flush()
 
@@ -37,10 +37,10 @@ def event_producer_loop(dispatch):
     istream = FileObject(sys.stdin)
     ostream = FileObject(sys.stdout, mode='w')
     while True:
-        signal(ostream, READY)
+        notify(ostream, READY)
         event = wait_for_event(istream)
         dispatch(event)
-        signal(ostream, ACKNOWLEDGED)
+        notify(ostream, ACKNOWLEDGED)
 
 
 def event_consumer_loop(queue, handler):

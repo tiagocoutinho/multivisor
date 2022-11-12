@@ -13,7 +13,7 @@ from werkzeug.debug import DebuggedApplication
 
 from multivisor.signals import SIGNALS
 from multivisor.util import sanitize_url
-from multivisor.multivisor import Multivisor
+from multivisor.multivisor import Multivisor, OS_SIGNAL_MAP
 from .util import is_login_valid, login_required
 
 
@@ -54,6 +54,7 @@ STATIC_DATA = {
     "STATES": STATES_TRANSITIONS,
     "STATES_ACTIONS": STATES_ACTIONS,
     "STATES_COLORS": STATES_COLORS,
+    "OS_SIGNALS": OS_SIGNAL_MAP,
 }
 
 
@@ -295,7 +296,7 @@ def view_groups():
     return render_view("groups")
 
 
-@app.get("/ui/groups/<uid>")
+@app.get("/ui/groups/process/<uid>")
 def groups_row(uid):
     process = app.multivisor.get_process(uid)
     return render_template("groups/row.html", process=process, **STATIC_DATA)
@@ -307,7 +308,7 @@ def view_supervisors():
     return render_view("supervisors")
 
 
-@app.get("/ui/supervisors/<uid>")
+@app.get("/ui/supervisors/process/<uid>")
 def supervisors_row(uid):
     process = app.multivisor.get_process(uid)
     return render_template("supervisors/row.html", process=process, **STATIC_DATA)
@@ -329,6 +330,13 @@ def ui_stream():
     return Response(event_stream(), mimetype="text/event-stream")
 
 
+@app.get("/ui/process/<uid>/info")
+def ui_process_info(uid):
+    process = app.multivisor.get_process(uid)
+    process.refresh()
+    return render_template("process.html", process=process, **STATIC_DATA)
+
+
 @app.post("/ui/process/<uid>/start")
 def process_start(uid):
     app.multivisor.restart_processes(uid)
@@ -344,6 +352,12 @@ def process_stop(uid):
 @app.post("/ui/process/<uid>/kill")
 def process_kill(uid):
     app.multivisor.kill_processes(uid)
+    return "OK"
+
+
+@app.post("/ui/process/<uid>/signal/<signal>")
+def process_os_signal(uid, signal):
+    app.multivisor.os_signal(uid, signal=signal)
     return "OK"
 
 

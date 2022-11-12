@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import copy
+import hashlib
 import logging
 import os
 import time
@@ -20,6 +21,46 @@ from supervisor.states import RUNNING_STATES
 from .util import sanitize_url, filter_patterns, parse_dict
 
 log = logging.getLogger("multivisor")
+
+
+OS_SIGNAL_MAP = {
+    "HUP": 1,
+    "INT": 2,
+    "QUIT": 3,
+    "ILL": 4,
+    "TRAP": 5,
+    "ABRT": 6,
+    "BUS": 7,
+    "FPE": 8,
+    "KILL": 9,
+    "USR1": 10,
+    "SEGV": 11,
+    "USR2": 12,
+    "PIPE": 13,
+    "ALRM": 14,
+    "TERM": 15,
+    "CHLD": 17,
+    "CONT": 18,
+    "STOP": 19,
+    "TSTP": 20,
+    "TTIN": 21,
+    "TTOU": 22,
+    "URG": 23,
+    "XCPU": 24,
+    "XFSZ": 25,
+    "VTALRM": 26,
+    "PROF": 27,
+    "WINCH": 28,
+    "IO": 29,
+    "PWR": 30,
+    "SYS": 31,
+    "RTMIN": 34,
+    "RTMAX": 64,
+}
+
+
+def unique(name):
+    return hashlib.md5(name.encode()).hexdigest()
 
 
 class Supervisor(dict):
@@ -90,7 +131,7 @@ class Supervisor(dict):
             self.refresh()
         elif name.startswith("PROCESS_STATE"):
             payload = event["payload"]
-            puid = "{}:{}:{}".format(
+            puid = Process.unique(
                 self.name, payload["groupname"], payload["processname"]
             )
             self["processes"][puid].handle_event(event)
@@ -236,15 +277,22 @@ class Process(dict):
             self.update(args[0])
         self.update(kwargs)
         supervisor_name = supervisor["name"]
-        full_name = self.get("group", "") + ":" + self.get("name", "")
-        uid = "{}:{}".format(supervisor_name, full_name)
-        self.log = log.getChild(uid)
+        group, name = self.get("group", ""), self.get("name", "")
+        full_name = "{}:{}".format(group, name)
+        unique_name = "{}:{}".format(supervisor_name, full_name)
+        uid = self.unique(supervisor_name, group, name)
+        self.log = log.getChild(unique_name)
         self.supervisor = weakref.proxy(supervisor)
         self["full_name"] = full_name
+        self["unique_name"] = unique_name
         self["running"] = self["state"] in RUNNING_STATES
         self["supervisor"] = supervisor_name
         self["host"] = supervisor["host"]
         self["uid"] = uid
+
+    @staticmethod
+    def unique(supervisor, group, name):
+        return unique("{}:{}:{}".format(supervisor, group, name))
 
     @property
     def server(self):
@@ -312,6 +360,9 @@ class Process(dict):
         if self["running"]:
             self.stop()
         self.start()
+
+    def os_signal(self, name_or_id):
+        r = self.server.signalProcess(self.full_name, name_or_id)
 
     def __str__(self):
         return "{0} on {1}".format(self["name"], self["supervisor"])
@@ -449,8 +500,10 @@ class Multivisor(object):
         return self.supervisors[name]
 
     def get_process(self, uid):
-        supervisor, _ = uid.split(":", 1)
-        return self.supervisors[supervisor]["processes"][uid]
+        for supervisor in self.supervisors.values():
+            proc = supervisor["processes"].get(uid)
+            if proc:
+                return proc
 
     def _do_supervisors(self, operation, *names):
         supervisors = (self.get_supervisor(name) for name in names)
@@ -480,3 +533,8 @@ class Multivisor(object):
 
     def stop_processes(self, *patterns):
         self._do_processes(Process.stop, *patterns)
+
+    def os_signal(self, *patterns, signal):
+        def send(proc):
+            return proc.os_signal(signal)
+        self._do_processes(send, *patterns)
