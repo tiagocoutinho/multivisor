@@ -357,6 +357,12 @@ def process_kill(uid):
     return "OK"
 
 
+@app.post("/ui/process/<uid>/restart")
+def process_restart(uid):
+    app.multivisor.restart_processes(uid)
+    return "OK"
+
+
 @app.post("/ui/process/<uid>/signal/<signal>")
 def process_os_signal(uid, signal):
     app.multivisor.os_signal(uid, signal=signal)
