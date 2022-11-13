@@ -1,13 +1,20 @@
 <div class="modal-content">
     <div class="modal-header">
         <h5 class="modal-title" id="modal-label-{{ process['uid'] }}">{{ process['name'] }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
     <div class="modal-body">
-        <ul class="list-group">
+        <ul class="list-group list-group-flush">
             <li class="list-group-item d-flex justify-content-between align-items-start">
                 <div class="ms-2 me-auto">
                 <div class="fw-bold">Unique name</div>
                     {{ process['unique_name'] }}
+                </div>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                <div class="fw-bold">Description</div>
+                    {{ process['description'] }}
                 </div>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-start">
@@ -36,14 +43,26 @@
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-start">
                 <div class="ms-2 me-auto">
+                <div class="fw-bold">Exit status (last)</div>
+                    {{ process['exitstatus'] }}
+                </div>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
                 <div class="fw-bold">PID</div>
                     {{ process['pid'] }}
                 </div>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-start">
                 <div class="ms-2 me-auto">
-                <div class="fw-bold">Description</div>
-                    {{ process['description'] }}
+                <div class="fw-bold">Output log file</div>
+                    {{ process['logfile'] }}
+                </div>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                <div class="fw-bold">Error log file</div>
+                    {{ process['stderr_logfile'] }}
                 </div>
             </li>
         </ul>
