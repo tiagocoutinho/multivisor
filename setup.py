@@ -12,7 +12,7 @@ extras = {
 
 extras["all"] = list(set.union(*(set(i) for i in extras.values())))
 
-requires = ["six", "gevent>=1.3"]
+requires = ["six", "gevent>=1.3", "arrow"]
 
 with open("README.md") as readme_file:
     readme = readme_file.read()

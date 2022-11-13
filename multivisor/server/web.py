@@ -12,7 +12,7 @@ from flask import Flask, render_template, Response, request, json, jsonify, sess
 from werkzeug.debug import DebuggedApplication
 
 from multivisor.signals import SIGNALS
-from multivisor.util import sanitize_url
+from multivisor.util import human_time, sanitize_url
 from multivisor.multivisor import Multivisor, OS_SIGNAL_MAP
 from .util import is_login_valid, login_required
 
@@ -334,7 +334,9 @@ def ui_stream():
 def ui_process_info(uid):
     process = app.multivisor.get_process(uid)
     process.refresh()
-    return render_template("process.html", process=process, **STATIC_DATA)
+    start = human_time(process["start"])
+    stop = human_time(process["stop"])
+    return render_template("process.html", start=start, stop=stop, process=process, **STATIC_DATA)
 
 
 @app.post("/ui/process/<uid>/start")

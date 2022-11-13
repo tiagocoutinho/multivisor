@@ -6,7 +6,9 @@ try:
 except ImportError:
     import collections as abc
 
+import arrow
 import six
+
 
 _PROTO_RE_STR = "(?P<protocol>\w+)\://"
 _HOST_RE_STR = "?P<host>([\w\-_]+\.)*[\w\-_]+|\*"
@@ -73,3 +75,12 @@ def parse_obj(obj):
     elif isinstance(obj, abc.Container):
         return type(obj)(parse_obj(i) for i in obj)
     return obj
+
+
+def human_time(ts=None):
+    if ts is None:
+        dt = arrow.now()
+    elif not ts:
+        return "Never"
+    dt = arrow.get(ts)
+    return f"{dt} ({dt.humanize()})"
