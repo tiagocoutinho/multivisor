@@ -468,6 +468,11 @@ class Multivisor(object):
         return {puid: proc for sprocs in procs for puid, proc in sprocs.items()}
 
     @property
+    def processes_names(self):
+        procs = (svisor["processes"] for svisor in self.supervisors.values())
+        return {proc["unique_name"]: proc for sprocs in procs for proc in sprocs.values()}
+
+    @property
     def groups(self):
         groups = {}
         for supervisor in self.supervisors.values():
@@ -492,6 +497,12 @@ class Multivisor(object):
     def secret_key(self):
         return os.environ.get("MULTIVISOR_SECRET_KEY")
 
+    def gen_processes(self):
+        return (proc for svisor in self.supervisors.values() for proc in svisor["processes"].values())
+
+    def gen_processes_uids(self):
+        return (puid for svisor in self.supervisors.values() for puid in svisor["processes"])
+
     def refresh(self):
         tasks = [spawn(supervisor.refresh) for supervisor in self.supervisors.values()]
         joinall(tasks)
@@ -500,10 +511,12 @@ class Multivisor(object):
         return self.supervisors[name]
 
     def get_process(self, uid):
-        for supervisor in self.supervisors.values():
-            proc = supervisor["processes"].get(uid)
-            if proc:
+        for proc in self.gen_processes():
+            if proc['uid'] == uid:
                 return proc
+
+    def get_processes_uids(self, uids):
+        return filter(lambda uid: uid in uids, self.gen_processes_uids())
 
     def _do_supervisors(self, operation, *names):
         supervisors = (self.get_supervisor(name) for name in names)
@@ -511,8 +524,11 @@ class Multivisor(object):
         joinall(tasks)
 
     def _do_processes(self, operation, *patterns):
+        procs = self.processes_names
+        puids = {procs[name]['uid'] for name in filter_patterns(procs, patterns)}
+        puids.update(self.get_processes_uids(patterns))
+        logging.info(str(puids))
         procs = self.processes
-        puids = filter_patterns(procs, patterns)
         tasks = [spawn(operation, procs[puid]) for puid in puids]
         joinall(tasks)
 
