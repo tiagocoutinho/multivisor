@@ -499,13 +499,12 @@ class Multivisor(object):
         return os.environ.get("MULTIVISOR_SECRET_KEY")
 
     def filter_processes(self, pattern=None):
-        if not pattern:
-            pattern = "*"
-        pattern = "*:{}*".format(pattern) if ":" not in pattern and "*" not in pattern else pattern 
         processes = self.processes_names
-        log.error(pattern)
-        log.error(str(fnmatch.filter(processes, pattern)))
-        return [processes[name] for name in fnmatch.filter(processes, pattern)]
+        if pattern:
+            pattern = pattern.lower()
+            return [process for name, process in processes.items() if pattern in name.lower()]
+        else:
+            return list(processes.values())
 
     def filter_groups(self, pattern=None):
         groups = {}
