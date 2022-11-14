@@ -37,6 +37,19 @@
         </div>
     </div>
 
+    <div class="btn-group btn-group-sm me-2" role="group" aria-label="Actions">
+        <button type="button" class="btn btn-secondary bi-card-text"
+            data-bs-toggle="modal" data-bs-target="#log-panel"
+            hx-get="/ui/process/{{ uid }}/log/out" hx-target="#log-panel-content" hx-trigger="click" hx-swap="innerHTML"
+        >
+        </button>
+        <button type="button" class="btn btn-danger bi-card-text"
+            data-bs-toggle="modal" data-bs-target="#log-panel"
+            hx-get="/ui/process/{{ uid }}/log/err" hx-target="#log-panel-content" hx-trigger="click" hx-swap="innerHTML"
+        >
+        </button>
+    </div>
+
     <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
         <button type="button" class="btn btn-secondary bi-info-lg"
             data-bs-toggle="modal" data-bs-target="#process-info"

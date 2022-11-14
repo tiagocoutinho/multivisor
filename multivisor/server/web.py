@@ -368,6 +368,46 @@ def process_os_signal(uid, signal):
     app.multivisor.os_signal(uid, signal=signal)
     return "OK"
 
+@app.route("/ui/process/<uid>/log/<stream>")
+def ui_process_log(stream, uid):
+    process = app.multivisor.get_process(uid)
+    return render_template("log.html", stream=stream, process=process, **STATIC_DATA)
+
+@app.route("/ui/process/<uid>/log/<stream>/tail")
+def ui_process_log_tail(stream, uid):
+    process = app.multivisor.get_process(uid)
+    supervisor = app.multivisor.get_supervisor(process["supervisor"])
+    server = supervisor.server
+    if stream == "out":
+        tail = server.tailProcessStdoutLog
+    else:
+        tail = server.tailProcessStderrLog
+
+    def event_stream():
+        '''
+        for i in range(100):
+            message = f"event {i:03d}\nmore {i:03d}\n"
+            data = "data: " + message.replace("\n", "\ndata: ") + "\n\n"
+            logging.info("YIELD: %r", data)
+            yield data
+            sleep(1)
+        return
+        '''
+        i, offset, length = 0, 0, 2 ** 14
+        while True:
+            data = tail(process["full_name"], offset, length)
+            log, offset, overflow = data
+            # don't care about overflow in first log message
+            if overflow and i:
+                length = min(length * 2, 2 ** 14)
+            else:
+                message = log.replace('\n', '\ndata: ')
+                payload = f"data: {message}\n\n"
+                yield payload
+            sleep(1)
+            i += 1
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 @app.route("/")
 def root():
