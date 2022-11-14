@@ -296,6 +296,12 @@ def view_groups():
     return render_view("groups")
 
 
+@app.post("/ui/groups")
+def view_groups_filter():
+    search = request.form.get("search", "*")
+    return render_template("groups/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
+
+
 @app.get("/ui/groups/process/<uid>")
 def groups_row(uid):
     process = app.multivisor.get_process(uid)
@@ -368,10 +374,12 @@ def process_os_signal(uid, signal):
     app.multivisor.os_signal(uid, signal=signal)
     return "OK"
 
+
 @app.route("/ui/process/<uid>/log/<stream>")
 def ui_process_log(stream, uid):
     process = app.multivisor.get_process(uid)
     return render_template("log.html", stream=stream, process=process, **STATIC_DATA)
+
 
 @app.route("/ui/process/<uid>/log/<stream>/tail")
 def ui_process_log_tail(stream, uid):

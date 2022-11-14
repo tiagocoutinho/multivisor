@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import copy
+import fnmatch
 import hashlib
 import logging
 import os
@@ -496,6 +497,25 @@ class Multivisor(object):
     @property
     def secret_key(self):
         return os.environ.get("MULTIVISOR_SECRET_KEY")
+
+    def filter_processes(self, pattern=None):
+        if not pattern:
+            pattern = "*"
+        pattern = "*:{}*".format(pattern) if ":" not in pattern and "*" not in pattern else pattern 
+        processes = self.processes_names
+        log.error(pattern)
+        log.error(str(fnmatch.filter(processes, pattern)))
+        return [processes[name] for name in fnmatch.filter(processes, pattern)]
+
+    def filter_groups(self, pattern=None):
+        groups = {}
+        for process in self.filter_processes(pattern):
+            gname = process["group"]
+            group = groups.get(gname)   
+            if group is None:
+                groups[gname] = group = {"name": gname, "processes": []}
+            group["processes"].append(process)
+        return groups
 
     def gen_processes(self):
         return (proc for svisor in self.supervisors.values() for proc in svisor["processes"].values())
