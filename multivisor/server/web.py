@@ -302,6 +302,18 @@ def view_groups_filter():
     return render_template("groups/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
 
 
+@app.post("/ui/supervisors")
+def view_supervisors_filter():
+    search = request.form.get("search", "*")
+    return render_template("supervisors/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
+
+
+@app.post("/ui/processes")
+def view_processes_filter():
+    search = request.form.get("search", "*")
+    return render_template("processes/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
+
+
 @app.get("/ui/groups/process/<uid>")
 def groups_row(uid):
     process = app.multivisor.get_process(uid)

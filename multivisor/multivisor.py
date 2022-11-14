@@ -516,6 +516,16 @@ class Multivisor(object):
             group["processes"].append(process)
         return groups
 
+    def filter_supervisors(self, pattern=None):
+        supervisors = {}
+        for process in self.filter_processes(pattern):
+            sname = process["supervisor"]
+            supervisor = supervisors.get(sname)
+            if supervisor is None:
+                supervisors[sname] = supervisor = {"name": sname, "processes": []}
+            supervisor["processes"].append(process)
+        return supervisors
+
     def gen_processes(self):
         return (proc for svisor in self.supervisors.values() for proc in svisor["processes"].values())
 
