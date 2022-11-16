@@ -21,7 +21,7 @@
         </ul>
         <form class="d-flex" role="search">
           <input class="form-control me-2" type="search" placeholder="Filter" aria-label="Filter" name="search"
-            hx-post="/ui/{{ view }}" hx-target="#view" hx-trigger="keyup changed delay:500ms, search" 
+            hx-post="/ui/{{ view }}/search" hx-target="#view" hx-trigger="keyup changed delay:200ms, search"
           >
         </form>
       </div>

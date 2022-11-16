@@ -251,36 +251,26 @@ TEMPLATES = {
     "supervisors": "supervisors/index.html",
 }
 
-def render_view(view=None, **kwargs):
-    if view is None:
+
+@app.get("/ui/<view>")
+def view(view):
+    htmx = request.headers.get("HX-Request") == "true"
+    template = "view.html"
+    if not htmx:
         view = request.path.rsplit("/", 1)[-1]
         template = "index.html"
-    else:
-        template = "view.html"
-    kwargs["view"] = view
-    kwargs["multivisor"] = app.multivisor
-    kwargs.update(STATIC_DATA)
-    return render_template(template, **kwargs)
+    return render_template(template, view=view, multivisor=app.multivisor, **STATIC_DATA)
 
 
-def ui_render(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        htmx = request.headers.get("HX-Request") == "true"
-        if not htmx:
-            return render_view()
-        return func(*args, **kwargs)
-    return wrapper
-
-
-@app.get("/ui/processes")
-@ui_render
-def view_processes():
-    return render_view("processes")
+@app.post("/ui/<view>/search")
+def view_filter(view):
+    search = request.form.get("search", "*")
+    log.error("%s %s", view, search)
+    return render_template(f"{view}/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
 
 
 @app.get("/ui/processes/body")
-def view_processes_body():
+def processes_body():
     return render_template("processes/table_body.html", multivisor=app.multivisor, **STATIC_DATA)
 
 
@@ -290,46 +280,10 @@ def process_row(uid):
     return render_template("processes/row.html", process=process, **STATIC_DATA)
 
 
-@app.get("/ui/groups")
-@ui_render
-def view_groups():
-    return render_view("groups")
-
-
-@app.post("/ui/groups")
-def view_groups_filter():
-    search = request.form.get("search", "*")
-    return render_template("groups/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
-
-
-@app.post("/ui/supervisors")
-def view_supervisors_filter():
-    search = request.form.get("search", "*")
-    return render_template("supervisors/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
-
-
-@app.post("/ui/processes")
-def view_processes_filter():
-    search = request.form.get("search", "*")
-    return render_template("processes/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
-
-
-@app.get("/ui/groups/process/<uid>")
-def groups_row(uid):
+@app.get("/ui/<view>/process/<uid>")
+def row(view, uid):
     process = app.multivisor.get_process(uid)
-    return render_template("groups/row.html", process=process, **STATIC_DATA)
-
-
-@app.get("/ui/supervisors")
-@ui_render
-def view_supervisors():
-    return render_view("supervisors")
-
-
-@app.get("/ui/supervisors/process/<uid>")
-def supervisors_row(uid):
-    process = app.multivisor.get_process(uid)
-    return render_template("supervisors/row.html", process=process, **STATIC_DATA)
+    return render_template(f"{view}/row.html", process=process, **STATIC_DATA)
 
 
 def Event(event=None, data=""):
