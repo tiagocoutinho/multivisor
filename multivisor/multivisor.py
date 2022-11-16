@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import copy
-import fnmatch
 import hashlib
 import logging
 import os
@@ -556,7 +555,6 @@ class Multivisor(object):
         procs = self.processes_names
         puids = {procs[name]['uid'] for name in filter_patterns(procs, patterns)}
         puids.update(self.get_processes_uids(patterns))
-        logging.info(str(puids))
         procs = self.processes
         tasks = [spawn(operation, procs[puid]) for puid in puids]
         joinall(tasks)
