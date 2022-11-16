@@ -82,5 +82,16 @@ def human_time(ts=None):
         dt = arrow.now()
     elif not ts:
         return "Never"
-    dt = arrow.get(ts)
+    else:
+        dt = arrow.get(ts)
     return f"{dt} ({dt.humanize()})"
+
+
+def delta_human_time(ts=None):
+    if ts is None:
+        dt = arrow.now()
+    elif not ts:
+        return "Never"
+    else:
+        dt = arrow.get(ts)
+    return dt.humanize()

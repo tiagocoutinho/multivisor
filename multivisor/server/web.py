@@ -12,7 +12,7 @@ from flask import Flask, render_template, Response, request, json, jsonify, sess
 from werkzeug.debug import DebuggedApplication
 
 from multivisor.signals import SIGNALS
-from multivisor.util import human_time, sanitize_url
+from multivisor.util import delta_human_time, human_time, sanitize_url
 from multivisor.multivisor import Multivisor, OS_SIGNAL_MAP
 from .util import is_login_valid, login_required
 
@@ -331,7 +331,31 @@ def supervisors_row(uid):
     process = app.multivisor.get_process(uid)
     return render_template("supervisors/row.html", process=process, **STATIC_DATA)
 
-    
+
+def Event(event=None, data=""):
+    if event is None:
+        return f"data: {data}\n\n"
+    return f"event: {event}\ndata: {data}\n\n"
+
+
+NOTIFICATION = """\
+  <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+    <div class="toast-header">
+      <strong class="me-auto">{level}</strong>
+      <small class="text-muted">{when}</small>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">{message}</div>
+  </div>
+"""
+
+LEVEL_STYLE = {
+    "INFO": "success",
+    "WARNING": "warning",
+    "DEBUG": "secondary",
+    "ERROR": "danger"
+}
+
 @app.get("/ui/stream")
 def ui_stream():
     def event_stream():
@@ -340,9 +364,14 @@ def ui_stream():
         for event in client:
             name = event["event"]
             if name == "process_changed":
-                name = f"{name}/{event['payload']['uid']}"
-            payload = f"event: {name}\ndata: \n\n"
-            yield payload
+                yield Event(f"{name}/{event['payload']['uid']}")
+            elif name == "notification":
+                continue
+                data = event["payload"]
+                data["when"] = delta_human_time(data["time"])
+                data["style"] = LEVEL_STYLE[data["level"]]
+                payload = NOTIFICATION.format(**data).replace("\n", "")
+                yield Event("notification", payload)
         app.dispatcher.remove_listener(client)
 
     return Response(event_stream(), mimetype="text/event-stream")
