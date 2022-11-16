@@ -60,15 +60,6 @@
                         Std Error logs
                     </button>
                 </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <button class="dropdown-item"
-                        data-bs-toggle="tooltip" data-bs-title="kill the process"
-                        hx-post="/ui/process/{{ uid }}/kill" hx-swap="none"
-                        {{"disabled" if "KILL" not in actions_allowed else ""}}>
-                        Kill
-                    </button>
-                </li>
             </ul>
         </div>
     </div>

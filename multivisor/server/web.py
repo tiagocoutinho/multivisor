@@ -29,10 +29,10 @@ STATES_TRANSITIONS = {
 
 
 STATES_ACTIONS = {
-    "RUNNING": ["STOP", "KILL", "RESTART"],
-    "STARTING": ["STOP", "KILL"],
+    "RUNNING": ["STOP", "RESTART"],
+    "STARTING": ["STOP"],
     "STOPPED": ["START",],
-    "STOPPING": ["KILL"],
+    "STOPPING": [],
     "BACKOFF": ["START"],
     "FATAL": ["START"],
     "EXITED": ["START"],
@@ -366,12 +366,6 @@ def process_start(uid):
 @app.post("/ui/process/<uid>/stop")
 def process_stop(uid):
     app.multivisor.stop_processes(uid)
-    return "OK"
-
-
-@app.post("/ui/process/<uid>/kill")
-def process_kill(uid):
-    app.multivisor.kill_processes(uid)
     return "OK"
 
 
