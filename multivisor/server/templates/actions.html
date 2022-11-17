@@ -7,18 +7,21 @@
 
 <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
     <div class="btn-group btn-group-sm me-2" role="group" aria-label="Actions">
-        <button type="button" class="btn btn-primary bi-{{ action_icon }}"
+        <button type="button" class="btn btn-dark bi-{{ action_icon }}"
             data-bs-toggle="tooltip" data-bs-title="{{ action }} the process"
             hx-post="/ui/process/{{ uid }}/{{ action }}" hx-swap="none"
         >
         </button>
-        <button type="button" class="btn btn-primary bi-stop-fill"
+        <button type="button" class="btn btn-dark bi-stop-fill"
             data-bs-toggle="tooltip" data-bs-title="stop the process"
             hx-post="/ui/process/{{ uid }}/stop" hx-swap="none"
         >
         </button>
 
         <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-dark bi-stoplights-fill" data-bs-toggle="dropdown" aria-expanded="false"
+                {{"" if is_signal_action_allowed else "disabled"}}>
+            </button>
             <ul class="dropdown-menu" >
                 # for signal, n in OS_SIGNALS|dictsort 
                 <li class="dropdown-item" hx-post="/ui/process/{{ uid }}/signal/{{ signal }}" hx-swap="none">
@@ -26,13 +29,10 @@
                 </li>
                 # endfor
             </ul>
-            <button type="button" class="btn btn-secondary bi-stoplights-fill" data-bs-toggle="dropdown" aria-expanded="false"
-                {{"" if is_signal_action_allowed else "disabled"}}>
-            </button>
         </div>
 
         <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <button type="button" class="btn btn-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             </button>
             <ul class="dropdown-menu">
                 <li>

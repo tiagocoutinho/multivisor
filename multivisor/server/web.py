@@ -360,7 +360,25 @@ def process_restart(uid):
 
 @app.post("/ui/process/<uid>/signal/<signal>")
 def process_os_signal(uid, signal):
-    app.multivisor.os_signal(uid, signal=signal)
+    app.multivisor.os_signal_processes(uid, signal=signal)
+    return "OK"
+
+
+@app.post("/ui/group/<group>/start")
+def group_start(group):
+    app.multivisor.restart_processes(f"*:{group}:*")
+    return "OK"
+
+
+@app.post("/ui/group/<group>/stop")
+def group_stop(group):
+    app.multivisor.stop_processes(f"*:{group}:*")
+    return "OK"
+
+
+@app.post("/ui/group/<group>/signal/<signal>")
+def group_signal(group, signal):
+    app.multivisor.os_signal_processes(f"*:{group}:*", signal=signal)
     return "OK"
 
 

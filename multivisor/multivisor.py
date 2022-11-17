@@ -577,7 +577,7 @@ class Multivisor(object):
     def stop_processes(self, *patterns):
         self._do_processes(Process.stop, *patterns)
 
-    def os_signal(self, *patterns, signal):
+    def os_signal_processes(self, *patterns, signal):
         def send(proc):
             return proc.os_signal(signal)
         self._do_processes(send, *patterns)
