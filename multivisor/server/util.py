@@ -78,5 +78,8 @@ def SSEEvent(event=None, data=""):
 
 def SSEResponse(stream):
     dtype = "text/event-stream"
-    headers = {"X-Accel-Buffering": "no"}
+    headers = {
+        "X-Accel-Buffering": "no",
+        "Cache-Control": "no-cache",
+    }
     return Response(stream, mimetype=dtype, content_type=dtype, headers=headers)
