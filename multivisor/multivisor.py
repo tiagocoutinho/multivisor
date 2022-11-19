@@ -227,6 +227,7 @@ class Supervisor(dict):
             server.addProcessGroup(gname)
             self.log.debug("added process group %s", gname)
 
+        self.refresh()
         self.log.info("Updated %s", self.name)
 
     def _reread(self):
@@ -258,6 +259,7 @@ class Supervisor(dict):
                     self.name, len(added), len(changed), len(removed)
                 )
             )
+        return added, changed, removed
 
     def shutdown(self):
         result = self.server.shutdown()
@@ -265,6 +267,12 @@ class Supervisor(dict):
             info("Shut down {}".format(self.name))
         else:
             error("Error shutting down {}".format(self.name))
+
+    def clear_log(self):
+        self.server.clearLog()
+
+    def read_log(self, offset, length):
+        return self.server.readLog(offset, length)
 
 
 class Process(dict):
@@ -363,6 +371,9 @@ class Process(dict):
 
     def os_signal(self, name_or_id):
         r = self.server.signalProcess(self.full_name, name_or_id)
+
+    def clear_logs(self):
+        self.server.clearProcessLogs(self.full_name)
 
     def __str__(self):
         return "{0} on {1}".format(self["name"], self["supervisor"])
@@ -521,8 +532,9 @@ class Multivisor(object):
             sname = process["supervisor"]
             supervisor = supervisors.get(sname)
             if supervisor is None:
-                supervisors[sname] = supervisor = {"name": sname, "processes": []}
-            supervisor["processes"].append(process)
+                supervisors[sname] = supervisor = {"name": sname, "processes": {}}
+            puid = process['uid']
+            supervisor["processes"][puid] = process
         return supervisors
 
     def gen_processes(self):
@@ -571,6 +583,9 @@ class Multivisor(object):
     def shutdown_supervisors(self, *names):
         self._do_supervisors(Supervisor.shutdown, *names)
 
+    def clear_log_supervisors(self, *names):
+        self._do_supervisors(Supervisor.clear_log, *names)
+
     def restart_processes(self, *patterns):
         self._do_processes(Process.restart, *patterns)
 
@@ -581,3 +596,6 @@ class Multivisor(object):
         def send(proc):
             return proc.os_signal(signal)
         self._do_processes(send, *patterns)
+
+    def clear_logs_processes(self, *patterns):
+        self._do_processes(Process.clear_logs, *patterns)

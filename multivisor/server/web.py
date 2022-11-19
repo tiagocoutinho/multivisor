@@ -1,20 +1,19 @@
 from gevent.monkey import patch_all
 patch_all(thread=False)
 
-import functools
 import logging
 import os
 
 from blinker import signal
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify, session
+from flask import Flask, render_template, Response, request, json, jsonify, session, make_response
 from werkzeug.debug import DebuggedApplication
 
 from multivisor.signals import SIGNALS
 from multivisor.util import delta_human_time, human_time, sanitize_url
 from multivisor.multivisor import Multivisor, OS_SIGNAL_MAP
-from .util import is_login_valid, login_required
+from .util import is_login_valid, login_required, SSEEvent, SSEResponse
 
 
 STATES_TRANSITIONS = {
@@ -194,7 +193,7 @@ def process_log_tail(stream, uid):
             sleep(1)
             i += 1
 
-    return Response(event_stream(), mimetype="text/event-stream")
+    return SSEResponse(event_stream())
 
 
 @app.route("/api/login", methods=["post"])
@@ -237,20 +236,12 @@ def stream():
             yield "data: {0}\n\n".format(data)
         app.dispatcher.remove_listener(client)
 
-    return Response(event_stream(), mimetype="text/event-stream")
+    return SSEResponse(event_stream())
 
 
 # ----------------------------------------------------------------------------
 # User Interface
 # ----------------------------------------------------------------------------
-
-TEMPLATES = {
-    None: "index.html",
-    "groups": "groups/index.html",
-    "processes": "processes/index.html",
-    "supervisors": "supervisors/index.html",
-}
-
 
 @app.get("/ui/<view>")
 def view(view):
@@ -286,10 +277,10 @@ def row(view, uid):
     return render_template(f"{view}/row.html", process=process, **STATIC_DATA)
 
 
-def Event(event=None, data=""):
-    if event is None:
-        return f"data: {data}\n\n"
-    return f"event: {event}\ndata: {data}\n\n"
+@app.get("/ui/supervisor/<supervisor>/card")
+def supervisor_card(supervisor):
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    return render_template(f"supervisors/card.html", supervisor=supervisor, **STATIC_DATA)
 
 
 NOTIFICATION = """\
@@ -318,7 +309,7 @@ def ui_stream():
         for event in client:
             name = event["event"]
             if name == "process_changed":
-                yield Event(f"{name}/{event['payload']['uid']}")
+                yield SSEEvent(f"{name}/{event['payload']['uid']}")
             elif name == "notification":
                 continue
                 data = event["payload"]
@@ -327,8 +318,8 @@ def ui_stream():
                 payload = NOTIFICATION.format(**data).replace("\n", "")
                 yield Event("notification", payload)
         app.dispatcher.remove_listener(client)
-
-    return Response(event_stream(), mimetype="text/event-stream")
+    resp =  SSEResponse(event_stream())
+    return resp
 
 
 @app.get("/ui/process/<uid>/info")
@@ -382,13 +373,48 @@ def group_signal(group, signal):
     return "OK"
 
 
-@app.route("/ui/process/<uid>/log/<stream>")
+@app.post("/ui/supervisor/<supervisor>/update")
+def supervisor_update(supervisor):
+    app.multivisor.update_supervisors(supervisor)
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    return render_template(f"supervisors/card.html", supervisor=supervisor, **STATIC_DATA)
+
+
+@app.get("/ui/supervisor/<supervisor>/log")
+def ui_supervisor_log(supervisor):
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    data = supervisor.read_log(-10000, 0)
+    return render_template("supervisor_log.html", data=data, supervisor=supervisor, **STATIC_DATA)
+
+
+@app.get("/ui/supervisor/<supervisor>/log/data")
+def ui_supervisor_log_data(supervisor):
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    data = supervisor.read_log(-10000, 0)
+    response = make_response(data)
+    response.mimetype = "text/plain"
+    return response
+
+
+@app.post("/ui/supervisor/<supervisor>/log/clear")
+def ui_supervisor_log_clear(supervisor):
+    app.multivisor.clear_log_supervisors(supervisor)
+    return "OK"
+
+
+@app.get("/ui/process/<uid>/log/<stream>")
 def ui_process_log(stream, uid):
     process = app.multivisor.get_process(uid)
-    return render_template("log.html", stream=stream, process=process, **STATIC_DATA)
+    return render_template("process_log_tail.html", stream=stream, process=process, **STATIC_DATA)
 
 
-@app.route("/ui/process/<uid>/log/<stream>/tail")
+@app.post("/ui/process/<uid>/log/clear")
+def ui_process_log_clear(uid):
+    app.multivisor.clear_logs_processes(uid)
+    return "OK"
+
+
+@app.get("/ui/process/<uid>/log/<stream>/tail")
 def ui_process_log_tail(stream, uid):
     process = app.multivisor.get_process(uid)
     supervisor = app.multivisor.get_supervisor(process["supervisor"])
@@ -399,15 +425,6 @@ def ui_process_log_tail(stream, uid):
         tail = server.tailProcessStderrLog
 
     def event_stream():
-        '''
-        for i in range(100):
-            message = f"event {i:03d}\nmore {i:03d}\n"
-            data = "data: " + message.replace("\n", "\ndata: ") + "\n\n"
-            logging.info("YIELD: %r", data)
-            yield data
-            sleep(1)
-        return
-        '''
         i, offset, length = 0, 0, 2 ** 14
         while True:
             data = tail(process["full_name"], offset, length)
@@ -422,7 +439,8 @@ def ui_process_log_tail(stream, uid):
             sleep(1)
             i += 1
 
-    return Response(event_stream(), mimetype="text/event-stream")
+    return SSEResponse(event_stream())
+    
 
 @app.route("/")
 def root():
@@ -482,6 +500,7 @@ def get_parser(args):
     )
     parser.add_argument(
         "-c",
+        "--config",
         help="configuration file",
         dest="config_file",
         default="/etc/multivisor.conf",

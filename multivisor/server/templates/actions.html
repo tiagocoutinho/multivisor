@@ -2,7 +2,7 @@
 # set uid = process['uid']
 # set actions_allowed = STATES_ACTIONS[state]
 # set action = "start" if "START" in actions_allowed else "restart"
-# set action_icon = "play-fill" if action == "start" else "arrow-clockwise"
+# set action_icon = "play-fill" if action == "start" else "arrow-repeat"
 # set is_signal_action_allowed = state in ["RUNNING", "STOPPING", "STARTING"]
 
 <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
@@ -38,7 +38,7 @@
                 <li>
                     <button type="button" class="dropdown-item"
                         data-bs-toggle="modal" data-bs-target="#process-info"
-                        hx-get="/ui/process/{{ uid }}/info" hx-target="#process-info-content" hx-trigger="click" hx-swap="innerHTML"
+                        hx-get="/ui/process/{{ uid }}/info" hx-target="#process-info-content" hx-swap="innerHTML"
                     >
                         Information
                     </button>
@@ -47,7 +47,7 @@
                 <li>
                     <button type="button" class="dropdown-item"
                         data-bs-toggle="modal" data-bs-target="#log-panel"
-                        hx-get="/ui/process/{{ uid }}/log/out" hx-target="#log-panel-content" hx-trigger="click" hx-swap="innerHTML"
+                        hx-get="/ui/process/{{ uid }}/log/out" hx-target="#log-panel-content" hx-swap="innerHTML"
                     >
                         Std Output logs
                     </button>
@@ -55,9 +55,16 @@
                 <li>
                     <button type="button" class="dropdown-item"
                         data-bs-toggle="modal" data-bs-target="#log-panel"
-                        hx-get="/ui/process/{{ uid }}/log/err" hx-target="#log-panel-content" hx-trigger="click" hx-swap="innerHTML"
+                        hx-get="/ui/process/{{ uid }}/log/err" hx-target="#log-panel-content" hx-swap="innerHTML"
                     >
                         Std Error logs
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item"
+                        hx-post="/ui/process/{{ uid }}/log/clear" hx-swap="none"
+                    >
+                        Clear logs
                     </button>
                 </li>
             </ul>
