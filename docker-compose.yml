@@ -48,8 +48,18 @@ services:
     - --
     - -c
     - /etc/multivisor.conf
+    - --log-level=DEBUG
     ports:
       - 22000:22000
     volumes:
       - ./docker/multivisor/multivisor.conf:/etc/multivisor.conf
       - ./multivisor/:/usr/app/multivisor/multivisor
+  web:
+    image: nginx:mainline-alpine
+    restart: always
+    ports:
+      - 22001:80
+    volumes:
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./multivisor/server/static/:/multivisor/static
