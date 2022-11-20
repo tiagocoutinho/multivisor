@@ -5,14 +5,14 @@ from setuptools import setup, find_packages
 supervisor = "supervisor-win" if platform.system() == "Windows" else "supervisor"
 
 extras = {
-    "rpc": ["zerorpc", supervisor],
+    "rpc": ["zerorpc", "psutil", supervisor],
     "web": ["flask", "werkzeug", "blinker", "zerorpc", supervisor],
     "cli": ["maya", "requests", "prompt_toolkit>=2", "blinker"],
 }
 
 extras["all"] = list(set.union(*(set(i) for i in extras.values())))
 
-requires = ["six", "gevent>=1.3"]
+requires = ["six", "gevent>=1.3", "arrow"]
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -27,7 +27,7 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(),
     package_data={
-        "multivisor.server": ["dist/*", "dist/static/css/*", "dist/static/js/*"]
+        "multivisor.server": ["static/*/*", "templates/*/*"]
     },
     entry_points=dict(
         console_scripts=[

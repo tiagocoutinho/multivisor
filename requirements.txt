@@ -1,4 +1,9 @@
-flask
+arrow
+six
 gevent
+werkzeug
+flask
 supervisor
-six==1.12.0
+blinker
+zerorpc
+psutil

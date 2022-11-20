@@ -1,0 +1,66 @@
+# set name = supervisor["name"]
+<div class="card" id="supervisor-card-{{ name }}">
+    <div class="card-header text-bg-secondary">
+        <div class="btn-toolbar justify-content-between" role="toolbar" aria-label="{{name }} group">
+            <div class="fs-5">
+                {{ name }}
+            </div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+                <button type="button" class="btn btn-dark bi-arrow-repeat"
+                    data-bs-toggle="tooltip" data-bs-title="start all the processes in the group"
+                    hx-post="/ui/supervisor/{{ name }}/start" hx-swap="none"
+                >
+                </button>
+                <button type="button" class="btn btn-dark bi-stop-fill"
+                    data-bs-toggle="tooltip" data-bs-title="stop all the processes in the group"
+                    hx-post="/ui/supervisor/{{ name }}/stop" hx-swap="none"
+                >
+                </button>
+                <div class="btn-group btn-group-sm" role="group">
+                    <ul class="dropdown-menu" >
+                        # for signal, n in OS_SIGNALS|dictsort
+                        <li class="dropdown-item" hx-post="/ui/supervisor/{{ name }}/signal/{{ signal }}" hx-swap="none">
+                            {{ signal }}( {{ n }} )
+                        </li>
+                        # endfor
+                    </ul>
+                    <button type="button" class="btn btn-dark bi-stoplights-fill" data-bs-toggle="dropdown" aria-expanded="false">
+                    </button>
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <button type="button" class="dropdown-item"
+                                hx-post="/ui/supervisor/{{ name }}/update" hx-swap="outerHTML" hx-target="#supervisor-card-{{ name }}"
+                            >
+                                Update
+                            </button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button type="button" class="dropdown-item"
+                                data-bs-toggle="modal" data-bs-target="#log-panel"
+                                hx-get="/ui/supervisor/{{ name }}/log" hx-target="#log-panel-content" hx-swap="innerHTML"
+                            >
+                                Logs
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+            # for uid, process in supervisor["processes"].items()
+            <li class="list-group-item d-flex justify-content-between align-items-center"
+            hx-trigger="sse:process_changed/{{ uid }}" hx-get="/ui/supervisors/process/{{ uid }}">
+                # include 'supervisors/row.html'
+            </li>
+            # endfor
+        </ul>
+    </div>
+</div>

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import copy
+import hashlib
 import logging
 import os
 import time
@@ -20,6 +21,46 @@ from supervisor.states import RUNNING_STATES
 from .util import sanitize_url, filter_patterns, parse_dict
 
 log = logging.getLogger("multivisor")
+
+
+OS_SIGNAL_MAP = {
+    "HUP": 1,
+    "INT": 2,
+    "QUIT": 3,
+    "ILL": 4,
+    "TRAP": 5,
+    "ABRT": 6,
+    "BUS": 7,
+    "FPE": 8,
+    "KILL": 9,
+    "USR1": 10,
+    "SEGV": 11,
+    "USR2": 12,
+    "PIPE": 13,
+    "ALRM": 14,
+    "TERM": 15,
+    "CHLD": 17,
+    "CONT": 18,
+    "STOP": 19,
+    "TSTP": 20,
+    "TTIN": 21,
+    "TTOU": 22,
+    "URG": 23,
+    "XCPU": 24,
+    "XFSZ": 25,
+    "VTALRM": 26,
+    "PROF": 27,
+    "WINCH": 28,
+    "IO": 29,
+    "PWR": 30,
+    "SYS": 31,
+    "RTMIN": 34,
+    "RTMAX": 64,
+}
+
+
+def unique(name):
+    return hashlib.md5(name.encode()).hexdigest()
 
 
 class Supervisor(dict):
@@ -90,7 +131,7 @@ class Supervisor(dict):
             self.refresh()
         elif name.startswith("PROCESS_STATE"):
             payload = event["payload"]
-            puid = "{}:{}:{}".format(
+            puid = Process.unique(
                 self.name, payload["groupname"], payload["processname"]
             )
             self["processes"][puid].handle_event(event)
@@ -186,6 +227,7 @@ class Supervisor(dict):
             server.addProcessGroup(gname)
             self.log.debug("added process group %s", gname)
 
+        self.refresh()
         self.log.info("Updated %s", self.name)
 
     def _reread(self):
@@ -217,6 +259,7 @@ class Supervisor(dict):
                     self.name, len(added), len(changed), len(removed)
                 )
             )
+        return added, changed, removed
 
     def shutdown(self):
         result = self.server.shutdown()
@@ -224,6 +267,12 @@ class Supervisor(dict):
             info("Shut down {}".format(self.name))
         else:
             error("Error shutting down {}".format(self.name))
+
+    def clear_log(self):
+        self.server.clearLog()
+
+    def read_log(self, offset, length):
+        return self.server.readLog(offset, length)
 
 
 class Process(dict):
@@ -236,15 +285,22 @@ class Process(dict):
             self.update(args[0])
         self.update(kwargs)
         supervisor_name = supervisor["name"]
-        full_name = self.get("group", "") + ":" + self.get("name", "")
-        uid = "{}:{}".format(supervisor_name, full_name)
-        self.log = log.getChild(uid)
+        group, name = self.get("group", ""), self.get("name", "")
+        full_name = "{}:{}".format(group, name)
+        unique_name = "{}:{}".format(supervisor_name, full_name)
+        uid = self.unique(supervisor_name, group, name)
+        self.log = log.getChild(unique_name)
         self.supervisor = weakref.proxy(supervisor)
         self["full_name"] = full_name
+        self["unique_name"] = unique_name
         self["running"] = self["state"] in RUNNING_STATES
         self["supervisor"] = supervisor_name
         self["host"] = supervisor["host"]
         self["uid"] = uid
+
+    @staticmethod
+    def unique(supervisor, group, name):
+        return unique("{}:{}:{}".format(supervisor, group, name))
 
     @property
     def server(self):
@@ -312,6 +368,12 @@ class Process(dict):
         if self["running"]:
             self.stop()
         self.start()
+
+    def os_signal(self, name_or_id):
+        r = self.server.signalProcess(self.full_name, name_or_id)
+
+    def clear_logs(self):
+        self.server.clearProcessLogs(self.full_name)
 
     def __str__(self):
         return "{0} on {1}".format(self["name"], self["supervisor"])
@@ -417,6 +479,23 @@ class Multivisor(object):
         return {puid: proc for sprocs in procs for puid, proc in sprocs.items()}
 
     @property
+    def processes_names(self):
+        procs = (svisor["processes"] for svisor in self.supervisors.values())
+        return {proc["unique_name"]: proc for sprocs in procs for proc in sprocs.values()}
+
+    @property
+    def groups(self):
+        groups = {}
+        for supervisor in self.supervisors.values():
+            for puid, process in supervisor["processes"].items():
+                gname = process["group"]
+                group = groups.get(gname)
+                if group is None:
+                    groups[gname] = group = {"name": gname, "processes": {}}
+                group["processes"][puid] = process
+        return groups
+
+    @property
     def use_authentication(self):
         """
         :return: whether authentication should be used
@@ -429,6 +508,41 @@ class Multivisor(object):
     def secret_key(self):
         return os.environ.get("MULTIVISOR_SECRET_KEY")
 
+    def filter_processes(self, pattern=None):
+        processes = self.processes_names
+        if pattern:
+            pattern = pattern.lower()
+            return [process for name, process in processes.items() if pattern in name.lower()]
+        else:
+            return list(processes.values())
+
+    def filter_groups(self, pattern=None):
+        groups = {}
+        for process in self.filter_processes(pattern):
+            gname = process["group"]
+            group = groups.get(gname)   
+            if group is None:
+                groups[gname] = group = {"name": gname, "processes": []}
+            group["processes"].append(process)
+        return groups
+
+    def filter_supervisors(self, pattern=None):
+        supervisors = {}
+        for process in self.filter_processes(pattern):
+            sname = process["supervisor"]
+            supervisor = supervisors.get(sname)
+            if supervisor is None:
+                supervisors[sname] = supervisor = {"name": sname, "processes": {}}
+            puid = process['uid']
+            supervisor["processes"][puid] = process
+        return supervisors
+
+    def gen_processes(self):
+        return (proc for svisor in self.supervisors.values() for proc in svisor["processes"].values())
+
+    def gen_processes_uids(self):
+        return (puid for svisor in self.supervisors.values() for puid in svisor["processes"])
+
     def refresh(self):
         tasks = [spawn(supervisor.refresh) for supervisor in self.supervisors.values()]
         joinall(tasks)
@@ -437,8 +551,12 @@ class Multivisor(object):
         return self.supervisors[name]
 
     def get_process(self, uid):
-        supervisor, _ = uid.split(":", 1)
-        return self.supervisors[supervisor]["processes"][uid]
+        for proc in self.gen_processes():
+            if proc['uid'] == uid:
+                return proc
+
+    def get_processes_uids(self, uids):
+        return filter(lambda uid: uid in uids, self.gen_processes_uids())
 
     def _do_supervisors(self, operation, *names):
         supervisors = (self.get_supervisor(name) for name in names)
@@ -446,8 +564,10 @@ class Multivisor(object):
         joinall(tasks)
 
     def _do_processes(self, operation, *patterns):
+        procs = self.processes_names
+        puids = {procs[name]['uid'] for name in filter_patterns(procs, patterns)}
+        puids.update(self.get_processes_uids(patterns))
         procs = self.processes
-        puids = filter_patterns(procs, patterns)
         tasks = [spawn(operation, procs[puid]) for puid in puids]
         joinall(tasks)
 
@@ -463,8 +583,19 @@ class Multivisor(object):
     def shutdown_supervisors(self, *names):
         self._do_supervisors(Supervisor.shutdown, *names)
 
+    def clear_log_supervisors(self, *names):
+        self._do_supervisors(Supervisor.clear_log, *names)
+
     def restart_processes(self, *patterns):
         self._do_processes(Process.restart, *patterns)
 
     def stop_processes(self, *patterns):
         self._do_processes(Process.stop, *patterns)
+
+    def os_signal_processes(self, *patterns, signal):
+        def send(proc):
+            return proc.os_signal(signal)
+        self._do_processes(send, *patterns)
+
+    def clear_logs_processes(self, *patterns):
+        self._do_processes(Process.clear_logs, *patterns)

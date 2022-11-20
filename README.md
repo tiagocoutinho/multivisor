@@ -300,6 +300,28 @@ That's it. If you modify `App.vue` for example, you should see the changes
 directly on your browser.
 
 
+### JS & CSS update notes
+
+The fronted depends on:
+
+* bootstrap v5.2.2 CSS
+* bootstrap v5.2.2 JS
+* bootstrap-icons v1.5.0 CSS & bootstrap-icons woff2
+* htmx v1.8.4 JS
+* Masonry pkgd v4.2.2 JS
+
+A copy of these libraries is provided in `multivisor/server/static` to avoid external
+CDN dependencies in environments were the there is no external access to internet
+(ex: nuclear power plant ;-)
+
+If you intend to update boostrap-icons, the process is a bit cumbersome:
+
+* download into `multivisor/server/static` [from here the following](https://www.jsdelivr.com/package/npm/bootstrap-icons):
+   * font/bootstrap-icons.min.css
+   * font/fonts/bootstrap-icons.woff2
+* open bootstrap-icons.min.css and change something like
+  `./fonts/bootstrap-icons.woff2?856008caa5eb66df68595e734e59580d` to `./bootstrap-icons.woff2`
+
 [pypi-python-versions]: https://img.shields.io/pypi/pyversions/multivisor.svg
 [pypi-version]: https://img.shields.io/pypi/v/multivisor.svg
 [pypi-status]: https://img.shields.io/pypi/status/multivisor.svg

@@ -1,0 +1,5 @@
+# for process in multivisor.filter_processes(search)
+<tr hx-trigger="sse:process_changed/{{ process['uid'] }}" hx-get="/ui/processes/{{ process['uid'] }}">
+    # include 'processes/row.html'
+</tr>
+# endfor

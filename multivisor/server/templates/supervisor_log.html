@@ -1,0 +1,16 @@
+# set name = supervisor['name']
+<div class="modal-content">
+    <div class="modal-header">
+        <h5 class="modal-title" id="log-panel-label">{{ name }} logs</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body text-bg-dark">
+        <pre hx-get="/ui/supervisor/{{ name }}/log/data" hx-trigger="every 1s">{{ data }}</pre>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-warning" hx-post="/ui/supervisor/{{ name }}/log/clear" hx-swap="none">
+            Clear logs
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    </div>
+</div>

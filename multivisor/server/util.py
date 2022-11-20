@@ -1,7 +1,7 @@
 import hashlib
 import functools
 
-from flask import session, abort
+from flask import session, abort, Response
 
 
 def is_login_valid(app, username, password):
@@ -68,3 +68,18 @@ def login_required(app):
         return wrapper_login_required
 
     return decorator
+
+
+def SSEEvent(event=None, data=""):
+    if event is None:
+        return f"data: {data}\n\n"
+    return f"event: {event}\ndata: {data}\n\n"
+
+
+def SSEResponse(stream):
+    dtype = "text/event-stream"
+    headers = {
+        "X-Accel-Buffering": "no",
+        "Cache-Control": "no-cache",
+    }
+    return Response(stream, mimetype=dtype, content_type=dtype, headers=headers)

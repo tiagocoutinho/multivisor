@@ -1,0 +1,19 @@
+
+<div class="container">
+    <div class="card">
+        <table class="table table-sm">
+            <thead class="text-bg-secondary">
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Group</th>
+                    <th scope="col">Supervisor</th>
+                    <th scope="col">State</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody hx-trigger="sse:processes_changed" hx-get="/ui/processes/body">
+                # include 'processes/table_body.html'
+            </tbody>
+        </table>
+    </div>
+</div>

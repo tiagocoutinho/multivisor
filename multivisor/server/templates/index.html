@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ multivisor.safe_config["name"] }} process supervision</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon"> <!--<href="{{ url_for('static', filename='favicon.ico') }}">-->
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons.min.css') }}">
+    <script src="{{ url_for('static', filename='htmx.min.js') }}"></script>
+    <style>
+      .cursor-pointer { cursor: pointer; }
+    </style>
+  </head>
+
+  <body>
+    # include 'view.html'
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='masonry.pkgd.min.js') }}"></script>
+  </body>
+</html>

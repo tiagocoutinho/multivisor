@@ -1,30 +1,66 @@
-import hashlib
-import functools
-
-import gevent
-from blinker import signal
 from gevent.monkey import patch_all
-
 patch_all(thread=False)
 
-import os
 import logging
+import os
 
+from blinker import signal
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify, session
+from flask import Flask, render_template, Response, request, json, jsonify, session, make_response
 from werkzeug.debug import DebuggedApplication
-from werkzeug.serving import run_with_reloader
 
 from multivisor.signals import SIGNALS
-from multivisor.util import sanitize_url
-from multivisor.multivisor import Multivisor
-from .util import is_login_valid, login_required
+from multivisor.util import delta_human_time, human_time, sanitize_url
+from multivisor.multivisor import Multivisor, OS_SIGNAL_MAP
+from .util import is_login_valid, login_required, SSEEvent, SSEResponse
+
+
+STATES_TRANSITIONS = {
+    "RUNNING": ["STOPPING", "EXITED"],
+    "STARTING": ["STOPPING", "RUNNING", "BACKOFF"],
+    "STOPPED": ["STARTING"],
+    "STOPPING": ["STOPPED"],
+    "BACKOFF": ["STARTING", "FATAL"],
+    "FATAL": ["STARTING"],
+    "EXITED": ["STARTING"],
+}
+
+
+STATES_ACTIONS = {
+    "RUNNING": ["STOP", "RESTART"],
+    "STARTING": ["STOP"],
+    "STOPPED": ["START",],
+    "STOPPING": [],
+    "BACKOFF": ["START"],
+    "FATAL": ["START"],
+    "EXITED": ["START"],
+}
+
+
+STATES_COLORS = {
+    "RUNNING": "success",
+    "STARTING": "primary",
+    "STOPPED": "danger",
+    "STOPPING": "dark",
+    "BACKOFF": "warning",
+    "FATAL": "danger",
+    "EXITED": "secondary",
+}
+
+
+STATIC_DATA = {
+    "STATES": STATES_TRANSITIONS,
+    "STATES_ACTIONS": STATES_ACTIONS,
+    "STATES_COLORS": STATES_COLORS,
+    "OS_SIGNALS": OS_SIGNAL_MAP,
+}
 
 
 log = logging.getLogger("multivisor")
 
-app = Flask(__name__, static_folder="./dist/static", template_folder="./dist")
+app = Flask(__name__)
+app.jinja_env.line_statement_prefix = '#'
 
 
 @app.route("/api/admin/reload")
@@ -157,7 +193,7 @@ def process_log_tail(stream, uid):
             sleep(1)
             i += 1
 
-    return Response(event_stream(), mimetype="text/event-stream")
+    return SSEResponse(event_stream())
 
 
 @app.route("/api/login", methods=["post"])
@@ -196,16 +232,225 @@ def stream():
         client = queue.Queue()
         app.dispatcher.add_listener(client)
         for event in client:
-            yield event
+            data = json.dumps(event)
+            yield "data: {0}\n\n".format(data)
         app.dispatcher.remove_listener(client)
 
-    return Response(event_stream(), mimetype="text/event-stream")
+    return SSEResponse(event_stream())
 
 
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def catch_all(path):
-    return render_template("index.html")
+# ----------------------------------------------------------------------------
+# User Interface
+# ----------------------------------------------------------------------------
+
+
+@app.context_processor
+def common_context():
+    return dict(STATIC_DATA, multivisor=app.multivisor)
+
+
+@app.get("/ui/<view>")
+def view(view):
+    htmx = request.headers.get("HX-Request") == "true"
+    template = "view.html"
+    if not htmx:
+        view = request.path.rsplit("/", 1)[-1]
+        template = "index.html"
+    return render_template(template, view=view)
+
+
+@app.post("/ui/<view>/search")
+def view_filter(view):
+    search = request.form.get("search", "*")
+    log.error("%s %s", view, search)
+    return render_template(f"{view}/index.html", search=search)
+
+
+@app.get("/ui/processes/body")
+def processes_body():
+    return render_template("processes/table_body.html")
+
+
+@app.get("/ui/processes/<uid>")
+def process_row(uid):
+    process = app.multivisor.get_process(uid)
+    return render_template("processes/row.html", process=process)
+
+
+@app.get("/ui/<view>/process/<uid>")
+def row(view, uid):
+    process = app.multivisor.get_process(uid)
+    return render_template(f"{view}/row.html", process=process)
+
+
+@app.get("/ui/supervisor/<supervisor>/card")
+def supervisor_card(supervisor):
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    return render_template(f"supervisors/card.html", supervisor=supervisor)
+
+
+NOTIFICATION = """\
+  <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+    <div class="toast-header">
+      <strong class="me-auto">{level}</strong>
+      <small class="text-muted">{when}</small>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">{message}</div>
+  </div>
+"""
+
+LEVEL_STYLE = {
+    "INFO": "success",
+    "WARNING": "warning",
+    "DEBUG": "secondary",
+    "ERROR": "danger"
+}
+
+@app.get("/ui/stream")
+def ui_stream():
+    def event_stream():
+        client = queue.Queue()
+        app.dispatcher.add_listener(client)
+        for event in client:
+            name = event["event"]
+            if name == "process_changed":
+                yield SSEEvent(f"{name}/{event['payload']['uid']}")
+            elif name == "notification":
+                continue
+                data = event["payload"]
+                data["when"] = delta_human_time(data["time"])
+                data["style"] = LEVEL_STYLE[data["level"]]
+                payload = NOTIFICATION.format(**data).replace("\n", "")
+                yield Event("notification", payload)
+        app.dispatcher.remove_listener(client)
+    resp =  SSEResponse(event_stream())
+    return resp
+
+
+@app.get("/ui/process/<uid>/info")
+def ui_process_info(uid):
+    process = app.multivisor.get_process(uid)
+    process.refresh()
+    start = human_time(process["start"])
+    stop = human_time(process["stop"])
+    return render_template("process.html", live=True, start=start, stop=stop, process=process)
+
+
+@app.post("/ui/process/<uid>/start")
+def process_start(uid):
+    app.multivisor.restart_processes(uid)
+    return "OK"
+
+
+@app.post("/ui/process/<uid>/stop")
+def process_stop(uid):
+    app.multivisor.stop_processes(uid)
+    return "OK"
+
+
+@app.post("/ui/process/<uid>/restart")
+def process_restart(uid):
+    app.multivisor.restart_processes(uid)
+    return "OK"
+
+
+@app.post("/ui/process/<uid>/signal/<signal>")
+def process_os_signal(uid, signal):
+    app.multivisor.os_signal_processes(uid, signal=signal)
+    return "OK"
+
+
+@app.post("/ui/group/<group>/start")
+def group_start(group):
+    app.multivisor.restart_processes(f"*:{group}:*")
+    return "OK"
+
+
+@app.post("/ui/group/<group>/stop")
+def group_stop(group):
+    app.multivisor.stop_processes(f"*:{group}:*")
+    return "OK"
+
+
+@app.post("/ui/group/<group>/signal/<signal>")
+def group_signal(group, signal):
+    app.multivisor.os_signal_processes(f"*:{group}:*", signal=signal)
+    return "OK"
+
+
+@app.post("/ui/supervisor/<supervisor>/update")
+def supervisor_update(supervisor):
+    app.multivisor.update_supervisors(supervisor)
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    return render_template(f"supervisors/card.html", supervisor=supervisor)
+
+
+@app.get("/ui/supervisor/<supervisor>/log")
+def ui_supervisor_log(supervisor):
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    data = supervisor.read_log(-10000, 0)
+    return render_template("supervisor_log.html", data=data, supervisor=supervisor)
+
+
+@app.get("/ui/supervisor/<supervisor>/log/data")
+def ui_supervisor_log_data(supervisor):
+    supervisor = app.multivisor.get_supervisor(supervisor)
+    data = supervisor.read_log(-10000, 0)
+    response = make_response(data)
+    response.mimetype = "text/plain"
+    return response
+
+
+@app.post("/ui/supervisor/<supervisor>/log/clear")
+def ui_supervisor_log_clear(supervisor):
+    app.multivisor.clear_log_supervisors(supervisor)
+    return "OK"
+
+
+@app.get("/ui/process/<uid>/log/<stream>")
+def ui_process_log(stream, uid):
+    process = app.multivisor.get_process(uid)
+    return render_template("process_log_tail.html", stream=stream, process=process)
+
+
+@app.post("/ui/process/<uid>/log/clear")
+def ui_process_log_clear(uid):
+    app.multivisor.clear_logs_processes(uid)
+    return "OK"
+
+
+@app.get("/ui/process/<uid>/log/<stream>/tail")
+def ui_process_log_tail(stream, uid):
+    process = app.multivisor.get_process(uid)
+    supervisor = app.multivisor.get_supervisor(process["supervisor"])
+    server = supervisor.server
+    if stream == "out":
+        tail = server.tailProcessStdoutLog
+    else:
+        tail = server.tailProcessStderrLog
+
+    def event_stream():
+        i, offset, length = 0, 0, 2 ** 14
+        while True:
+            data = tail(process["full_name"], offset, length)
+            log, offset, overflow = data
+            # don't care about overflow in first log message
+            if overflow and i:
+                length = min(length * 2, 2 ** 14)
+            else:
+                message = log.replace('\n', '\ndata: ')
+                payload = f"data: {message}\n\n"
+                yield payload
+            sleep(1)
+            i += 1
+
+    return SSEResponse(event_stream())
+    
+
+@app.route("/")
+def root():
+    return render_template("index.html", view="groups")
 
 
 class Dispatcher(object):
@@ -221,8 +466,7 @@ class Dispatcher(object):
         self.clients.remove(client)
 
     def on_multivisor_event(self, signal, payload):
-        data = json.dumps(dict(payload=payload, event=signal))
-        event = "data: {0}\n\n".format(data)
+        event = dict(payload=payload, event=signal)
         for client in self.clients:
             client.put(event)
 
@@ -253,16 +497,6 @@ def custom_401(error):
     )
 
 
-def run_with_reloader_if_debug(func):
-    @functools.wraps(func)
-    def wrapper_login_required(*args, **kwargs):
-        if not app.debug:
-            return func(*args, **kwargs)
-        return run_with_reloader(func, *args, **kwargs)
-
-    return wrapper_login_required
-
-
 def get_parser(args):
     import argparse
 
@@ -272,6 +506,7 @@ def get_parser(args):
     )
     parser.add_argument(
         "-c",
+        "--config",
         help="configuration file",
         dest="config_file",
         default="/etc/multivisor.conf",
@@ -286,7 +521,6 @@ def get_parser(args):
     return parser
 
 
-@run_with_reloader_if_debug
 def main(args=None):
     parser = get_parser(args)
     options = parser.parse_args(args)
@@ -294,6 +528,8 @@ def main(args=None):
     log_level = getattr(logging, options.log_level.upper())
     log_fmt = "%(levelname)s %(asctime)-15s %(name)s: %(message)s"
     logging.basicConfig(level=log_level, format=log_fmt)
+
+    logging.info("Bootstraping %d...", os.getpid())
 
     if not os.path.exists(options.config_file):
         parser.exit(

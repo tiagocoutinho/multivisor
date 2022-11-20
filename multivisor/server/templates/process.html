@@ -1,0 +1,135 @@
+# set mem = process.get('psutil', {}).get("memory_full_info", {}).get("rss", -1)
+# set psutil = process.get('psutil', {})
+# set puid = process["uid"]
+# if live
+<div class="modal-content" hx-get="/ui/process/{{ puid }}/info" hx-trigger="load delay:1s" hx-swap="outerHTML">
+# else
+<div class="modal-content">
+#endif
+    <div class="modal-header">
+        <h5 class="modal-title" id="process-info-label">{{ process['name'] }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Unique name</div>
+                                {{ process['unique_name'] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Description</div>
+                                {{ process['description'] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Host</div>
+                                {{ process['host'] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Supervisor</div>
+                                {{ process['supervisor'] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Started at</div>
+                                {{ start }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Stopped at</div>
+                                {{ stop }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Exit status (last)</div>
+                                {{ process['exitstatus'] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">PID</div>
+                                {{ process['pid'] }}
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Memory</div>
+                                # set mem = psutil.get("memory_full_info", {})
+                                # for name, value in mem|dictsort:
+                                    {{ name }}: {{ value|filesizeformat }}<br/>
+                                # endfor
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">CPU</div>
+                                # set cpu = psutil.get("cpu_times", {})
+                                # for name, value in cpu|dictsort:
+                                    {{ name }}: {{ value }}<br/>
+                                # endfor
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold"># Files</div>
+                                {{ psutil["num_fds"] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold"># Threads</div>
+                                {{ psutil["num_threads"] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold"># Context switches</div>
+                                # set ctx = psutil.get("num_ctx_switches", {})
+                                Voluntary: {{ ctx["voluntary"] }}<br/>
+                                Involuntary: {{ ctx["involuntary"] }}
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="col-sm-12">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Output log file</div>
+                                {{ process['logfile'] }}
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                            <div class="fw-bold">Error log file</div>
+                                {{ process['stderr_logfile'] }}
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    </div>
+</div>
