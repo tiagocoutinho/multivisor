@@ -9,35 +9,41 @@ services:
     build: 
       context: .
       dockerfile: docker/Dockerfile
+    image: multivisor:dev
     command: ["supervisord", "-c", "/etc/supervisord/lid001.conf"]
     ports:
       - 9011:9001
     volumes:
       - ./docker/supervisord/lid001.conf:/etc/supervisord/lid001.conf
+      - ./multivisor/:/usr/app/multivisor/multivisor
   lid002:
     build: 
       context: .
       dockerfile: docker/Dockerfile
+    image: multivisor:dev
     command: ["supervisord", "-c", "/etc/supervisord/lid002.conf"]
     ports:
       - 9021:9001
       - 5000:5000
     volumes:
       - ./docker/supervisord/lid002.conf:/etc/supervisord/lid002.conf
+      - ./multivisor/:/usr/app/multivisor/multivisor
   baslid001:
     build: 
       context: .
       dockerfile: docker/Dockerfile
+    image: multivisor:dev
     command: ["supervisord", "-c", "/etc/supervisord/baslid001.conf"]
     ports:
       - 9031:9001
     volumes:
       - ./docker/supervisord/baslid001.conf:/etc/supervisord/baslid001.conf
+      - ./multivisor/:/usr/app/multivisor/multivisor
   multivisor:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    #command: ["multivisor", "-c", "/etc/multivisor.conf"]
+    image: multivisor:dev
     command:
     - watchmedo
     - auto-restart
