@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 supervisor = "supervisor-win" if platform.system() == "Windows" else "supervisor"
 
 extras = {
-    "rpc": ["zerorpc", supervisor],
+    "rpc": ["zerorpc", "psutil", supervisor],
     "web": ["flask", "werkzeug", "blinker", "zerorpc", supervisor],
     "cli": ["maya", "requests", "prompt_toolkit>=2", "blinker"],
 }

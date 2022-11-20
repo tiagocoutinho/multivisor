@@ -14,6 +14,24 @@ from gevent.fileobject import FileObject
 from zerorpc import stream, Server, LostRemote
 from supervisor.childutils import getRPCInterface
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+PSUTIL_ATTRS = (
+    "cmdline",
+    "cpu_times",
+    "create_time",
+    "cwd",
+    "exe",
+    "memory_full_info",
+    "name",
+    "num_ctx_switches",
+    "num_fds",
+    "num_threads",
+    "open_files",
+)
 
 READY = "READY\n"
 ACKNOWLEDGED = "RESULT 2\nOK"
@@ -54,14 +72,29 @@ def event_consumer_loop(queue, handler):
 get_rpc = partial(getRPCInterface, environ)
 
 
-def build_method(supervisor, name):
-    subsystem_name, func_name = name.split(".", 1)
+def build_method(supervisor, subsystem_name, func_name):    
     def method(*args):
         subsystem = getattr(supervisor.rpc, subsystem_name)
         with supervisor.lock:
             return getattr(subsystem, func_name)(*args)
     method.__name__ = func_name
     return func_name, method
+
+
+def get_psutil(pid):
+    if psutil is None or pid is None:
+        return {}
+    try:
+        proc = psutil.Process(pid)
+        return {
+            k: v._asdict() if isinstance(v, tuple) else v
+            for k, v in proc.as_dict(PSUTIL_ATTRS).items()
+        }
+    except psutil.NoSuchProcess:
+        return {}
+    except Exception:
+        logging.exception("Error getting process info")
+        return {}
 
 
 class Supervisor(object):
@@ -71,7 +104,14 @@ class Supervisor(object):
         self.lock = RLock()
         self.rpc = xml_rpc
         for name in self.rpc.system.listMethods():
-            setattr(self, *build_method(self, name))
+            subsystem_name, func_name = name.split(".", 1)
+            if not hasattr(self, func_name):
+                setattr(self, *build_method(self, subsystem_name, func_name))
+
+    def getProcessInfo(self, pname):
+        info = self.rpc.supervisor.getProcessInfo(pname)
+        info["psutil"] = get_psutil(info["pid"])
+        return info
 
     @stream
     def event_stream(self):

@@ -6,3 +6,4 @@ flask
 supervisor
 blinker
 zerorpc
+psutil
