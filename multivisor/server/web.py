@@ -243,6 +243,12 @@ def stream():
 # User Interface
 # ----------------------------------------------------------------------------
 
+
+@app.context_processor
+def common_context():
+    return dict(STATIC_DATA, multivisor=app.multivisor)
+
+
 @app.get("/ui/<view>")
 def view(view):
     htmx = request.headers.get("HX-Request") == "true"
@@ -250,37 +256,37 @@ def view(view):
     if not htmx:
         view = request.path.rsplit("/", 1)[-1]
         template = "index.html"
-    return render_template(template, view=view, multivisor=app.multivisor, **STATIC_DATA)
+    return render_template(template, view=view)
 
 
 @app.post("/ui/<view>/search")
 def view_filter(view):
     search = request.form.get("search", "*")
     log.error("%s %s", view, search)
-    return render_template(f"{view}/index.html", search=search, multivisor=app.multivisor, **STATIC_DATA)
+    return render_template(f"{view}/index.html", search=search)
 
 
 @app.get("/ui/processes/body")
 def processes_body():
-    return render_template("processes/table_body.html", multivisor=app.multivisor, **STATIC_DATA)
+    return render_template("processes/table_body.html")
 
 
 @app.get("/ui/processes/<uid>")
 def process_row(uid):
     process = app.multivisor.get_process(uid)
-    return render_template("processes/row.html", process=process, **STATIC_DATA)
+    return render_template("processes/row.html", process=process)
 
 
 @app.get("/ui/<view>/process/<uid>")
 def row(view, uid):
     process = app.multivisor.get_process(uid)
-    return render_template(f"{view}/row.html", process=process, **STATIC_DATA)
+    return render_template(f"{view}/row.html", process=process)
 
 
 @app.get("/ui/supervisor/<supervisor>/card")
 def supervisor_card(supervisor):
     supervisor = app.multivisor.get_supervisor(supervisor)
-    return render_template(f"supervisors/card.html", supervisor=supervisor, **STATIC_DATA)
+    return render_template(f"supervisors/card.html", supervisor=supervisor)
 
 
 NOTIFICATION = """\
@@ -328,7 +334,7 @@ def ui_process_info(uid):
     process.refresh()
     start = human_time(process["start"])
     stop = human_time(process["stop"])
-    return render_template("process.html", start=start, stop=stop, process=process, **STATIC_DATA)
+    return render_template("process.html", live=True, start=start, stop=stop, process=process)
 
 
 @app.post("/ui/process/<uid>/start")
@@ -377,14 +383,14 @@ def group_signal(group, signal):
 def supervisor_update(supervisor):
     app.multivisor.update_supervisors(supervisor)
     supervisor = app.multivisor.get_supervisor(supervisor)
-    return render_template(f"supervisors/card.html", supervisor=supervisor, **STATIC_DATA)
+    return render_template(f"supervisors/card.html", supervisor=supervisor)
 
 
 @app.get("/ui/supervisor/<supervisor>/log")
 def ui_supervisor_log(supervisor):
     supervisor = app.multivisor.get_supervisor(supervisor)
     data = supervisor.read_log(-10000, 0)
-    return render_template("supervisor_log.html", data=data, supervisor=supervisor, **STATIC_DATA)
+    return render_template("supervisor_log.html", data=data, supervisor=supervisor)
 
 
 @app.get("/ui/supervisor/<supervisor>/log/data")
@@ -405,7 +411,7 @@ def ui_supervisor_log_clear(supervisor):
 @app.get("/ui/process/<uid>/log/<stream>")
 def ui_process_log(stream, uid):
     process = app.multivisor.get_process(uid)
-    return render_template("process_log_tail.html", stream=stream, process=process, **STATIC_DATA)
+    return render_template("process_log_tail.html", stream=stream, process=process)
 
 
 @app.post("/ui/process/<uid>/log/clear")
@@ -444,7 +450,7 @@ def ui_process_log_tail(stream, uid):
 
 @app.route("/")
 def root():
-    return render_template("index.html", view="groups", multivisor=app.multivisor, **STATIC_DATA)
+    return render_template("index.html", view="groups")
 
 
 class Dispatcher(object):
