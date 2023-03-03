@@ -179,9 +179,10 @@ You can generate some random hash easily using python:
 ### HTTPS
 
 Multivison now supports HTTPS.  To enable this feature, you will need to set 2 environment variables:
-'''MULTIVISOR_HTTPS_SERVER_KEY=/path/to/your/serer/key/private.key
+```
+MULTIVISOR_HTTPS_SERVER_KEY=/path/to/your/serer/key/private.key
 MULTIVISOR_HTTPS_CERT_FILE=//path/to/your/server/certificate/certificate.pem
-'''
+```
 
 ### CLI
 
