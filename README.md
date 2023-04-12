@@ -176,6 +176,14 @@ as flask sessions module needs some secret value to create secure session.
 You can generate some random hash easily using python:
 `python -c 'import os; import binascii; print(binascii.hexlify(os.urandom(32)))'`
 
+### HTTPS
+
+Multivison now supports HTTPS.  To enable this feature, you will need to set 2 environment variables:
+```
+MULTIVISOR_HTTPS_SERVER_KEY=/path/to/your/serer/key/private.key
+MULTIVISOR_HTTPS_CERT_FILE=//path/to/your/server/certificate/certificate.pem
+```
+
 ### CLI
 
 The multivisor CLI is an optional component which can be installed with:

@@ -315,7 +315,15 @@ def main(args=None):
         app.secret_key = secret_key
 
     application = DebuggedApplication(app, evalex=True) if app.debug else app
-    http_server = WSGIServer(bind, application=application)
+    
+    #look for a HTTPS server key and certificate and use them if available
+    httpsKeyFile = os.environ.get( "MULTIVISOR_HTTPS_SERVER_KEY", "" )
+    httpsCertFile = os.environ.get( "MULTIVISOR_HTTPS_CERT_FILE", "" )
+    if( httpsKeyFile != "" and httpsCertFile != "" ):
+        http_server = WSGIServer(bind, application=application, keyfile=httpsKeyFile, certfile=httpsCertFile)
+    else:
+        http_server = WSGIServer(bind, application=application)   
+        
     logging.info("Start accepting requests")
     try:
         http_server.serve_forever()
