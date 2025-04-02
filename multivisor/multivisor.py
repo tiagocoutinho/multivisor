@@ -8,7 +8,7 @@ import weakref
 from blinker import signal
 
 try:
-    from ConfigParser import SafeConfigParser
+    from ConfigParser import SafeConfigParser as ConfigParser
 except ImportError:
     from configparser import ConfigParser
 
