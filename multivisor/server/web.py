@@ -14,7 +14,6 @@ from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify, session
 from werkzeug.debug import DebuggedApplication
-# ~ from werkzeug.serving import run_with_reloader
 from werkzeug.serving import run_simple
 
 from multivisor.signals import SIGNALS
@@ -259,7 +258,7 @@ def run_with_reloader_if_debug(func):
     def wrapper_login_required(*args, **kwargs):
         if not app.debug:
             return func(*args, **kwargs)
-        return run_with_reloader(func, *args, **kwargs, use_reloader=True)
+        return run_simple(func, *args, **kwargs, use_reloader=True)
 
     return wrapper_login_required
 
