@@ -19,7 +19,7 @@ with open("README.md") as readme_file:
 
 setup(
     name="multivisor",
-    version="6.0.1",
+    version="6.0.2",
     author="Tiago Coutinho",
     author_email="coutinhotiago@gmail.com",
     description="A centralized supervisor UI (web & CLI)",
