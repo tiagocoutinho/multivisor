@@ -11,6 +11,8 @@
     "build": "node build/build.js"
   },
   "dependencies": {
+    "@fontsource/roboto": "^5.2.9",
+    "material-design-icons-iconfont": "^6.7.0",
     "vue": "^2.5.22",
     "vue-router": "^3.0.2",
     "vuetify": "^1.4.4",

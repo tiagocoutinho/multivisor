@@ -1,3 +1,6 @@
+import '@fontsource/roboto'
+import 'material-design-icons-iconfont/dist/material-design-icons.css'
+
 import Vue from 'vue'
 import Vuetify from 'vuetify'
 import 'vuetify/dist/vuetify.min.css'
@@ -6,7 +9,9 @@ import App from '@/App'
 import store from '@/store'
 import router from '@/router'
 
-Vue.use(Vuetify)
+Vue.use(Vuetify, {
+  iconfont: 'md'
+})
 
 Vue.config.productionTip = false
 
