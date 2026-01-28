@@ -27,7 +27,7 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests", "tests.*")),
     package_data={
-        "multivisor.server": ["dist/*", "dist/static/css/*", "dist/static/js/*"]
+        "multivisor.server": ["dist/*", "dist/static/css/*", "dist/static/js/*", "dist/static/fonts/*"]
     },
     entry_points=dict(
         console_scripts=[
