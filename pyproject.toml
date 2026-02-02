@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+
+[tool.setuptools.packages.find]
+include = ["multivisor", "multivisor.*"]
+
+[tool.setuptools.package-data]
+"multivisor.server" = ["dist/*", "dist/static/css/*", "dist/static/js/*", "dist/static/fonts/*"]
+
+[project]
+name = "multivisor"
+dynamic = ["version"]
+authors = [{ name = "Tiago Coutinho", email = "coutinhotiago@gmail.com" }, { name = "Samuel Debionne", email = "samuel.debionne@gmail.com" }]
+description = "A centralized supervisor UI (web & CLI)"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+requires-python = ">= 3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Framework :: Flask",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Boot",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "six",
+    "gevent>=1.3",
+]
+
+[project.urls]
+Repository = "https://github.com/tiagocoutinho/multivisor"
+Documentation = "https://limagroup.gitlab-pages.esrf.fr/lima2-client/"
+
+[project.scripts]
+multivisor = "multivisor.server.web:main [web]"
+multivisor-rpc = "multivisor.server.rpc:main [rpc]"
+multivisor-cli = "multivisor.client.cli:main [cli]"
+
+[project.optional-dependencies]
+rpc = [
+    "zerorpc",
+    "supervisor; platform_system=='Linux'",
+    "supervisor-win; platform_system=='Windows'",
+]
+web = [
+    "flask",
+    "flask_cors",
+    "werkzeug",
+    "blinker",
+    "zerorpc",
+    "supervisor; platform_system=='Linux'",
+    "supervisor-win; platform_system=='Windows'",
+]
+cli = [
+    "maya",
+    "requests",
+    "prompt_toolkit>=2",
+    "blinker",
+]
