@@ -1,27 +1,20 @@
-import '@fontsource/roboto'
-import 'material-design-icons-iconfont/dist/material-design-icons.css'
+/**
+ * main.js
+ *
+ * Bootstraps Vuetify and other plugins then mounts the App`
+ */
 
-import Vue from 'vue'
-import Vuetify from 'vuetify'
-import 'vuetify/dist/vuetify.min.css'
+// Plugins
+import { registerPlugins } from "@/plugins";
 
-import App from '@/App'
-import store from '@/store'
-import router from '@/router'
+// Components
+import App from "./App.vue";
 
-Vue.use(Vuetify, {
-  iconfont: 'md'
-})
+// Composables
+import { createApp } from "vue";
 
-Vue.config.productionTip = false
+const app = createApp(App);
 
-/* eslint-disable no-new */
-new Vue({
-  el: '#app',
-  store,
-  router,
-  render: h => h(App),
-  created () {
-    this.$store.dispatch('init')
-  }
-})
+registerPlugins(app);
+
+app.mount("#app");

@@ -1,33 +1,53 @@
 <template>
-  <v-app >
-    <ToolBar></ToolBar>
-    <v-content>
-      <v-container fluid grid-list-md>
-        <AlertBar></AlertBar>
-        <router-view></router-view>
-      </v-container>
-    </v-content>
+  <v-app>
+    <ToolBar v-model:drawer="drawer"></ToolBar>
+    <v-navigation-drawer
+      v-model="drawer"
+      :location="$vuetify.display.mobile ? 'bottom' : undefined"
+      temporary
+    >
+      <v-list :items="drawerItems"></v-list>
+    </v-navigation-drawer>
+    <AlertBar></AlertBar>
+    <router-view></router-view>
     <NotificationBar></NotificationBar>
     <LogSheet></LogSheet>
     <ProcessDetails></ProcessDetails>
   </v-app>
 </template>
 
-<script>
-import ToolBar from '@/components/ToolBar'
-import NotificationBar from '@/components/NotificationBar'
-import AlertBar from '@/components/AlertBar'
+<script setup>
+import { onMounted } from "vue";
 
-import LogSheet from '@/components/process/Log'
-import ProcessDetails from '@/components/process/Details'
+import ToolBar from "@/components/ToolBar";
+import NotificationBar from "@/components/NotificationBar";
+import AlertBar from "@/components/AlertBar";
 
-export default {
-  components: {
-    ToolBar,
-    LogSheet,
-    ProcessDetails,
-    NotificationBar,
-    AlertBar
-  }
-}
+import LogSheet from "@/components/process/Log";
+import ProcessDetails from "@/components/process/Details";
+
+import { useAppStore } from "@/stores/app";
+
+const store = useAppStore();
+
+const drawerItems = [
+  {
+    title: "Processes",
+    value: "process",
+  },
+  {
+    title: "Supervisors",
+    value: "Supervisor",
+  },
+  {
+    title: "Groups",
+    value: "group",
+  },
+];
+
+const drawer = ref(false);
+
+onMounted(() => {
+  store.init();
+});
 </script>
