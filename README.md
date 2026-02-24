@@ -250,7 +250,7 @@ The `multivisor-cli` runs a
 [prompt-toolkit](http://python-prompt-toolkit.rtfd.io) based console.
 
 The frontend is based on [vue](https://vuejs.org/) +
-[vuex](https://vuex.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
+[pinia](https://pinia.vuejs.org/) + [vuetify](https://vuetifyjs.com/).
 
 # Development
 

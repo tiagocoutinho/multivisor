@@ -1,27 +1,21 @@
 <template>
-  <v-tooltip bottom>
-    <v-btn slot="activator" flat
-           router to="/view/supervisor"
-           >
-      <v-icon class="mr-2">visibility</v-icon>
-      <div>
-      <v-icon small>thumb_up</v-icon>
+  <v-btn slot="activator" variant="flat" router to="/supervisor">
+    <v-tooltip activator="parent" location="bottom">Supervisors</v-tooltip>
+    <v-icon class="mr-2">mdi-desktop-classic</v-icon>
+    <div>
+      <v-icon size="small">mdi-thumb-up</v-icon>
       {{ nbRunningSupervisors }}
-      <v-icon small class="ml-1">thumb_down</v-icon>
+      <v-icon size="small" class="ml-1">mdi-thumb-down</v-icon>
       {{ nbStoppedSupervisors }}
     </div>
-    </v-btn>
-    <span>Supervisors</span>
-  </v-tooltip>
+  </v-btn>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
+<script setup>
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/stores/app";
 
-export default {
-  name: 'SupervisorChip',
-  computed: {
-    ...mapGetters(['nbRunningSupervisors', 'nbStoppedSupervisors'])
-  }
-}
+const store = useAppStore();
+
+const { nbRunningSupervisors, nbStoppedSupervisors } = storeToRefs(store);
 </script>

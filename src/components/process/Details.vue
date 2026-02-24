@@ -2,61 +2,82 @@
   <v-bottom-sheet inset v-model="visible">
     <v-card>
       <v-card-title>Last updated {{ lastUpdate }}</v-card-title>
-      <v-list dense>
+      <v-list density="compact">
         <template v-for="(item, index) in items">
-          <v-list-tile avatar :key="item.id" v-if="showItem(item)">
-            <v-list-tile-avatar :color="item.color">
-              <span class="white--text headline">{{ item.label[0] }}</span>
-            </v-list-tile-avatar>
-            <v-list-tile-content>
-              <v-list-tile-title>{{ itemValue(item) }}</v-list-tile-title>
-              <v-list-tile-sub-title>{{ item.label }}</v-list-tile-sub-title>
-            </v-list-tile-content>
-          </v-list-tile>
-          <v-divider inset v-if="index < (items.length - 2)"></v-divider>
+          <v-list-item
+            avatar
+            :subtitle="item.label"
+            :title="itemValue(item)"
+            :key="item.id"
+            v-if="showItem(item)"
+          >
+            <template v-slot:prepend>
+              <v-avatar :color="item.color">
+                <span class="text-white text-h5">{{ item.label[0] }}</span>
+              </v-avatar>
+            </template>
+          </v-list-item>
+          <!-- <v-divider inset v-if="index < items.length - 2"></v-divider> -->
         </template>
       </v-list>
-  </v-card>
+    </v-card>
   </v-bottom-sheet>
 </template>
 
-<script>
-import { timeAgo } from '../../multivisor'
+<script setup>
+import { ref, watch, computed } from "vue";
+import { timeAgo } from "@/multivisor";
 
-export default {
-  name: 'ProcessDetails',
-  data () {
-    return {
-      items: [
-        {id: 'name', label: 'Name', color: 'red'},
-        {value: this.startTime, label: 'Started at (last)', color: 'red darken-2'},
-        {id: 'description', label: 'Description', color: 'orange'},
-        {id: 'host', label: 'Host', color: 'green'},
-        {id: 'supervisor', label: 'Supervisor', color: 'green darken-2'},
-        {id: 'pid', label: 'PID', color: 'blue'},
-        {id: 'exitstatus', label: 'Exit status (last)', color: 'blue darken-2'},
-        {id: 'logfile', label: 'Output log file', color: 'purple'},
-        {id: 'stderr_logfile', label: 'Error log file', color: 'purple darken-2'}
-      ]
-    }
+import { useAppStore } from "@/stores/app";
+
+const store = useAppStore();
+
+const startTime = () => {
+  return Date(process.start);
+};
+
+const items = [
+  { id: "name", label: "Name", color: "red" },
+  { value: startTime, label: "Started at (last)", color: "red darken-2" },
+  { id: "description", label: "Description", color: "orange" },
+  { id: "host", label: "Host", color: "green" },
+  { id: "supervisor", label: "Supervisor", color: "green darken-2" },
+  { id: "pid", label: "PID", color: "blue" },
+  { id: "exitstatus", label: "Exit status (last)", color: "blue darken-2" },
+  { id: "logfile", label: "Output log file", color: "purple" },
+  { id: "stderr_logfile", label: "Error log file", color: "purple darken-2" },
+];
+
+const { processDetails } = storeToRefs(store);
+
+// const process = computed(() => {
+//   return processDetails.value.process;
+// });
+
+const visible = computed({
+  get() {
+    return processDetails.value.visible;
   },
-  computed: {
-    process () { return this.$store.state.processDetails.process },
-    visible: {
-      get () { return this.$store.state.processDetails.visible },
-      set (v) { this.$store.commit('setProcessDetailsVisible', v) }
-    },
-    lastUpdate () { return timeAgo(this.process.now) }
+  set(newValue) {
+    store.setProcessDetailsVisible(newValue);
   },
-  methods: {
-    startTime () { return Date(this.process.start) },
-    showItem (item) { return 'value' in item || this.process[item.id] !== '' },
-    itemValue (item) {
-      if ('id' in item) {
-        return this.process[item.id]
-      }
-      return item.value()
-    }
+});
+
+const lastUpdate = computed(() => {
+  return timeAgo(processDetails.value.process.now);
+});
+
+const showItem = (item) => {
+  return "value" in item || processDetails.value.process[item.id] !== "";
+};
+
+const itemValue = (item) => {
+  let res;
+  if ("id" in item) {
+    res = processDetails.value.process[item.id];
+  } else {
+    res = item.value();
   }
-}
+  return res;
+};
 </script>

@@ -1,81 +1,81 @@
 <template>
   <v-card>
-    <v-toolbar dense color="purple darken-2" dark>
+    <v-toolbar density="compact" color="purple-darken-2" dark>
       <v-toolbar-title>{{ group.name }}</v-toolbar-title>
-      <v-spacer></v-spacer>
-      <v-tooltip top>
-        <v-btn slot="activator" icon small @click="restartSelected()"
-               v-show="selectedProcesses.length">
-          <v-icon>autorenew</v-icon>
-        </v-btn>
-      <span>(Re)start selected processes</span>
-      </v-tooltip>
-      <v-tooltip top>
-        <v-btn slot="activator" icon small @click="stopSelected()"
-               v-show="selectedProcesses.length">
-          <v-icon>stop</v-icon>
-        </v-btn>
-        <span>Stop selected processes</span>
-      </v-tooltip>
-      <v-tooltip top>
-        <v-btn slot="activator" icon small @click="clearSelected()"
-               v-show="selectedProcesses.length">
-          <v-icon>clear_all</v-icon>
-        </v-btn>
-        <span>Clear selection</span>
-      </v-tooltip>
-      <v-tooltip top>
-        <v-btn slot="activator" icon small @click="selectAll()"
-               v-show="selectedProcesses.length < group.processes.length">
-          <v-icon>done_all</v-icon>
-        </v-btn>
-        <span>Select all</span>
-      </v-tooltip>
+
+      <v-btn
+        icon="mdi-autorenew"
+        size="small"
+        @click="restartSelected()"
+        v-show="selectedGroupProcesses.length"
+      >
+      </v-btn>
+      <!-- <v-tooltip location="top" text="(Re)start selected processes"></v-tooltip> -->
+
+      <v-btn
+        icon="mdi-stop"
+        size="small"
+        @click="stopSelected()"
+        v-show="selectedGroupProcesses.length"
+      >
+      </v-btn>
+      <!-- <v-tooltip activator="parent" location="top" text="Stop selected processes"></v-tooltip> -->
+      <v-btn
+        icon="mdi-checkbox-blank-outline"
+        size="small"
+        @click="clearSelected()"
+        v-show="selectedGroupProcesses.length"
+      >
+      </v-btn>
+      <!-- <v-tooltip activator="parent" location="top" text="Clear selection"></v-tooltip> -->
+      <v-btn
+        icon="mdi-check-all"
+        size="small"
+        @click="selectAll()"
+        v-show="selectedGroupProcesses.length < group.processes.length"
+      >
+      </v-btn>
+      <!-- <v-tooltip activator="parent" location="top" text="Select all"></v-tooltip> -->
+
+      <!-- </template> -->
     </v-toolbar>
     <GroupList :group="group"></GroupList>
   </v-card>
 </template>
 
-<script>
-import GroupList from './List'
+<script setup>
+import { useAppStore } from "@/stores/app";
+import GroupList from "./List";
 
-export default {
-  name: 'GroupCard',
-  props: ['item'],
-  components: {
-    GroupList
-  },
-  computed: {
-    group () { return this.item.item },
-    selectedProcesses () {
-      return this.$store.state.selectedProcesses.reduce((processes, puid) => {
-        let group = puid.split(':', 2)[1]
-        if (group === this.group.name) {
-          processes.push(puid)
-        }
-        return processes
-      }, [])
-    }
-  },
-  methods: {
-    restartSelected () {
-      this.$store.dispatch('restartProcesses', this.selectedProcesses)
-      this.clearSelected()
-    },
-    stopSelected () {
-      this.$store.dispatch('stopProcesses', this.selectedProcesses)
-      this.clearSelected()
-    },
-    selectAll () {
-      let puids = this.group.processes.reduce((processes, process) => {
-        processes.push(process.uid)
-        return processes
-      }, [])
-      this.$store.commit('addSelectedProcesses', puids)
-    },
-    clearSelected () {
-      this.$store.commit('removeSelectedProcesses', this.selectedProcesses)
-    }
-  }
-}
+const store = useAppStore();
+
+const { group } = defineProps(["group"]);
+
+const { selectedProcesses } = storeToRefs(store);
+
+const selectedGroupProcesses = computed(() => {
+  return selectedProcesses.value.filter((uid) => {
+    let g = uid.split(":", 2)[1];
+    return g === group.name;
+  });
+});
+
+const restartSelected = () => {
+  store.restartProcesses(selectedProcesses.value);
+  clearSelected();
+};
+const stopSelected = () => {
+  store.stopProcesses(selectedProcesses.value);
+  clearSelected();
+};
+const selectAll = () => {
+  let puids = group.processes.reduce((processes, process) => {
+    processes.push(process.uid);
+    return processes;
+  }, []);
+  store.addSelectedProcesses(puids);
+};
+const clearSelected = () => {
+  store.removeSelectedProcesses(selectedProcesses.value);
+};
 </script>

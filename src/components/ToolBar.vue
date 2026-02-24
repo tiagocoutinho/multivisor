@@ -1,63 +1,93 @@
 <template>
-  <v-toolbar fixed dark app class="primary">
-    <v-menu offset-y nudge-bottom="15" v-show="isAuthenticated && useAuthentication">
-      <template slot="activator">
-        <v-btn icon slot="activator">
-          <v-icon >menu</v-icon>
-        </v-btn>
-      </template>
-      <v-list>
-        <v-list-tile @click="logout">
-          <v-list-tile-title>Logout</v-list-tile-title>
-        </v-list-tile>
-      </v-list>
-    </v-menu>
+  <v-app-bar blue :elevation="2" class="bg-primary">
+    <!-- <template v-slot:prepend>
+      <v-menu offset="15" v-show="isAuthenticated && useAuthentication">
+        <template slot="activator">
+          <v-btn icon slot="activator">
+            <v-icon >menu</v-icon>
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item @click="logout">
+            <v-list-item-title>Logout</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </template> -->
 
-    <v-toolbar-title>
-      <router-link to="/" tag="span" style="cursor: pointer">{{ name }}</router-link>
-    </v-toolbar-title>
-    <v-spacer></v-spacer>
-    <v-text-field append-icon="search" clearable single-line hide-details
-                  placeholder="Filter..." v-model="search" class="no-padding"
-                  color="grey lighten-1" v-show="isAuthenticated || !useAuthentication">
+    <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+
+    <v-app-bar-title style="cursor: pointer" @click="$router.push('/')">
+      {{ name }}
+    </v-app-bar-title>
+
+    <v-text-field
+      prepend-inner-icon="mdi-magnify"
+      density="compact"
+      clearable
+      single-line
+      hide-details
+      placeholder="Filter"
+      v-model="search"
+      class="expending-search"
+      :class="{ closed: searchClosed && !search }"
+      v-show="isAuthenticated || !useAuthentication"
+      @focus="searchClosed = false"
+      @blur="searchClosed = true"
+    >
     </v-text-field>
-    <ActionBar v-show="isAuthenticated || !useAuthentication"></ActionBar>
-    <v-toolbar-items v-show="isAuthenticated || !useAuthentication">
-      <ProcessChip class="hidden-sm-and-down"></ProcessChip>
-      <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
-      <GroupChip class="hidden-sm-and-down"></GroupChip>
-    </v-toolbar-items>
-  </v-toolbar>
+
+    <template v-slot:append>
+      <!-- <ActionBar v-show="isAuthenticated || !useAuthentication"></ActionBar> -->
+      <!-- <v-toolbar-items v-show="isAuthenticated || !useAuthentication"> -->
+      <!-- <v-btn icon="mdi-dots-vertical"></v-btn> -->
+      <v-btn-group variant="outlined" divided class="buttons-padding">
+        <ProcessChip class="hidden-sm-and-down"></ProcessChip>
+        <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
+        <GroupChip class="hidden-sm-and-down"></GroupChip>
+      </v-btn-group>
+      <!-- </v-toolbar-items> -->
+    </template>
+  </v-app-bar>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
-import ProcessChip from './process/Chip'
-import SupervisorChip from './supervisor/Chip'
-import GroupChip from './group/Chip'
-import ActionBar from './ActionBar'
+<script setup>
+//import { computed } from 'vue'
+import { storeToRefs } from "pinia";
 
-export default {
-  name: 'ToolBar',
-  components: { ActionBar, ProcessChip, SupervisorChip, GroupChip },
-  computed: {
-    ...mapGetters(['name']),
-    isAuthenticated () { return this.$store.state.isAuthenticated },
-    useAuthentication () { return this.$store.state.useAuthentication },
-    search: {
-      get () { return this.$store.state.search },
-      set (v) { this.$store.commit('updateSearch', v) }
-    }
-  },
-  methods: {
-    logout () {
-      this.$store.dispatch('logout').then(() => { this.$router.push({'name': 'Login'}) })
-    }
-  }
+import ProcessChip from "./process/Chip.vue";
+import SupervisorChip from "./supervisor/Chip.vue";
+import GroupChip from "./group/Chip.vue";
+import ActionBar from "./ActionBar.vue";
+
+import { useAppStore } from "@/stores/app";
+
+const store = useAppStore();
+
+const { name, search, isAuthenticated, useAuthentication } = storeToRefs(store);
+
+const drawer = defineModel("drawer", false);
+
+const searchClosed = ref(true);
+
+function logout() {
+  dispatch("logout").then(() => {
+    this.$router.push({ name: "Login" });
+  });
 }
 </script>
-<style scoped>
-  .no-padding {
-    padding: 0;
-  }
+
+<style scoped lang="sass">
+.v-input.expending-search
+  transition: max-width 0.3s
+  .v-field__prepend-inner
+    cursor: pointer !important
+  &.closed
+    max-width: 45px
+    .v-field__overlay
+      background-color: transparent !important
+
+.buttons-padding
+  padding-left: 1em
+  padding-right: 1em
 </style>

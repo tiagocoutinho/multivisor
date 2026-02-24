@@ -1,26 +1,22 @@
 <template>
   <div>
-  <v-footer dark app class="info">
-    <v-layout row wrap justify-center>
-      <v-flex xs12 py-3 text-xs-center white--text>
+    <v-footer
+      class="d-flex align-center justify-center ga-2 flex-wrap flex-grow-1 py-3"
+      color="surface-light"
+    >
+      <div xs12 py-3 text-xs-center white--text>
         <ProcessChip></ProcessChip>
         <SupervisorChip></SupervisorChip>
         <GroupChip class="mx-2"></GroupChip>
-      </v-flex>
-    </v-layout>
-    <ActionBar></ActionBar>
-  </v-footer>
-</div>
+      </div>
+      <ActionBar></ActionBar>
+    </v-footer>
+  </div>
 </template>
 
-<script>
-import ProcessChip from './process/Chip'
-import SupervisorChip from './supervisor/Chip'
-import GroupChip from './group/Chip'
-import ActionBar from './ActionBar'
-
-export default {
-  name: 'Footer',
-  components: { ActionBar, ProcessChip, SupervisorChip, GroupChip }
-}
+<script setup>
+import ProcessChip from "./process/Chip";
+import SupervisorChip from "./supervisor/Chip";
+import GroupChip from "./group/Chip";
+import ActionBar from "./ActionBar";
 </script>

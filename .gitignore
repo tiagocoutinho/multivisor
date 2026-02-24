@@ -1,14 +1,53 @@
 .DS_Store
-node_modules/
-multivisor/dist/
-build_py/
-dist/
-npm-debug.log*
-*.egg-info
-.pytest_cache/
+node_modules
+/dist
 
-*.pyc
-*.log*
-*.pid
-.idea/
-.env
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test files
+supervisord.log*
+supervisord.pid*
+tests/log
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST

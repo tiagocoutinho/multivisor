@@ -1,49 +1,77 @@
-import Vue from 'vue'
-import Router from 'vue-router'
-import GroupPage from '@/components/group/Page'
-import ProcessPage from '@/components/process/Page'
-import SupervisorPage from '@/components/supervisor/Page'
-import LoginPage from '@/components/login/Page'
-import store from '../store'
+/**
+ * router/index.ts
+ *
+ * Automatic routes for `./src/pages/*.vue`
+ */
 
-Vue.use(Router)
+// Composables
+import { createRouter, createWebHistory } from "vue-router";
+import { setupLayouts } from "virtual:generated-layouts";
+import { routes } from "vue-router/auto-routes";
 
-const loginRequired = {meta: {requiresAuth: true}}
-const router = new Router({
-  routes: [
-    {path: '/', name: 'Home', component: GroupPage, ...loginRequired},
-    {path: '/login', name: 'Login', component: LoginPage},
-    {path: '/view/group', name: 'GroupPage', component: GroupPage, ...loginRequired},
-    {path: '/view/supervisor', name: 'SupervisorPage', component: SupervisorPage, ...loginRequired},
-    {path: '/view/process', name: 'ProcessPage', component: ProcessPage, ...loginRequired}
-  ],
-  mode: 'history'
-})
+import { useAppStore } from "@/stores/app";
+import * as api from "@/api";
 
-router.beforeEach(async function (to, from, next) {
-  if (store.state.useAuthentication === undefined || store.state.isAuthenticated === undefined) {
-    const response = await fetch('/api/auth')
-    if (response.status === 504) {
-      return next()
+const loginRequired = { meta: { requiresAuth: true } };
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: setupLayouts(routes),
+});
+
+// Workaround for https://github.com/vitejs/vite/issues/11804
+router.onError((err, to) => {
+  if (err?.message?.includes?.("Failed to fetch dynamically imported module")) {
+    if (!localStorage.getItem("vuetify:dynamic-reload")) {
+      console.log("Reloading page to fix dynamic import error");
+      localStorage.setItem("vuetify:dynamic-reload", "true");
+      location.assign(to.fullPath);
+    } else {
+      console.error("Dynamic import error, reloading page did not fix it", err);
     }
-    const data = await response.json()
-    store.commit('setUseAuthentication', data.use_authentication)
-    store.commit('setIsAuthenticated', data.is_authenticated)
+  } else {
+    console.error(err, to);
   }
-  if (!store.state.useAuthentication) {
-    if (to.name === 'Login') { return next({name: 'Home'}) }
-    return next()
+});
+
+router.isReady().then(() => {
+  localStorage.removeItem("vuetify:dynamic-reload");
+});
+
+// Authentication
+router.beforeEach(async function (to, from, next) {
+  const store = useAppStore();
+
+  if (
+    store.useAuthentication === undefined ||
+    store.isAuthenticated === undefined
+  ) {
+    const response = await api.auth();
+    if (response.status === 504) {
+      return next();
+    }
+    const data = await response.json();
+    store.setUseAuthentication(data.use_authentication);
+    store.setIsAuthenticated(data.is_authenticated);
   }
-  const loginRequiredRoute = to.matched.some(route => route.meta.requiresAuth)
+  if (!store.useAuthentication) {
+    if (to.name === "Login") {
+      return next({ name: "Group" });
+    }
+    return next();
+  }
+  const loginRequiredRoute = to.matched.some(
+    (route) => route.meta.requiresAuth,
+  );
   // if user is not authenticated and route requires login -> redirect to login page
-  if (!store.state.isAuthenticated && loginRequiredRoute) {
-    return next({name: 'Login'})
+  if (!store.isAuthenticated && loginRequiredRoute) {
+    return next({ name: "Login" });
   }
   // if user is authenticated and navigates to login page -> redirect to home page
-  if (to.name === 'Login' && store.state.isAuthenticated) {
-    return next({name: 'Home'})
+  if (to.name === "Login" && store.isAuthenticated) {
+    return next({ name: "Group" });
   }
-  return next()
-})
+  return next();
+});
 
-export default router
+export default router;
