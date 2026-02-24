@@ -17,7 +17,6 @@ import threading
 
 from gevent import spawn, hub, sleep
 from gevent.queue import Queue
-from six import text_type
 from zerorpc import stream, Server, LostRemote, Context
 
 from supervisor.http import NOT_DONE_YET
@@ -110,10 +109,10 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         elif event_name.startswith("TICK"):
             return
         try:
-            payload_str = text_type(event.payload())
+            payload_str = str(event.payload())
         except AttributeError:
             # old supervisor version
-            payload_str = text_type(event)
+            payload_str = str(event)
         payload = dict((x.split(":") for x in payload_str.split()))
         if event_name.startswith("PROCESS_STATE"):
             pname = "{}:{}".format(payload["groupname"], payload["processname"])
@@ -122,8 +121,8 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         server = self.supervisord.options.identifier
         new_event = {
             u"pool": u"multivisor",
-            u"server": text_type(server),
-            u"eventname": text_type(event_name),
+            u"server": str(server),
+            u"eventname": str(event_name),
             u"payload": payload,
         }
         for channel in self._event_channels:
