@@ -280,7 +280,7 @@ Start a browser pointing to [localhost:22000](http://localhost:22000)
 
 ## Development mode
 
-You can run the backend using the webpack dev server to facilitate your
+You can run the backend using the vite dev server to facilitate your
 development cycle:
 
 First, start multivisor (which listens on 22000 by default):
@@ -289,7 +289,7 @@ First, start multivisor (which listens on 22000 by default):
 python -m multivisor.server.web -c multivisor.conf
 ```
 
-Now, in another console, run the webpack dev server (it will
+Now, in another console, run the vite dev server (it will
 transfer the requests between the browser and multivisor):
 
 ``` bash

@@ -6,8 +6,6 @@ try:
 except ImportError:
     import collections as abc
 
-import six
-
 _PROTO_RE_STR = "(?P<protocol>\w+)\://"
 _HOST_RE_STR = "?P<host>([\w\-_]+\.)*[\w\-_]+|\*"
 _PORT_RE_STR = "\:(?P<port>\d{1,5})"
@@ -66,7 +64,7 @@ def parse_obj(obj):
     `obj` can be any objects, including list and dictionary"""
     if isinstance(obj, bytes):
         return obj.decode()
-    elif isinstance(obj, six.text_type):
+    elif isinstance(obj, str):
         return obj
     elif isinstance(obj, abc.Mapping):
         return {parse_obj(k): parse_obj(v) for k, v in obj.items()}

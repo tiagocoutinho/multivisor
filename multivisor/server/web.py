@@ -13,6 +13,7 @@ import logging
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, Response, request, json, jsonify, session
+from flask_cors import CORS
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_simple
 
@@ -25,6 +26,7 @@ from .util import is_login_valid, login_required
 log = logging.getLogger("multivisor")
 
 app = Flask(__name__, static_folder="./dist/static", template_folder="./dist")
+CORS(app)
 
 
 @app.route("/api/admin/reload")
