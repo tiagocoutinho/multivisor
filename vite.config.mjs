@@ -79,4 +79,8 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    outDir: "multivisor/server/dist",
+    emptyOutDir: true,
+  },
 });
