@@ -12,16 +12,18 @@
 
     <template v-slot:append>
       <ProcessState :state="process.statename"></ProcessState>
-      <v-btn flat icon @click="restartProcess(process)">
-        <v-icon color="green">
-          <template v-if="process.running">mdi-autorenew</template>
-          <template v-else>mdi-play</template>
-        </v-icon>
-      </v-btn>
-      <v-btn flat icon @click="stopProcess(process)" :disabled="!process.running">
-        <v-icon color="red">mdi-stop</v-icon>
-      </v-btn>
-      <v-menu open-on-hover>
+      <V-btn-group>
+        <v-btn flat icon @click="restartProcess(process)">
+          <v-icon color="green">
+            <template v-if="process.running">mdi-autorenew</template>
+            <template v-else>mdi-play</template>
+          </v-icon>
+        </v-btn>
+        <v-btn flat icon @click="stopProcess(process)" :disabled="!process.running">
+          <v-icon :color="process.running ? 'red' : 'gray'">mdi-stop</v-icon>
+        </v-btn>
+      </V-btn-group>
+      <v-menu open-on-click>
         <template v-slot:activator="{ props }">
           <v-btn flat  icon="mdi-dots-vertical" v-bind="props"></v-btn>
         </template>
@@ -93,3 +95,9 @@ const viewDetails = (process) => {
   });
 };
 </script>
+
+<style>
+.v-btn--disabled.v-btn--variant-elevated .v-btn__overlay, .v-btn--disabled.v-btn--variant-flat .v-btn__overlay {
+  opacity: 0.0;
+}
+</style>
