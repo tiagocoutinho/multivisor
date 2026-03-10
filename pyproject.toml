@@ -9,7 +9,7 @@ version_scheme = "guess-next-dev"
 include = ["multivisor", "multivisor.*"]
 
 [tool.setuptools.package-data]
-"multivisor.server" = ["dist/*", "dist/static/css/*", "dist/static/js/*", "dist/static/fonts/*"]
+"multivisor.server" = ["dist/*", "dist/assets/*"]
 
 [project]
 name = "multivisor"
