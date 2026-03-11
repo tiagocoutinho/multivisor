@@ -12,7 +12,7 @@
 
     <template v-slot:append>
       <ProcessState :state="process.statename"></ProcessState>
-      <V-btn-group>
+      <V-btn-group density="compact">
         <v-btn flat icon @click="restartProcess(process)">
           <v-icon color="green">
             <template v-if="process.running">mdi-autorenew</template>
@@ -21,6 +21,9 @@
         </v-btn>
         <v-btn flat icon @click="stopProcess(process)" :disabled="!process.running">
           <v-icon :color="process.running ? 'red' : 'gray'">mdi-stop</v-icon>
+        </v-btn>
+        <v-btn flat icon @click="viewDetails(process)">
+          <v-icon size="small">mdi-information</v-icon>
         </v-btn>
       </V-btn-group>
       <v-menu open-on-click>
@@ -99,5 +102,9 @@ const viewDetails = (process) => {
 <style>
 .v-btn--disabled.v-btn--variant-elevated .v-btn__overlay, .v-btn--disabled.v-btn--variant-flat .v-btn__overlay {
   opacity: 0.0;
+}
+
+.v-list-item__content {
+    min-width: fit-content;
 }
 </style>

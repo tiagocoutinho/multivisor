@@ -1,6 +1,10 @@
 <template>
   <v-card>
-    <v-toolbar dense :color="toolbarColor" dark>
+    <v-toolbar density="compact" color="purple-darken-2" dark>
+      <!-- <template v-slot:prepend>
+        <v-icon>mdi-desktop-classic</v-icon>
+      </template> -->
+
       <v-toolbar-title
         >{{ supervisor.name }}
         <span v-if="inactive">(offline)</span></v-toolbar-title
