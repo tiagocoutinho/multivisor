@@ -17,6 +17,10 @@ supervisord.log*
 supervisord.pid*
 tests/log
 
+# Example files
+examples/full_example/log
+examples/full_example/*.pid
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
