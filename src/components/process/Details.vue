@@ -50,9 +50,9 @@ const items = [
 
 const { processDetails } = storeToRefs(store);
 
-// const process = computed(() => {
-//   return processDetails.value.process;
-// });
+const process = computed(() => {
+  return processDetails.value.process;
+});
 
 const visible = computed({
   get() {
