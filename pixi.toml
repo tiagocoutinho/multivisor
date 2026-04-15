@@ -1,0 +1,47 @@
+[workspace]
+authors = ["Tiago Coutinho <coutinhotiago@gmail.com>", "Samuel Debionne <samuel.debionne@gmail.com>"]
+channels = ["conda-forge"]
+name = "multivisor"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[feature.backend.dependencies]
+flask = "*"
+flask_cors = "*"
+werkzeug = "*"
+blinker = "*"
+zerorpc-python = "*"
+supervisor = "*"
+
+[feature.backend.tasks]
+dev-backend = "python -m multivisor.server.web -c examples/full_example/multivisor.conf"
+
+[feature.frontend.dependencies]
+nodejs = "*"
+
+[feature.frontend.tasks]
+build-frontend = "npm audit fix && npm run build"
+dev-frontend = "npm run dev"
+
+[feature.demo.dependencies]
+supervisor = "*"
+
+[feature.demo.pypi-dependencies]
+multivisor = { version = "*", extras = ["rpc"] }
+
+[feature.demo.tasks]
+demo = "supervisord -c examples/full_example/supervisord_baslid001.conf && supervisord -c examples/full_example/supervisord_lid001.conf && supervisord -c examples/full_example/supervisord_lid002.conf"
+
+[feature.package.tasks]
+build-package = "python -m build"
+upload-package = "twine upload dist/*.whl"
+
+[feature.package.dependencies]
+python-build = "*"
+twine = "*"
+
+[environments]
+backend = ["backend"]
+frontend = ["frontend"]
+demo = ["demo"]
+package = ["package"]

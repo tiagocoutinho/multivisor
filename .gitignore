@@ -51,3 +51,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Pixi environments
+.pixi/*
+!.pixi/config.toml
