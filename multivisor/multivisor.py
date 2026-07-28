@@ -78,6 +78,21 @@ class Supervisor(dict):
                 if delta < 10:
                     sleep(10 - delta)
                 last_retry = time.time()
+                self.reconnect()
+
+    def reconnect(self):
+        """Replace the client so the next attempt dials a fresh connection.
+
+        When the remote host reboots, the established connection dies
+        without a RST/FIN reaching us: TCP stays half-open forever and
+        zmq never re-dials, so every retry runs into the same dead pipe
+        and the supervisor stays offline until multivisor is restarted.
+        """
+        try:
+            self.server.close()
+        except Exception:
+            self.log.debug("error closing stale client", exc_info=True)
+        self.server = zerorpc.Client(self.address)
 
     def handle_event(self, event):
         name = event["eventname"]
