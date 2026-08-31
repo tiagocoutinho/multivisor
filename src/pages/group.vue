@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid grid-list-md>
+  <v-container fluid>
     <v-data-iterator
       row
       wrap
@@ -10,7 +10,14 @@
       no-data-text="Sorry, there are no processes currently being monitored"
     >
       <v-row>
-        <v-col v-for="group in filteredGroups" xs12 sm12 md6 lg4 xl3>
+        <v-col
+          v-for="group in filteredGroups"
+          cols="12"
+          sm="12"
+          md="6"
+          lg="4"
+          xl="3"
+        >
           <GroupCard :group="group"></GroupCard>
         </v-col>
       </v-row>
