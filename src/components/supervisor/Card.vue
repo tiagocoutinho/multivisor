@@ -106,18 +106,18 @@ const selectedProcesses = computed(() => {
 });
 
 const updateSupervisor = () => {
-  store.dispatch("updateSupervisor", supervisor.name);
+  store.requestSupervisorUpdate(supervisor.name);
 };
 const restartSupervisor = () => {
-  store.dispatch("restartSupervisor", supervisor.name);
+  store.restartSupervisor(supervisor.name);
 };
 const restartSelectedProcesses = () => {
-  store.dispatch("restartProcesses", selectedProcesses);
-  this.clearSelectedProcesses();
+  store.restartProcesses(selectedProcesses.value);
+  clearSelectedProcesses();
 };
 const stopSelectedProcesses = () => {
-  store.dispatch("stopProcesses", selectedProcesses);
-  this.clearSelectedProcesses();
+  store.stopProcesses(selectedProcesses.value);
+  clearSelectedProcesses();
 };
 const selectAllProcesses = () => {
   let puids = [];
@@ -127,6 +127,6 @@ const selectAllProcesses = () => {
   store.addSelectedProcesses(puids);
 };
 const clearSelectedProcesses = () => {
-  store.removeSelectedProcesses(selectedProcesses);
+  store.removeSelectedProcesses(selectedProcesses.value);
 };
 </script>
