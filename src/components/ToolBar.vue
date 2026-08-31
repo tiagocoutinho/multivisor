@@ -21,32 +21,35 @@
       {{ name }}
     </v-app-bar-title>
 
-    <v-text-field
-      prepend-inner-icon="mdi-magnify"
-      density="compact"
-      clearable
-      single-line
-      hide-details
-      placeholder="Filter"
-      v-model="search"
-      class="expending-search"
-      :class="{ closed: searchClosed && !search }"
-      v-show="isAuthenticated || !useAuthentication"
-      @focus="searchClosed = false"
-      @blur="searchClosed = true"
-    >
-    </v-text-field>
-
     <template v-slot:append>
-      <!-- <ActionBar v-show="isAuthenticated || !useAuthentication"></ActionBar> -->
-      <!-- <v-toolbar-items v-show="isAuthenticated || !useAuthentication"> -->
-      <!-- <v-btn icon="mdi-dots-vertical"></v-btn> -->
-      <v-btn-group variant="outlined" divided class="buttons-padding">
-        <ProcessChip class="hidden-sm-and-down"></ProcessChip>
-        <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
-        <GroupChip class="hidden-sm-and-down"></GroupChip>
-      </v-btn-group>
-      <!-- </v-toolbar-items> -->
+      <v-fade-transition>
+        <v-btn
+          v-show="!showSearch"
+          icon
+          @click="showSearch = true"
+        >
+            <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+      </v-fade-transition>
+
+      <v-expand-x-transition>
+        <v-text-field
+          v-if="showSearch"
+          v-model.trim="search"
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          label="Filter..."
+          variant="solo"
+          hide-details
+          single-line
+          clearable
+          autofocus
+          @keydown.esc="showSearch = false"
+          @click:clear="showSearch = false"
+          @blur="search && search.length ? showSearch : showSearch = false"
+          class="search-input"
+        ></v-text-field>
+      </v-expand-x-transition>
     </template>
   </v-app-bar>
 </template>
@@ -66,9 +69,7 @@ const store = useAppStore();
 
 const { name, search, isAuthenticated, useAuthentication } = storeToRefs(store);
 
-const drawer = defineModel("drawer", false);
-
-const searchClosed = ref(true);
+const showSearch = ref(false);
 
 function logout() {
   dispatch("logout").then(() => {
@@ -77,17 +78,8 @@ function logout() {
 }
 </script>
 
-<style scoped lang="sass">
-.v-input.expending-search
-  transition: max-width 0.3s
-  .v-field__prepend-inner
-    cursor: pointer !important
-  &.closed
-    max-width: 45px
-    .v-field__overlay
-      background-color: transparent !important
-
-.buttons-padding
-  padding-left: 1em
-  padding-right: 1em
+<style>
+.v-input__control {
+  min-width: 400px;
+}
 </style>
