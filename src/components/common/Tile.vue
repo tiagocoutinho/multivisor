@@ -1,59 +1,68 @@
 <template lang="html">
   <v-list-item>
     <template v-slot:prepend>
-      <v-checkbox
+      <v-checkbox-btn
         hide-details
         v-model="selectedProcesses"
         :value="process.uid"
-      ></v-checkbox>
+      ></v-checkbox-btn>
     </template>
 
     <v-list-item-title>{{ process.name }}</v-list-item-title>
 
     <template v-slot:append>
       <ProcessState :state="process.statename"></ProcessState>
-      <V-btn-group density="compact">
-        <v-btn flat icon @click="restartProcess(process)">
+      <v-btn-group density="compact">
+        <v-btn variant="flat" icon @click="restartProcess(process)">
           <v-icon color="green">
             <template v-if="process.running">mdi-autorenew</template>
             <template v-else>mdi-play</template>
           </v-icon>
         </v-btn>
-        <v-btn flat icon @click="stopProcess(process)" :disabled="!process.running">
+        <v-btn
+          variant="flat"
+          icon
+          @click="stopProcess(process)"
+          :disabled="!process.running"
+        >
           <v-icon :color="process.running ? 'red' : 'gray'">mdi-stop</v-icon>
         </v-btn>
-        <v-btn flat icon @click="viewDetails(process)">
-          <v-icon size="small">mdi-information</v-icon>
-        </v-btn>
-      </V-btn-group>
-      <v-menu open-on-click>
-        <template v-slot:activator="{ props }">
-          <v-btn flat  icon="mdi-dots-vertical" v-bind="props"></v-btn>
-        </template>
-        <v-list>
-          <v-list-item @click="viewDetails(process)">
-            <v-list-item-title
-              ><v-icon size="small">mdi-information</v-icon>
-              Info</v-list-item-title
+        <v-menu open-on-click>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              variant="flat"
+              icon="mdi-dots-vertical"
+              v-bind="props"
+            ></v-btn>
+          </template>
+          <v-list>
+            <v-list-item @click="viewDetails(process)">
+              <v-list-item-title
+                ><v-icon size="small">mdi-information</v-icon>
+                Info</v-list-item-title
+              >
+            </v-list-item>
+            <v-list-item
+              @click="viewLog(process, 'out')"
+              v-if="process.logfile"
             >
-          </v-list-item>
-          <v-list-item @click="viewLog(process, 'out')" v-if="process.logfile">
-            <v-list-item-title
-              ><v-icon size="small">mdi-file-document-alert-outline</v-icon>Log
-              stdout</v-list-item-title
+              <v-list-item-title
+                ><v-icon size="small">mdi-file-document-alert-outline</v-icon
+                >Log stdout</v-list-item-title
+              >
+            </v-list-item>
+            <v-list-item
+              @click="viewLog(process, 'err')"
+              v-if="process.stderr_logfile"
             >
-          </v-list-item>
-          <v-list-item
-            @click="viewLog(process, 'err')"
-            v-if="process.stderr_logfile"
-          >
-            <v-list-item-title
-              ><v-icon size="small">mdi-file-document-alert-outline</v-icon>Log
-              stderr</v-list-item-title
-            >
-          </v-list-item>
-        </v-list>
-      </v-menu>
+              <v-list-item-title
+                ><v-icon size="small">mdi-file-document-alert-outline</v-icon
+                >Log stderr</v-list-item-title
+              >
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </v-btn-group>
     </template>
   </v-list-item>
 </template>
@@ -100,11 +109,12 @@ const viewDetails = (process) => {
 </script>
 
 <style>
-.v-btn--disabled.v-btn--variant-elevated .v-btn__overlay, .v-btn--disabled.v-btn--variant-flat .v-btn__overlay {
-  opacity: 0.0;
+.v-btn--disabled.v-btn--variant-elevated .v-btn__overlay,
+.v-btn--disabled.v-btn--variant-flat .v-btn__overlay {
+  opacity: 0;
 }
 
 .v-list-item__content {
-    min-width: fit-content;
+  min-width: fit-content;
 }
 </style>
