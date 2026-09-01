@@ -1,16 +1,19 @@
 <template>
   <v-container fluid grid-list-md>
     <v-data-iterator
-      row
-      wrap
-      hide-actions
       item-key="name"
       :items="supervisorsGroups"
       no-results-text="Sorry, no matching processes found"
       no-data-text="Sorry, there are no processes currently being monitored"
     >
       <v-row>
-        <v-col v-for="supervisor in supervisorsGroups" xs12 sm12 md6 lg4>
+        <v-col
+          v-for="supervisor in supervisorsGroups"
+          cols="12"
+          sm="12"
+          md="6"
+          lg="4"
+        >
           <SupervisorCard :supervisor="supervisor"></SupervisorCard>
         </v-col>
       </v-row>

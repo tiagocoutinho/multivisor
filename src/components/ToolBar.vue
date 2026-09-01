@@ -57,24 +57,20 @@
 <script setup>
 //import { computed } from 'vue'
 import { storeToRefs } from "pinia";
-
-import ProcessChip from "./process/Chip.vue";
-import SupervisorChip from "./supervisor/Chip.vue";
-import GroupChip from "./group/Chip.vue";
-import ActionBar from "./ActionBar.vue";
+import { useRouter } from "vue-router";
 
 import { useAppStore } from "@/stores/app";
 
 const store = useAppStore();
+const router = useRouter();
 
 const { name, search, isAuthenticated, useAuthentication } = storeToRefs(store);
 
 const showSearch = ref(false);
 
 function logout() {
-  dispatch("logout").then(() => {
-    this.$router.push({ name: "Login" });
-  });
+  store.logout();
+  router.push({ name: "Login" });
 }
 </script>
 

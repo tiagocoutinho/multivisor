@@ -15,12 +15,6 @@
         item-key="uid"
       >
         <template v-slot:item.statename="{ item }">
-          <!-- <ProcessRow
-          :process="item"
-          :show-supervisor="showSupervisor"
-          :show-group="showGroup"
-        ></ProcessRow> -->
-
           <v-chip
             label
             variant="flat"
@@ -33,7 +27,6 @@
         <template v-slot:item.actions="{ item }">
           <div class="d-flex align-center">
             <v-btn
-              iconvariant=""
               variant="flat"
               size="small"
               @click="restartProcess(item)"
@@ -95,7 +88,6 @@
 </template>
 
 <script setup>
-//import ProcessRow from "@/components/process/Row";
 import { stateColorMap } from "@/multivisor";
 
 import { useAppStore } from "@/stores/app";

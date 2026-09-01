@@ -4,7 +4,7 @@
       class="d-flex align-center justify-center ga-2 flex-wrap flex-grow-1 py-3"
       color="surface-light"
     >
-      <div xs12 py-3 text-xs-center white--text>
+      <div class="text-center text-white py-3">
         <ProcessChip></ProcessChip>
         <SupervisorChip></SupervisorChip>
         <GroupChip class="mx-2"></GroupChip>

@@ -111,7 +111,7 @@ const localSize = computed(() => {
 });
 
 const active = computed(() => {
-  return eventSource && eventSource.readyState < 2;
+  return eventSource.value && eventSource.value.readyState < 2;
 });
 
 const appendLogMessage = (data) => {

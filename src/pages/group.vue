@@ -1,9 +1,6 @@
 <template>
   <v-container fluid>
     <v-data-iterator
-      row
-      wrap
-      hide-actions
       item-key="name"
       :items="filteredGroups"
       no-results-text="Sorry, no matching processes found"

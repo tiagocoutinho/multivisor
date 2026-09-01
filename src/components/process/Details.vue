@@ -33,7 +33,7 @@ import { useAppStore } from "@/stores/app";
 const store = useAppStore();
 
 const startTime = () => {
-  return Date(process.start);
+  return new Date(process.value.start);
 };
 
 const items = [
