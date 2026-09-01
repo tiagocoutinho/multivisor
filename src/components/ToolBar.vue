@@ -78,8 +78,8 @@ function logout() {
 }
 </script>
 
-<style>
-.v-input__control {
+<style scoped>
+:deep(.search-input .v-input__control) {
   min-width: 400px;
 }
 </style>

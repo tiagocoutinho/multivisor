@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-toolbar density="compact" color="purple-darken-2" dark>
+    <v-toolbar density="compact" :color="toolbarColor" dark>
       <!-- <template v-slot:prepend>
         <v-icon>mdi-desktop-classic</v-icon>
       </template> -->
@@ -12,60 +12,70 @@
       <v-spacer></v-spacer>
 
       <v-tooltip location="top">
-        <v-btn
-          slot="activator"
-          icon
-          size="small"
-          @click="restartSelectedProcesses()"
-          v-show="selectedProcesses.length"
-        >
-          <v-icon>autorenew</v-icon>
-        </v-btn>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            icon
+            size="small"
+            @click="restartSelectedProcesses()"
+            v-show="selectedProcesses.length"
+            v-bind="props"
+          >
+            <v-icon>mdi-autorenew</v-icon>
+          </v-btn>
+        </template>
         <span>(Re)start selected processes</span>
       </v-tooltip>
       <v-tooltip location="top">
-        <v-btn
-          slot="activator"
-          icon
-          size="small"
-          @click="stopSelectedProcesses()"
-          v-show="selectedProcesses.length"
-        >
-          <v-icon>stop</v-icon>
-        </v-btn>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            icon
+            size="small"
+            @click="stopSelectedProcesses()"
+            v-show="selectedProcesses.length"
+            v-bind="props"
+          >
+            <v-icon>mdi-stop</v-icon>
+          </v-btn>
+        </template>
         <span>Stop selected processes</span>
       </v-tooltip>
       <v-tooltip location="top">
-        <v-btn
-          slot="activator"
-          icon
-          size="small"
-          @click="clearSelectedProcesses()"
-          v-show="selectedProcesses.length"
-        >
-          <v-icon>clear_all</v-icon>
-        </v-btn>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            icon
+            size="small"
+            @click="clearSelectedProcesses()"
+            v-show="selectedProcesses.length"
+            v-bind="props"
+          >
+            <v-icon>mdi-checkbox-blank-outline</v-icon>
+          </v-btn>
+        </template>
         <span>Clear selection</span>
       </v-tooltip>
       <v-tooltip location="top">
-        <v-btn
-          slot="activator"
-          icon
-          size="small"
-          @click="selectAllProcesses()"
-          v-show="
-            selectedProcesses.length < Object.keys(supervisor.processes).length
-          "
-        >
-          <v-icon>done_all</v-icon>
-        </v-btn>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            icon
+            size="small"
+            @click="selectAllProcesses()"
+            v-show="
+              selectedProcesses.length < Object.keys(supervisor.processes).length
+            "
+            v-bind="props"
+          >
+            <v-icon>mdi-check-all</v-icon>
+          </v-btn>
+        </template>
         <span>Select all</span>
       </v-tooltip>
 
       <v-menu v-if="!inactive" location="bottom left">
-        <v-btn icon slot="activator">
-          <v-icon>more_vert</v-icon>
-        </v-btn>
+        <template v-slot:activator="{ props }">
+          <v-btn icon v-bind="props">
+            <v-icon>mdi-dots-vertical</v-icon>
+          </v-btn>
+        </template>
         <v-list>
           <v-list-item @click="updateSupervisor()">
             <v-list-item-title>Update</v-list-item-title>
@@ -92,12 +102,12 @@ const inactive = computed(() => {
   return !supervisor.running;
 });
 const toolbarColor = computed(() => {
-  return inactive ? "grey lighten-1" : "indigo";
+  return inactive.value ? "grey lighten-1" : "purple-darken-2";
 });
 const selectedProcesses = computed(() => {
   let procs = store.selectedProcesses.reduce((processes, puid) => {
-    let supervisor = puid.split(":", 1)[0];
-    if (supervisor === supervisor.name) {
+    let supervisorName = puid.split(":", 1)[0];
+    if (supervisorName === supervisor.name) {
       processes.push(puid);
     }
     return processes;

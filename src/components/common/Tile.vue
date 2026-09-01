@@ -12,7 +12,7 @@
 
     <template v-slot:append>
       <ProcessState :state="process.statename"></ProcessState>
-      <v-btn-group density="compact">
+      <v-btn-group density="compact" class="ml-2">
         <v-btn variant="flat" icon @click="restartProcess(process)">
           <v-icon color="green">
             <template v-if="process.running">mdi-autorenew</template>
@@ -38,8 +38,8 @@
           <v-list>
             <v-list-item @click="viewDetails(process)">
               <v-list-item-title
-                ><v-icon size="small">mdi-information</v-icon>
-                Info</v-list-item-title
+                ><v-icon size="small" class="mr-2">mdi-information</v-icon
+                >Info</v-list-item-title
               >
             </v-list-item>
             <v-list-item
@@ -47,7 +47,8 @@
               v-if="process.logfile"
             >
               <v-list-item-title
-                ><v-icon size="small">mdi-file-document-alert-outline</v-icon
+                ><v-icon size="small" class="mr-2"
+                  >mdi-file-document-alert-outline</v-icon
                 >Log stdout</v-list-item-title
               >
             </v-list-item>
@@ -56,7 +57,8 @@
               v-if="process.stderr_logfile"
             >
               <v-list-item-title
-                ><v-icon size="small">mdi-file-document-alert-outline</v-icon
+                ><v-icon size="small" class="mr-2"
+                  >mdi-file-document-alert-outline</v-icon
                 >Log stderr</v-list-item-title
               >
             </v-list-item>
@@ -108,13 +110,13 @@ const viewDetails = (process) => {
 };
 </script>
 
-<style>
-.v-btn--disabled.v-btn--variant-elevated .v-btn__overlay,
-.v-btn--disabled.v-btn--variant-flat .v-btn__overlay {
+<style scoped>
+:deep(.v-btn--disabled.v-btn--variant-elevated .v-btn__overlay),
+:deep(.v-btn--disabled.v-btn--variant-flat .v-btn__overlay) {
   opacity: 0;
 }
 
-.v-list-item__content {
+:deep(.v-list-item__content) {
   min-width: fit-content;
 }
 </style>
