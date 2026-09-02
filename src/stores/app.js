@@ -152,24 +152,20 @@ export const useAppStore = defineStore("app", {
       api.processAction(uid, "stop");
     },
     selectAll() {
-      this.setSelectedProcesses([...this.getters.filteredProcessUIDs]);
+      this.setSelectedProcesses([...this.filteredProcessUIDs]);
     },
     clearSelected() {
       this.setSelectedProcesses([]);
     },
     restartSelected() {
-      this.dispatch("restartProcesses", this.state.selectedProcesses).then(
-        () => {
-          this.dispatch("clearSelected");
-        },
-      );
+      this.restartProcesses(this.selectedProcesses);
+      this.clearSelected();
     },
     stopSelected() {
-      this.dispatch("stopProcesses", this.state.selectedProcesses).then(() => {
-        this.dispatch("clearSelected");
-      });
+      this.stopProcesses(this.selectedProcesses);
+      this.clearSelected();
     },
-    updateSupervisor(uid) {
+    requestSupervisorUpdate(uid) {
       api.supervisorAction(uid, "update");
     },
     restartSupervisor(uid) {
@@ -236,10 +232,6 @@ export const useAppStore = defineStore("app", {
     },
     setError(error) {
       this.error = error;
-    },
-    setMultivisorError() {
-      this.error =
-        "Couldn't connect to multivisor server, make sure it is running";
     },
   },
 });

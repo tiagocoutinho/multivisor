@@ -1,5 +1,5 @@
 <template>
-  <v-btn slot="activator" variant="flat" router to="/supervisor">
+  <v-btn variant="flat" router to="/supervisor">
     <v-tooltip activator="parent" location="bottom">Supervisors</v-tooltip>
     <v-icon class="mr-2">mdi-desktop-classic</v-icon>
     <div>

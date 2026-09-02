@@ -9,26 +9,24 @@
         class="log-toolbar-title"
       ></v-toolbar-title>
       <template v-slot:append>
-        <div>
-          <v-switch
-            :label="`Auto scroll ${autoScroll ? 'On' : 'Off'}`"
-            color="indigo"
-            v-model="autoScroll"
-          >
-            <v-tooltip activator="parent" location="bottom">on / off</v-tooltip>
-          </v-switch>
-        </div>
-        <!-- <span>auto-scroll ({{ autoScroll ? "On" : "Off" }})</span>
-      </v-tooltip> -->
-        <!-- <v-tooltip location="bottom"> -->
         <v-chip-group>
           <v-chip color="indigo white--text" @click="text = ''">
             {{ formatBytes(localSize) }}
             <v-icon icon="mdi-delete"></v-icon>
           </v-chip>
-          <!-- <span>Web console log size</span>
-      </v-tooltip> -->
-          <!-- <v-tooltip location="bottom"> -->
+        </v-chip-group>
+        <div class="d-flex align-center flex-grow-0 mx-3">
+          <v-switch
+            :label="`Auto scroll ${autoScroll ? 'On' : 'Off'}`"
+            color="indigo"
+            v-model="autoScroll"
+            hide-details
+            density="compact"
+          >
+            <v-tooltip activator="parent" location="bottom">on / off</v-tooltip>
+          </v-switch>
+        </div>
+        <v-chip-group>
           <v-chip class="bg-indigo text-white">
             {{ formatBytes(remoteSize) }}
           </v-chip>
@@ -113,7 +111,7 @@ const localSize = computed(() => {
 });
 
 const active = computed(() => {
-  return eventSource && eventSource.readyState < 2;
+  return eventSource.value && eventSource.value.readyState < 2;
 });
 
 const appendLogMessage = (data) => {
@@ -124,18 +122,18 @@ const appendLogMessage = (data) => {
     if (text.length > 1e7) {
       text.value = text.value.substr(-9000000);
     }
-  } 
+  }
 };
 
 const scrollToBottom = () => {
-  if (logContent.value) {    
+  if (logContent.value) {
     nextTick(() => {
       logContent.value.$el.scrollTop = logContent.value.$el.scrollHeight;
-    })
+    });
   } else {
     // not mounted yet, or the element was unmounted (e.g. by v-if)
   }
-}
+};
 
 const viewLog = () => {
   if (eventSource.value !== null) {
@@ -154,7 +152,7 @@ const viewLog = () => {
     let data = JSON.parse(event.data);
     appendLogMessage(data);
     if (autoScroll.value) {
-      scrollToBottom()
+      scrollToBottom();
     }
   };
   newEventSource.onopen = (event) => {

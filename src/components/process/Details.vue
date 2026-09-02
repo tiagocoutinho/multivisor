@@ -33,7 +33,7 @@ import { useAppStore } from "@/stores/app";
 const store = useAppStore();
 
 const startTime = () => {
-  return Date(process.start);
+  return new Date(process.value.start);
 };
 
 const items = [
@@ -50,9 +50,9 @@ const items = [
 
 const { processDetails } = storeToRefs(store);
 
-// const process = computed(() => {
-//   return processDetails.value.process;
-// });
+const process = computed(() => {
+  return processDetails.value.process;
+});
 
 const visible = computed({
   get() {

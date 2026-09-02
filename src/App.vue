@@ -1,12 +1,40 @@
 <template>
   <v-app>
     <ToolBar v-model:drawer="drawer"></ToolBar>
-    <v-navigation-drawer
-      v-model="drawer"
-      :location="$vuetify.display.mobile ? 'bottom' : undefined"
-      temporary
-    >
-      <v-list :items="drawerItems"></v-list>
+    <v-navigation-drawer expand-on-hover permanent rail>
+      <v-list>
+        <v-list-item
+          prepend-avatar="@/assets/multivisor.png"
+          subtitle="v7.0.0"
+          title="Multivisor"
+          router
+          to="/about"
+        ></v-list-item>
+      </v-list>
+      <v-divider></v-divider>
+      <v-list :items="drawerItems" density="compact" nav>
+        <v-list-item
+          prepend-icon="mdi-cog"
+          title="Processes"
+          value="processes"
+          router
+          to="/process"
+        ></v-list-item>
+        <v-list-item
+          prepend-icon="mdi-account-multiple"
+          title="Groups"
+          value="groups"
+          router
+          to="/group"
+        ></v-list-item>
+        <v-list-item
+          prepend-icon="mdi-desktop-classic"
+          title="Supervisors"
+          value="supervisors"
+          router
+          to="/supervisor"
+        ></v-list-item>
+      </v-list>
     </v-navigation-drawer>
     <AlertBar></AlertBar>
     <router-view></router-view>

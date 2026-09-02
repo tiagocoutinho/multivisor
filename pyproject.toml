@@ -43,7 +43,7 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/tiagocoutinho/multivisor"
-Documentation = "https://limagroup.gitlab-pages.esrf.fr/lima2-client/"
+Documentation = "https://pypi.org/project/multivisor/#description"
 
 [project.scripts]
 multivisor = "multivisor.server.web:main [web]"
