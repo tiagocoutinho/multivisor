@@ -44,7 +44,7 @@
           single-line
           clearable
           autofocus
-          @keydown.esc="showSearch = false"
+          @keydown.esc="search = ''; showSearch = false"
           @click:clear="showSearch = false"
           @blur="search && search.length ? showSearch : showSearch = false"
           class="search-input"
