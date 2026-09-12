@@ -55,8 +55,12 @@ class Supervisor(dict):
         other_p = other.pop("processes")
         return this == other and list(this_p.keys()) == list(other_p.keys())
 
+    MIN_RETRY_DELAY = 10
+    MAX_RETRY_DELAY = 60
+
     def run(self):
         last_retry = time.time()
+        retry_delay = self.MIN_RETRY_DELAY
         while True:
             try:
                 self.log.info("(re)initializing...")
@@ -66,17 +70,22 @@ class Supervisor(dict):
                     # connection and avoid TimeoutExpired
                     if i != 0:
                         self.handle_event(event)
+                # a successful (re)connection: reset the backoff
+                retry_delay = self.MIN_RETRY_DELAY
             except zerorpc.LostRemote:
                 self.log.info("Lost remote")
+                retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
             except zerorpc.TimeoutExpired:
                 self.log.info("Timeout expired")
+                retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
             except Exception as err:
                 self.log.warning("Unexpected error %r", err)
+                retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
             finally:
                 curr_time = time.time()
                 delta = curr_time - last_retry
-                if delta < 10:
-                    sleep(10 - delta)
+                if delta < retry_delay:
+                    sleep(retry_delay - delta)
                 last_retry = time.time()
                 self.reconnect()
 
@@ -91,7 +100,9 @@ class Supervisor(dict):
         try:
             self.server.close()
         except Exception:
-            self.log.debug("error closing stale client", exc_info=True)
+            # if this ever fires, the old zmq socket/fd may not be
+            # released; keep it visible instead of silently leaking
+            self.log.warning("error closing stale client", exc_info=True)
         self.server = zerorpc.Client(self.address)
 
     def handle_event(self, event):
