@@ -66,12 +66,16 @@ def build_method(supervisor, name):
 
 class Supervisor(object):
 
-    def __init__(self, xml_rpc):
+    def __init__(self, xml_rpc_factory):
         self.event_channels = set()
         self.lock = RLock()
-        self.rpc = xml_rpc
+        self._rpc_factory = xml_rpc_factory
         for name in self.rpc.system.listMethods():
             setattr(self, *build_method(self, name))
+
+    @property
+    def rpc(self):
+        return self._rpc_factory()
 
     @stream
     def event_stream(self):
@@ -109,9 +113,9 @@ class Supervisor(object):
             channel.put(event)
 
 
-def run(xml_rpc, bind=DEFAULT_BIND):
+def run(xml_rpc_factory, bind=DEFAULT_BIND):
     channel = Queue()
-    supervisor = Supervisor(xml_rpc)
+    supervisor = Supervisor(xml_rpc_factory)
     t1 = spawn(event_consumer_loop, channel, supervisor.publish_event)
     t2 = spawn(event_producer_loop, channel.put)
     server = Server(supervisor)
@@ -149,7 +153,7 @@ def main(args=None):
     except KeyError:
         print("multivisor-rpc can only run as supervisor eventlistener", file=sys.stderr)
         exit(1)
-    run(rpc, bind)
+    run(get_rpc, bind)
 
 
 if __name__ == "__main__":
