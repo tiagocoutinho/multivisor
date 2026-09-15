@@ -13,6 +13,8 @@ except ImportError:
     from configparser import ConfigParser
 
 import zerorpc
+import zmq
+import gevent
 from gevent import spawn, sleep, joinall
 from supervisor.xmlrpc import Faults
 from supervisor.states import RUNNING_STATES
@@ -42,9 +44,28 @@ class Supervisor(dict):
         addr = sanitize_url(url, protocol="tcp", host=name, port=9002)
         self.address = addr["url"]
         self.host = self["host"] = addr["host"]
-        self.server = zerorpc.Client(self.address)
+        self.server = self._create_client()
         # fill supervisor info before events start coming in
         self.event_loop = spawn(self.run)
+
+    def _create_client(self):
+        """Create a zerorpc client, throttling zmq's own internal reconnect.
+
+        A zmq DEALER socket retries a dead TCP connection on its own, at
+        the C level, independently of our Python-level retry/backoff loop
+        - by default every ~100ms, for as long as the socket exists. With
+        many unreachable hosts this alone can generate a very high rate of
+        connect() syscalls and CPU usage, regardless of how rarely we
+        recreate the zerorpc.Client wrapper. Slow it down to match our own
+        MIN/MAX_RETRY_DELAY instead of leaving it at zmq's aggressive
+        default.
+        """
+        client = zerorpc.Client()
+        socket = client._events._socket
+        socket.setsockopt(zmq.RECONNECT_IVL, self.MIN_RETRY_DELAY * 1000)
+        socket.setsockopt(zmq.RECONNECT_IVL_MAX, self.MAX_RETRY_DELAY * 1000)
+        client.connect(self.address)
+        return client
 
     def __repr__(self):
         return "{}(name={})".format(self.__class__.__name__, self.name)
@@ -62,6 +83,7 @@ class Supervisor(dict):
         last_retry = time.time()
         retry_delay = self.MIN_RETRY_DELAY
         while True:
+            connected_at = time.time()
             try:
                 self.log.info("(re)initializing...")
                 self.refresh()
@@ -70,18 +92,24 @@ class Supervisor(dict):
                     # connection and avoid TimeoutExpired
                     if i != 0:
                         self.handle_event(event)
-                # a successful (re)connection: reset the backoff
-                retry_delay = self.MIN_RETRY_DELAY
             except zerorpc.LostRemote:
                 self.log.info("Lost remote")
-                retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
             except zerorpc.TimeoutExpired:
                 self.log.info("Timeout expired")
-                retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
             except Exception as err:
                 self.log.warning("Unexpected error %r", err)
-                retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
             finally:
+                # A flapping host that connects and drops again right
+                # away would otherwise reset the backoff to MIN_RETRY_DELAY
+                # on every cycle (any successful pass through the try
+                # block resets it), defeating the backoff entirely. Only
+                # treat the connection as healthy - and reset the backoff -
+                # if it stayed up for a meaningful amount of time; a short
+                # lived connection instead keeps escalating the delay.
+                if time.time() - connected_at >= self.MIN_RETRY_DELAY:
+                    retry_delay = self.MIN_RETRY_DELAY
+                else:
+                    retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
                 curr_time = time.time()
                 delta = curr_time - last_retry
                 if delta < retry_delay:
@@ -100,14 +128,21 @@ class Supervisor(dict):
         zerorpc.Client.close() tears down the multiplexer (killing its
         dispatcher greenlet) and only then closes the underlying zmq
         socket, with no try/finally between the two steps. If killing
-        the greenlet ever raises, the socket - and its fd(s) - never get
-        released, so both steps are closed independently here to make
-        sure the socket always goes away even if the multiplexer teardown
-        fails.
+        the greenlet ever raises - or simply hangs, since Greenlet.kill()
+        blocks indefinitely by default waiting for the greenlet to die -
+        the socket and its fd(s) never get released, so both steps are
+        closed independently here, bounded by a timeout, to make sure the
+        socket always goes away even if the multiplexer teardown fails or
+        gets stuck.
         """
-        old_server, self.server = self.server, zerorpc.Client(self.address)
+        old_server, self.server = self.server, self._create_client()
         try:
-            zerorpc.core.ClientBase.close(old_server)
+            with gevent.Timeout(5):
+                zerorpc.core.ClientBase.close(old_server)
+        except gevent.Timeout:
+            self.log.warning(
+                "timed out waiting for stale client's channel dispatcher to stop"
+            )
         except Exception:
             self.log.warning("error closing stale client multiplexer", exc_info=True)
         try:
