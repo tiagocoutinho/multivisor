@@ -96,14 +96,24 @@ class Supervisor(dict):
         without a RST/FIN reaching us: TCP stays half-open forever and
         zmq never re-dials, so every retry runs into the same dead pipe
         and the supervisor stays offline until multivisor is restarted.
+
+        zerorpc.Client.close() tears down the multiplexer (killing its
+        dispatcher greenlet) and only then closes the underlying zmq
+        socket, with no try/finally between the two steps. If killing
+        the greenlet ever raises, the socket - and its fd(s) - never get
+        released, so both steps are closed independently here to make
+        sure the socket always goes away even if the multiplexer teardown
+        fails.
         """
+        old_server, self.server = self.server, zerorpc.Client(self.address)
         try:
-            self.server.close()
+            zerorpc.core.ClientBase.close(old_server)
         except Exception:
-            # if this ever fires, the old zmq socket/fd may not be
-            # released; keep it visible instead of silently leaking
-            self.log.warning("error closing stale client", exc_info=True)
-        self.server = zerorpc.Client(self.address)
+            self.log.warning("error closing stale client multiplexer", exc_info=True)
+        try:
+            zerorpc.core.SocketBase.close(old_server)
+        except Exception:
+            self.log.warning("error closing stale client socket", exc_info=True)
 
     def handle_event(self, event):
         name = event["eventname"]
