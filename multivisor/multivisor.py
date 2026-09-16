@@ -59,11 +59,21 @@ class Supervisor(dict):
         recreate the zerorpc.Client wrapper. Slow it down to match our own
         MIN/MAX_RETRY_DELAY instead of leaving it at zmq's aggressive
         default.
+
+        Also set LINGER=0. zmq's default LINGER is -1 (infinite): close()
+        on a socket with unacknowledged queued data (e.g. a handshake sent
+        to a host that never replies) doesn't actually release the fd -
+        libzmq defers it until that data is flushed, which for a dead peer
+        never happens. That silently leaks the fd on every close() even
+        though the call itself never raises, so there's nothing to warn
+        about. LINGER=0 makes close() drop any unsent data and release the
+        fd immediately instead.
         """
         client = zerorpc.Client()
         socket = client._events._socket
         socket.setsockopt(zmq.RECONNECT_IVL, self.MIN_RETRY_DELAY * 1000)
         socket.setsockopt(zmq.RECONNECT_IVL_MAX, self.MAX_RETRY_DELAY * 1000)
+        socket.setsockopt(zmq.LINGER, 0)
         client.connect(self.address)
         return client
 
