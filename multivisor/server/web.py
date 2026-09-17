@@ -197,9 +197,11 @@ def stream():
     def event_stream():
         client = queue.Queue()
         app.dispatcher.add_listener(client)
-        for event in client:
-            yield event
-        app.dispatcher.remove_listener(client)
+        try:
+            for event in client:
+                yield event
+        finally:
+            app.dispatcher.remove_listener(client)
 
     return Response(event_stream(), mimetype="text/event-stream")
 
