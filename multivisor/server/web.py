@@ -12,7 +12,16 @@ import logging
 
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify, session
+from flask import (
+    Flask,
+    render_template,
+    Response,
+    request,
+    json,
+    jsonify,
+    session,
+    send_from_directory,
+)
 from flask_cors import CORS
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_simple
@@ -204,6 +213,11 @@ def stream():
             app.dispatcher.remove_listener(client)
 
     return Response(event_stream(), mimetype="text/event-stream")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(app.template_folder, "favicon.ico")
 
 
 @app.route("/", defaults={"path": ""})
