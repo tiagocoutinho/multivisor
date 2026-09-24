@@ -1,18 +1,16 @@
 <template>
-  <v-tooltip bottom>
-    <v-btn slot="activator" flat router to="/view/group">
-      <v-icon class="mr-2">group_work</v-icon>
-      {{ nbGroups }}
-    </v-btn>
-    <span>Groups</span>
-  </v-tooltip>
+  <v-btn variant="flat" router to="/group">
+    <v-tooltip activator="parent" location="bottom">Groups</v-tooltip>
+    <v-icon class="mr-2">mdi-account-multiple</v-icon>
+    {{ nbGroups }}
+  </v-btn>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
-export default {
-  computed: {
-    ...mapGetters(['nbGroups'])
-  }
-}
+<script setup>
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/stores/app";
+
+const store = useAppStore();
+
+const { nbGroups } = storeToRefs(store);
 </script>

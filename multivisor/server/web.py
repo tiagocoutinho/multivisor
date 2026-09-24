@@ -12,7 +12,17 @@ import logging
 
 from gevent import queue, sleep
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, Response, request, json, jsonify, session
+from flask import (
+    Flask,
+    render_template,
+    Response,
+    request,
+    json,
+    jsonify,
+    session,
+    send_from_directory,
+)
+from flask_cors import CORS
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_simple
 
@@ -24,7 +34,8 @@ from .util import is_login_valid, login_required
 
 log = logging.getLogger("multivisor")
 
-app = Flask(__name__, static_folder="./dist/static", template_folder="./dist")
+app = Flask(__name__, static_folder="./dist/assets", template_folder="./dist")
+CORS(app)
 
 
 @app.route("/api/admin/reload")
@@ -195,11 +206,18 @@ def stream():
     def event_stream():
         client = queue.Queue()
         app.dispatcher.add_listener(client)
-        for event in client:
-            yield event
-        app.dispatcher.remove_listener(client)
+        try:
+            for event in client:
+                yield event
+        finally:
+            app.dispatcher.remove_listener(client)
 
     return Response(event_stream(), mimetype="text/event-stream")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(app.template_folder, "favicon.ico")
 
 
 @app.route("/", defaults={"path": ""})

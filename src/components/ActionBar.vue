@@ -1,52 +1,81 @@
-<template lang="html">
-  <v-speed-dial open-on-hover
-                transition="scale-transition" direction="bottom">
-    <v-btn slot="activator" icon>
-      <v-icon>more_vert</v-icon>
-    </v-btn>
+<template>
+  <div>
+    <v-speed-dial
+      open-on-hover
+      transition="scale-transition"
+      direction="bottom"
+    >
+      <template v-slot:activator="{ props }">
+        <v-btn icon v-bind="props">
+          <v-icon>mdi-dots-vertical</v-icon>
+        </v-btn>
+      </template>
 
-    <v-tooltip left>
-      <v-btn slot="activator" fab small dark color="green darken-2"
-             @click="restartSelected()" v-show="selectedProcesses.length">
-        <v-icon>autorenew</v-icon>
-      </v-btn>
-      <span>(Re)start selected processes</span>
-    </v-tooltip>
-    <v-tooltip left>
-      <v-btn slot="activator" fab small dark color="red darken-2"
-             @click="stopSelected()" v-show="selectedProcesses.length">
-        <v-icon>stop</v-icon>
-      </v-btn>
-      <span>Stop selected processes</span>
-    </v-tooltip>
-    <v-tooltip left>
-      <v-btn slot="activator" fab small dark color="blue darken-1"
-             @click="clearSelected()" v-show="selectedProcesses.length">
-        <v-icon>clear_all</v-icon>
-      </v-btn>
-      <span>Clear selection</span>
-    </v-tooltip>
-    <v-tooltip left>
-      <v-btn slot="activator" fab small dark color="blue darken-1"
-             @click="selectAll()">
-        <v-icon>select_all</v-icon>
-      </v-btn>
-      <span>Select all</span>
-    </v-tooltip>
-  </v-speed-dial>
+      <v-tooltip location="left">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            size="small"
+            color="green-darken-2"
+            @click="restartSelected()"
+            v-show="selectedProcesses.length"
+            v-bind="props"
+          >
+            <v-icon>mdi-autorenew</v-icon>
+          </v-btn>
+        </template>
+        <span>(Re)start selected processes</span>
+      </v-tooltip>
+      <v-tooltip location="left">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            size="small"
+            color="red-darken-2"
+            @click="stopSelected()"
+            v-show="selectedProcesses.length"
+            v-bind="props"
+          >
+            <v-icon>mdi-stop</v-icon>
+          </v-btn>
+        </template>
+        <span>Stop selected processes</span>
+      </v-tooltip>
+      <v-tooltip location="left">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            size="small"
+            color="blue-darken-1"
+            @click="clearSelected()"
+            v-show="selectedProcesses.length"
+            v-bind="props"
+          >
+            <v-icon>mdi-checkbox-blank-outline</v-icon>
+          </v-btn>
+        </template>
+        <span>Clear selection</span>
+      </v-tooltip>
+      <v-tooltip location="left">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            size="small"
+            color="blue-darken-1"
+            @click="selectAll()"
+            v-bind="props"
+          >
+            <v-icon>mdi-check-all</v-icon>
+          </v-btn>
+        </template>
+        <span>Select all</span>
+      </v-tooltip>
+    </v-speed-dial>
+  </div>
 </template>
 
-<script>
-import { mapActions } from 'vuex'
+<script setup>
+import { useAppStore } from "@/stores/app";
 
-export default {
-  name: 'ActionBar',
-  computed: {
-    selectedProcesses () { return this.$store.state.selectedProcesses }
-  },
-  methods: {
-    ...mapActions(['selectAll', 'clearSelected', 'restartSelected', 'stopSelected'])
-  }
+const store = useAppStore();
 
-}
+const { selectedProcesses } = storeToRefs(store);
+
+const { selectAll, clearSelected, restartSelected, stopSelected } = store;
 </script>

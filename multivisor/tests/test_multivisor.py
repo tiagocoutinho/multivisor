@@ -145,6 +145,17 @@ def test_use_authentication(multivisor_instance):
 
 
 @pytest.mark.usefixtures("supervisor_test001")
+def test_reconnect_replaces_client(multivisor_instance):
+    supervisor = multivisor_instance.get_supervisor("test001")
+    stale = supervisor.server
+    supervisor.reconnect()
+    assert supervisor.server is not stale
+    info = supervisor.read_info()
+    assert info["running"]
+    assert len(info["processes"]) == 10
+
+
+@pytest.mark.usefixtures("supervisor_test001")
 def test_stop_process(multivisor_instance):
     multivisor_instance.refresh()  # processes are empty before calling this
     uid = "test001:PLC:wcid00d"

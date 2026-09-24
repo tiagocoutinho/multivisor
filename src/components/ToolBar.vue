@@ -1,63 +1,81 @@
 <template>
-  <v-toolbar fixed dark app class="primary">
-    <v-menu offset-y nudge-bottom="15" v-show="isAuthenticated && useAuthentication">
-      <template slot="activator">
-        <v-btn icon slot="activator">
-          <v-icon >menu</v-icon>
-        </v-btn>
-      </template>
-      <v-list>
-        <v-list-tile @click="logout">
-          <v-list-tile-title>Logout</v-list-tile-title>
-        </v-list-tile>
-      </v-list>
-    </v-menu>
+  <v-app-bar blue :elevation="2" class="bg-primary">
+    <!-- <template v-slot:prepend>
+      <v-menu offset="15" v-show="isAuthenticated && useAuthentication">
+        <template slot="activator">
+          <v-btn icon slot="activator">
+            <v-icon >menu</v-icon>
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item @click="logout">
+            <v-list-item-title>Logout</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </template> -->
 
-    <v-toolbar-title>
-      <router-link to="/" tag="span" style="cursor: pointer">{{ name }}</router-link>
-    </v-toolbar-title>
-    <v-spacer></v-spacer>
-    <v-text-field append-icon="search" clearable single-line hide-details
-                  placeholder="Filter..." v-model="search" class="no-padding"
-                  color="grey lighten-1" v-show="isAuthenticated || !useAuthentication">
-    </v-text-field>
-    <ActionBar v-show="isAuthenticated || !useAuthentication"></ActionBar>
-    <v-toolbar-items v-show="isAuthenticated || !useAuthentication">
-      <ProcessChip class="hidden-sm-and-down"></ProcessChip>
-      <SupervisorChip class="hidden-sm-and-down"></SupervisorChip>
-      <GroupChip class="hidden-sm-and-down"></GroupChip>
-    </v-toolbar-items>
-  </v-toolbar>
+    <!-- <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon> -->
+
+    <v-app-bar-title style="cursor: pointer" @click="$router.push('/')">
+      {{ name }}
+    </v-app-bar-title>
+
+    <template v-slot:append>
+      <v-fade-transition>
+        <v-btn
+          v-show="!showSearch"
+          icon
+          @click="showSearch = true"
+        >
+            <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+      </v-fade-transition>
+
+      <v-expand-x-transition>
+        <v-text-field
+          v-if="showSearch"
+          v-model.trim="search"
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          label="Filter..."
+          variant="solo"
+          hide-details
+          single-line
+          clearable
+          autofocus
+          @keydown.esc="search = ''; showSearch = false"
+          @click:clear="showSearch = false"
+          @blur="search && search.length ? showSearch : showSearch = false"
+          class="search-input"
+        ></v-text-field>
+      </v-expand-x-transition>
+    </template>
+  </v-app-bar>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
-import ProcessChip from './process/Chip'
-import SupervisorChip from './supervisor/Chip'
-import GroupChip from './group/Chip'
-import ActionBar from './ActionBar'
+<script setup>
+//import { computed } from 'vue'
+import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 
-export default {
-  name: 'ToolBar',
-  components: { ActionBar, ProcessChip, SupervisorChip, GroupChip },
-  computed: {
-    ...mapGetters(['name']),
-    isAuthenticated () { return this.$store.state.isAuthenticated },
-    useAuthentication () { return this.$store.state.useAuthentication },
-    search: {
-      get () { return this.$store.state.search },
-      set (v) { this.$store.commit('updateSearch', v) }
-    }
-  },
-  methods: {
-    logout () {
-      this.$store.dispatch('logout').then(() => { this.$router.push({'name': 'Login'}) })
-    }
-  }
+import { useAppStore } from "@/stores/app";
+
+const store = useAppStore();
+const router = useRouter();
+
+const { name, search, isAuthenticated, useAuthentication } = storeToRefs(store);
+
+const showSearch = ref(false);
+
+function logout() {
+  store.logout();
+  router.push({ name: "Login" });
 }
 </script>
+
 <style scoped>
-  .no-padding {
-    padding: 0;
-  }
+:deep(.search-input .v-input__control) {
+  min-width: 400px;
+}
 </style>

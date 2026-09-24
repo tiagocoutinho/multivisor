@@ -1,14 +1,20 @@
 <template>
-    <v-alert :value="error" type="error" transition="scale-transition">{{error}}</v-alert>
+  <transition name="scale-transition">
+    <v-alert v-model="visible" variant="tonal" type="warning" closable>{{
+      error
+    }}</v-alert>
+  </transition>
 </template>
 
-<script>
-  export default {
-    name: 'AlertBar',
-    computed: {
-      error () {
-        return this.$store.state.error
-      }
-    }
-  }
+<script setup>
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/stores/app";
+
+const store = useAppStore();
+
+const { error } = storeToRefs(store);
+
+const visible = computed(() => {
+  return error.len > 0;
+});
 </script>
