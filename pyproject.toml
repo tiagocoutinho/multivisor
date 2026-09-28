@@ -10,6 +10,7 @@ include = ["multivisor", "multivisor.*"]
 
 [tool.setuptools.package-data]
 "multivisor.server" = ["dist/*", "dist/assets/*"]
+"multivisor.zerorpc" = ["LICENSE", "README.md"]
 
 [project]
 name = "multivisor"
@@ -52,7 +53,8 @@ multivisor-cli = "multivisor.client.cli:main [cli]"
 
 [project.optional-dependencies]
 rpc = [
-    "zerorpc",
+    "pyzmq",
+    "msgpack",
     "supervisor; platform_system=='Linux'",
     "supervisor-win; platform_system=='Windows'",
 ]
@@ -61,7 +63,8 @@ web = [
     "flask_cors",
     "werkzeug",
     "blinker",
-    "zerorpc",
+    "pyzmq",
+    "msgpack",
     "supervisor; platform_system=='Linux'",
     "supervisor-win; platform_system=='Windows'",
 ]
