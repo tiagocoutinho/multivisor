@@ -13,12 +13,12 @@ except ImportError:
     from configparser import ConfigParser
 
 import gevent
-import zerorpc
-import zmq
+import zmq.green as zmq
 from gevent import joinall, sleep, spawn
 from supervisor.states import RUNNING_STATES
 from supervisor.xmlrpc import Faults
 
+from . import zerorpc
 from .util import filter_patterns, parse_dict, sanitize_url
 
 log = logging.getLogger("multivisor")

@@ -20,7 +20,6 @@ from gevent.queue import Queue
 from supervisor.events import Event, getEventNameByType, subscribe
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
-from zerorpc import Context, LostRemote, Server, stream
 
 # unsubscribe only appears in supervisor > 3.3.4
 try:
@@ -32,6 +31,7 @@ except ImportError:
 
 
 from .util import parse_obj, sanitize_url
+from .zerorpc import Context, LostRemote, Server, stream
 
 DEFAULT_BIND = "tcp://*:9002"
 
@@ -63,7 +63,7 @@ def sync(klass):
 
 
 # When supervisor is asked to restart, it closes file descriptors
-# from 5..1024. Since we are not able to restart the ZeroRPC server
+# from 5..1024. Since we are not able to restart the vendored RPC server
 # (see https://github.com/0rpc/zerorpc-python/issues/208) this patch
 # prevents supervisor from closing the gevent pipes and 0MQ sockets
 # This is a really agressive move but seems to work until the above

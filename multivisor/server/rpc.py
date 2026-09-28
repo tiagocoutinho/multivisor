@@ -11,7 +11,8 @@ from gevent.fileobject import FileObject
 from gevent.lock import RLock
 from gevent.queue import Queue
 from supervisor.childutils import getRPCInterface
-from zerorpc import LostRemote, Server, stream
+
+from ..zerorpc import LostRemote, Server, stream
 
 READY = "READY\n"
 ACKNOWLEDGED = "RESULT 2\nOK"
