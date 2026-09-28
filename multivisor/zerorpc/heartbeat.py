@@ -1,0 +1,106 @@
+# Vendored from zerorpc-python, see LICENSE in this directory.
+
+import time
+
+import gevent.queue
+
+from .channel_base import ChannelBase
+from .exceptions import LostRemote, TimeoutExpired
+
+
+class HeartBeatOnChannel(ChannelBase):
+
+    def __init__(self, channel, freq=5, passive=False):
+        self._closed = False
+        self._channel = channel
+        self._heartbeat_freq = freq
+        self._input_queue = gevent.queue.Channel()
+        self._remote_last_hb = None
+        self._lost_remote = False
+        self._recv_task = gevent.spawn(self._recver)
+        self._heartbeat_task = None
+        self._parent_coroutine = gevent.getcurrent()
+        self._compat_v2 = None
+        if not passive:
+            self._start_heartbeat()
+
+    @property
+    def recv_is_supported(self):
+        return self._channel.recv_is_supported
+
+    @property
+    def emit_is_supported(self):
+        return self._channel.emit_is_supported
+
+    def close(self):
+        self._closed = True
+        if self._heartbeat_task is not None:
+            self._heartbeat_task.kill()
+            self._heartbeat_task = None
+        if self._recv_task is not None:
+            self._recv_task.kill()
+            self._recv_task = None
+        if self._channel is not None:
+            self._channel.close()
+            self._channel = None
+
+    def _heartbeat(self):
+        while True:
+            gevent.sleep(self._heartbeat_freq)
+            if self._remote_last_hb is None:
+                self._remote_last_hb = time.time()
+            if time.time() > self._remote_last_hb + self._heartbeat_freq * 2:
+                self._lost_remote = True
+                if not self._closed:
+                    gevent.kill(self._parent_coroutine,
+                            self._lost_remote_exception())
+                break
+            self._channel.emit(u'_zpc_hb', (0,))  # 0 -> compat with protocol v2
+
+    def _start_heartbeat(self):
+        if self._heartbeat_task is None and self._heartbeat_freq is not None and not self._closed:
+            self._heartbeat_task = gevent.spawn(self._heartbeat)
+
+    def _recver(self):
+        while True:
+            event = self._channel.recv()
+            if self._compat_v2 is None:
+                self._compat_v2 = event.header.get(u'v', 0) < 3
+            if event.name == u'_zpc_hb':
+                self._remote_last_hb = time.time()
+                self._start_heartbeat()
+                if self._compat_v2:
+                    event.name = u'_zpc_more'
+                    self._input_queue.put(event)
+            else:
+                self._input_queue.put(event)
+
+    def _lost_remote_exception(self):
+        return LostRemote('Lost remote after {0}s heartbeat'.format(
+            self._heartbeat_freq * 2))
+
+    def new_event(self, name, args, header=None):
+        if self._compat_v2 and name == u'_zpc_more':
+            name = u'_zpc_hb'
+        return self._channel.new_event(name, args, header)
+
+    def emit_event(self, event, timeout=None):
+        if self._lost_remote:
+            raise self._lost_remote_exception()
+        self._channel.emit_event(event, timeout)
+
+    def recv(self, timeout=None):
+        if self._lost_remote:
+            raise self._lost_remote_exception()
+        try:
+            return self._input_queue.get(timeout=timeout)
+        except gevent.queue.Empty:
+            raise TimeoutExpired(timeout)
+
+    @property
+    def channel(self):
+        return self._channel
+
+    @property
+    def context(self):
+        return self._channel.context

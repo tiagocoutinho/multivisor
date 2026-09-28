@@ -84,3 +84,5 @@ select = ["E", "F", "W", "I"]
 "multivisor/client/cli.py" = ["E402"]
 "multivisor/server/web.py" = ["E402"]
 "tests/conftest.py" = ["E402"]
+# vendored zerorpc re-exports its submodules with star imports
+"multivisor/zerorpc/*" = ["F403"]
