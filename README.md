@@ -10,7 +10,7 @@
 [![Python Versions][pypi-python-versions]](https://pypi.python.org/pypi/multivisor)
 [![Pypi status][pypi-status]](https://pypi.python.org/pypi/multivisor)
 ![License][license]
-[![Build Status][build]](https://travis-ci.org/guy881/multivisor)
+[![Build Status][build]](https://github.com/tiagocoutinho/multivisor/actions/workflows/ci.yml)
 
 A centralized supervisor UI (Web & CLI)
 
@@ -304,4 +304,4 @@ directly on your browser.
 [pypi-version]: https://img.shields.io/pypi/v/multivisor.svg
 [pypi-status]: https://img.shields.io/pypi/status/multivisor.svg
 [license]: https://img.shields.io/pypi/l/multivisor.svg
-[build]: https://travis-ci.org/guy881/multivisor.svg?branch=develop
+[build]: https://github.com/tiagocoutinho/multivisor/actions/workflows/ci.yml/badge.svg?branch=develop
