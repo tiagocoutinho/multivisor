@@ -1,5 +1,0 @@
--r requirements.txt
-pytest==4.4.1
-requests==2.21.0
-isort==4.3.20
-flake8==3.7.7
