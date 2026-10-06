@@ -12,14 +12,14 @@ try:
 except ImportError:
     from configparser import ConfigParser
 
+import gevent
 import zerorpc
 import zmq
-import gevent
-from gevent import spawn, sleep, joinall
-from supervisor.xmlrpc import Faults
+from gevent import joinall, sleep, spawn
 from supervisor.states import RUNNING_STATES
+from supervisor.xmlrpc import Faults
 
-from .util import sanitize_url, filter_patterns, parse_dict
+from .util import filter_patterns, parse_dict, sanitize_url
 
 log = logging.getLogger("multivisor")
 
@@ -210,7 +210,7 @@ class Supervisor(dict):
     def refresh(self):
         try:
             info = self.read_info()
-        except:
+        except BaseException:
             info = self.create_base_info()
             raise
         finally:
@@ -376,7 +376,7 @@ class Process(dict):
     def start(self):
         try:
             self.server.startProcess(self.full_name, False, timeout=30)
-        except:
+        except Exception:
             message = "Error trying to start {}!".format(self)
             error(message)
             self.log.exception(message)
@@ -384,7 +384,7 @@ class Process(dict):
     def stop(self):
         try:
             self.server.stopProcess(self.full_name)
-        except:
+        except Exception:
             message = "Failed to stop {}".format(self["uid"])
             warning(message)
             self.log.exception(message)
@@ -420,7 +420,6 @@ def load_config(config_file):
     supervisors = {}
     config = dict(dft_global, supervisors=supervisors)
     config.update(parser.items("global"))
-    tasks = []
     for section in parser.sections():
         if not section.startswith("supervisor:"):
             continue
