@@ -5,7 +5,7 @@
       <v-list>
         <v-list-item
           prepend-avatar="@/assets/multivisor.png"
-          subtitle="v7.0.0"
+          :subtitle="`v${version}`"
           title="Multivisor"
           router
           to="/about"
@@ -55,6 +55,8 @@ import LogSheet from "@/components/process/Log";
 import ProcessDetails from "@/components/process/Details";
 
 import { useAppStore } from "@/stores/app";
+
+const version = __APP_VERSION__;
 
 const store = useAppStore();
 
