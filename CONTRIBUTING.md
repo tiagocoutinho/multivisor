@@ -69,7 +69,14 @@ directly on your browser.
 ```bash
 # backend tests
 pixi run -e test test
+
+# frontend unit tests
+npm test
+# or
+pixi run -e frontend test-frontend
 ```
+
+Frontend unit tests are `src/**/*.test.js` files run with [Vitest](https://vitest.dev).
 
 ## Linting
 

@@ -22,6 +22,7 @@ nodejs = "*"
 [feature.frontend.tasks]
 build-frontend = "npm audit fix && npm run build"
 dev-frontend = "npm run dev"
+test-frontend = "npm test"
 
 [feature.demo.dependencies]
 supervisor = "*"

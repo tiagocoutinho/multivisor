@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
@@ -45,6 +46,7 @@
     "vite-plugin-vue-layouts-next": "^0.0.8",
     "vite-plugin-vuetify": "^2.1.1",
     "vite-plugin-webfont-dl": "^3.11.1",
+    "vitest": "^5.0.3",
     "vue-router": "^4.5.0"
   },
   "engines": {

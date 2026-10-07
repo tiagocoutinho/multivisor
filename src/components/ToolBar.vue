@@ -60,6 +60,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 
 import { useAppStore } from "@/stores/app";
+import { LOGIN_PATH } from "@/router/auth";
 
 const store = useAppStore();
 const router = useRouter();
@@ -70,7 +71,7 @@ const showSearch = ref(false);
 
 function logout() {
   store.logout();
-  router.push({ name: "Login" });
+  router.push(LOGIN_PATH);
 }
 </script>
 

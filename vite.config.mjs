@@ -83,4 +83,8 @@ export default defineConfig({
     outDir: "multivisor/server/dist",
     emptyOutDir: true,
   },
+  test: {
+    // e2e/ holds Playwright tests
+    include: ["src/**/*.test.js"],
+  },
 });
