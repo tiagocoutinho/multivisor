@@ -9,27 +9,29 @@ advantages: it avoids creating an eventlistener process just to forward events.
 The python environment where supervisor runs must have multivisor installed
 """
 
+import functools
+import logging
 import os
 import queue
-import logging
-import functools
 import threading
 
-from gevent import spawn, hub, sleep
+from gevent import hub, sleep, spawn
 from gevent.queue import Queue
-from zerorpc import stream, Server, LostRemote, Context
-
+from supervisor.events import Event, getEventNameByType, subscribe
 from supervisor.http import NOT_DONE_YET
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
-from supervisor.events import subscribe, Event, getEventNameByType
+from zerorpc import Context, LostRemote, Server, stream
 
 # unsubscribe only appears in supervisor > 3.3.4
 try:
     from supervisor.events import unsubscribe
-except:
-    unsubscribe = lambda x, y: None
+except ImportError:
 
-from .util import sanitize_url, parse_obj
+    def unsubscribe(x, y):
+        return None
+
+
+from .util import parse_obj, sanitize_url
 
 DEFAULT_BIND = "tcp://*:9002"
 
@@ -66,7 +68,7 @@ def sync(klass):
 # prevents supervisor from closing the gevent pipes and 0MQ sockets
 # This is a really agressive move but seems to work until the above
 # bug is solved
-from supervisor.options import ServerOptions
+from supervisor.options import ServerOptions  # noqa: E402
 
 ServerOptions.cleanup_fds = lambda options: None
 
@@ -169,7 +171,7 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
                     return
                 # self._log.info(event)
                 yield event
-        except LostRemote as e:
+        except LostRemote:
             self._log.info("remote end of stream disconnected")
         finally:
             self._event_channels.remove(channel)

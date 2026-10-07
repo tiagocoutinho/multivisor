@@ -1,19 +1,17 @@
 from __future__ import print_function
 
-import sys
 import logging
+import sys
 import xmlrpc.client
-
-from os import environ
 from functools import partial
+from os import environ
 
 from gevent import spawn
+from gevent.fileobject import FileObject
 from gevent.lock import RLock
 from gevent.queue import Queue
-from gevent.fileobject import FileObject
-from zerorpc import stream, Server, LostRemote
 from supervisor.childutils import getRPCInterface
-
+from zerorpc import LostRemote, Server, stream
 
 READY = "READY\n"
 ACKNOWLEDGED = "RESULT 2\nOK"
@@ -47,7 +45,7 @@ def event_consumer_loop(queue, handler):
     for event in queue:
         try:
             handler(event)
-        except:
+        except Exception:
             logging.exception("Error processing %s", event)
 
 
@@ -56,6 +54,7 @@ get_rpc = partial(getRPCInterface, environ)
 
 def build_method(supervisor, name):
     subsystem_name, func_name = name.split(".", 1)
+
     def method(*args):
         subsystem = getattr(supervisor.rpc, subsystem_name)
         with supervisor.lock:
@@ -82,7 +81,7 @@ class Supervisor(object):
             yield "First event to trigger connection. Please ignore me!"
             for event in channel:
                 yield event
-        except LostRemote as e:
+        except LostRemote:
             logging.info("remote end of stream disconnected")
         finally:
             self.event_channels.remove(channel)
@@ -112,8 +111,8 @@ class Supervisor(object):
 def run(xml_rpc, bind=DEFAULT_BIND):
     channel = Queue()
     supervisor = Supervisor(xml_rpc)
-    t1 = spawn(event_consumer_loop, channel, supervisor.publish_event)
-    t2 = spawn(event_producer_loop, channel.put)
+    spawn(event_consumer_loop, channel, supervisor.publish_event)
+    spawn(event_producer_loop, channel.put)
     server = Server(supervisor)
     server.bind(bind)
     server.run()

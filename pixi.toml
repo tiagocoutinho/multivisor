@@ -40,8 +40,26 @@ upload-package = "twine upload dist/*.whl"
 python-build = "*"
 twine = "*"
 
+[feature.test.dependencies]
+pytest = "*"
+requests = "*"
+
+[feature.test.pypi-dependencies]
+multivisor = { path = ".", editable = true }
+
+[feature.test.tasks]
+test = "pytest"
+
+[feature.lint.dependencies]
+ruff = "*"
+
+[feature.lint.tasks]
+lint = "ruff check"
+
 [environments]
 backend = ["backend"]
 frontend = ["frontend"]
 demo = ["demo"]
 package = ["package"]
+test = ["backend", "test"]
+lint = { features = ["lint"], no-default-feature = true }

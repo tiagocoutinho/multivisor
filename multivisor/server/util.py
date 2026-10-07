@@ -1,7 +1,7 @@
-import hashlib
 import functools
+import hashlib
 
-from flask import session, abort
+from flask import abort, session
 
 
 def is_login_valid(app, username, password):

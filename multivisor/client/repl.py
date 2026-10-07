@@ -3,7 +3,7 @@ import functools
 
 import maya
 from blinker import signal
-from prompt_toolkit import PromptSession, HTML, print_formatted_text
+from prompt_toolkit import HTML, PromptSession, print_formatted_text
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
@@ -13,6 +13,7 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.validation import ValidationError
 
 from multivisor.signals import SIGNALS
+
 from . import util
 
 STYLE = Style.from_dict(
@@ -64,7 +65,9 @@ def process_status(process, max_puid_len=10, group_by="group"):
 
 
 def processes_status(status, group_by="group", filter="*"):
-    filt = lambda p: fnmatch.fnmatch(p["uid"], filter)
+    def filt(p):
+        return fnmatch.fnmatch(p["uid"], filter)
+
     return util.processes_status(
         status, group_by=group_by, process_filter=filt, process_status=process_status
     )
