@@ -55,7 +55,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.14.3-py314hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flask-3.1.3-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flask_cors-4.0.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/future-1.0.0-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/itsdangerous-2.2.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.6-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pycparser-2.22-pyh29332c3_1.conda
@@ -65,7 +64,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/supervisor-4.3.0-pyh8f84b5b_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/werkzeug-3.1.7-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/zerorpc-python-0.6.3-pyhe01879c_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zope.event-6.1-pyhcf101f3_0.conda
   default:
     channels:
@@ -300,7 +298,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flask-3.1.3-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flask_cors-4.0.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/future-1.0.0-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/h2-4.4.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hyperframe-6.1.0-pyhd8ed1ab_0.conda
@@ -325,7 +322,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/werkzeug-3.1.9-pyh5ded981_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/zerorpc-python-0.6.3-pyhe01879c_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zope.event-6.2-pyhcf101f3_0.conda
       - pypi: ./
 packages:
@@ -1806,18 +1802,6 @@ packages:
   run_exports: {}
   size: 17851
   timestamp: 1718399263910
-- conda: https://conda.anaconda.org/conda-forge/noarch/future-1.0.0-pyhd8ed1ab_2.conda
-  sha256: 45dfd037889b7075c5eb46394f93172de0be0b1624c7f802dd3ecc94b814d8e0
-  md5: 1054c53c95d85e35b88143a3eda66373
-  depends:
-  - python >=3.9
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/future?source=hash-mapping
-  run_exports: {}
-  size: 364561
-  timestamp: 1738926525117
 - conda: https://conda.anaconda.org/conda-forge/noarch/h2-4.3.0-pyhcf101f3_0.conda
   sha256: 84c64443368f84b600bfecc529a1194a3b14c3656ee2e832d15a20e0329b6da3
   md5: 164fc43f0b53b6e3a7bc7dce5e4f1dc9
@@ -2488,23 +2472,6 @@ packages:
   run_exports: {}
   size: 260273
   timestamp: 1790550578594
-- conda: https://conda.anaconda.org/conda-forge/noarch/zerorpc-python-0.6.3-pyhe01879c_3.conda
-  sha256: 047336130771bb1772cc49c0014049cf49576539e1cac0c1b014222237ca1bbe
-  md5: d342f518c162abe12a9bc363c8513019
-  depends:
-  - python >=3.9
-  - future
-  - gevent >=1.1
-  - msgpack-python >=0.5.2
-  - pyzmq >=13.1.0,!=23.0.0
-  - python
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/zerorpc?source=hash-mapping
-  run_exports: {}
-  size: 27701
-  timestamp: 1754287542920
 - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.23.0-pyhcf101f3_1.conda
   sha256: b4533f7d9efc976511a73ef7d4a2473406d7f4c750884be8e8620b0ce70f4dae
   md5: 30cd29cb87d819caead4d55184c1d115
@@ -2540,14 +2507,16 @@ packages:
   name: multivisor
   requires_dist:
   - gevent>=1.3
-  - zerorpc ; extra == 'rpc'
+  - pyzmq ; extra == 'rpc'
+  - msgpack ; extra == 'rpc'
   - supervisor ; sys_platform == 'linux' and extra == 'rpc'
   - supervisor-win ; sys_platform == 'win32' and extra == 'rpc'
   - flask ; extra == 'web'
   - flask-cors ; extra == 'web'
   - werkzeug ; extra == 'web'
   - blinker ; extra == 'web'
-  - zerorpc ; extra == 'web'
+  - pyzmq ; extra == 'web'
+  - msgpack ; extra == 'web'
   - supervisor ; sys_platform == 'linux' and extra == 'web'
   - supervisor-win ; sys_platform == 'win32' and extra == 'web'
   - maya ; extra == 'cli'
