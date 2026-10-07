@@ -1,83 +1,78 @@
 <template>
-  <v-container fluid grid-list-md>
-    <v-form v-model="valid">
-      <v-layout align-center justify-center>
-        <v-flex xs12 sm6 md5 lg4 xl3>
-          <v-card class="elevation-12">
-            <v-toolbar dark color="primary">
-              <v-toolbar-title>Log in</v-toolbar-title>
-            </v-toolbar>
+  <v-container class="fill-height" fluid>
+    <v-row align="center" justify="center">
+      <v-col cols="12" sm="6" md="5" lg="4" xl="3">
+        <v-card class="elevation-12">
+          <v-toolbar color="primary">
+            <v-toolbar-title>Log in</v-toolbar-title>
+          </v-toolbar>
+          <v-form ref="form" v-model="valid" @submit.prevent="submit">
             <v-card-text>
-              <v-form @keyup.native.enter="submit" v-model="valid" ref="form">
-                <v-text-field
-                  autofocus
-                  prepend-icon="person"
-                  name="username"
-                  label="Username"
-                  type="text"
-                  v-model="username"
-                  :rules="[rules.required]"
-                  :error-messages="errorMessages['username']"
-                ></v-text-field>
-                <v-text-field
-                  prepend-icon="lock"
-                  name="password"
-                  label="Password"
-                  type="password"
-                  v-model="password"
-                  :rules="[rules.required]"
-                  :error-messages="errorMessages['password']"
-                ></v-text-field>
-              </v-form>
+              <v-text-field
+                autofocus
+                prepend-icon="mdi-account"
+                name="username"
+                label="Username"
+                type="text"
+                v-model="username"
+                :rules="[rules.required]"
+                :error-messages="errorMessages.username"
+              ></v-text-field>
+              <v-text-field
+                prepend-icon="mdi-lock"
+                name="password"
+                label="Password"
+                type="password"
+                v-model="password"
+                :rules="[rules.required]"
+                :error-messages="errorMessages.password"
+              ></v-text-field>
             </v-card-text>
-            <v-card-actions align="center">
-              <v-layout justify-center>
-                <v-btn color="primary" location="bottom" @click="submit"
-                  >Log in</v-btn
-                >
-              </v-layout>
+            <v-card-actions class="justify-center">
+              <v-btn type="submit" color="primary">Log in</v-btn>
             </v-card-actions>
-          </v-card>
-        </v-flex>
-      </v-layout>
-    </v-form>
+          </v-form>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup>
+import { useRouter } from "vue-router";
+
 import * as api from "@/api";
 import { useAppStore } from "@/stores/app";
 
 const store = useAppStore();
+const router = useRouter();
 
-const valid = false;
-const username = "";
-const password = "";
+const form = ref(null);
+const valid = ref(false);
+const username = ref("");
+const password = ref("");
+const errorMessages = ref({ username: [], password: [] });
+
 const rules = {
   required: (value) => !!value || "This field is required",
 };
-const errorMessages = {
-  username: [],
-  password: [],
-};
 
-const submit = () => {
-  if (!this.$refs.form.validate()) {
+async function submit() {
+  const { valid } = await form.value.validate();
+  if (!valid) {
     return;
   }
-  const form = new FormData();
-  form.append("username", username);
-  form.append("password", password);
-  api.login(form).then((response) => {
-    if (response.status === 200) {
-      store.setIsAuthenticated(true);
-      store.dispatch("init");
-      this.$router.push({ name: "group" });
-    } else {
-      response.json().then((data) => {
-        this.errorMessages = data.errors;
-      });
-    }
-  });
-};
+  const data = new FormData();
+  data.append("username", username.value);
+  data.append("password", password.value);
+  const response = await api.login(data);
+  if (response.ok) {
+    store.setIsAuthenticated(true);
+    store.init();
+    router.push("/");
+  } else {
+    const result = await response.json();
+    errorMessages.value = { username: [], password: [], ...result.errors };
+  }
+}
 </script>

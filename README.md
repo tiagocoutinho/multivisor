@@ -254,50 +254,7 @@ The frontend is based on [vue](https://vuejs.org/) +
 
 # Development
 
-## Build & Install
-
-```bash
-
-# install frontend
-npm install
-
-# build for production with minification
-npm run build
-
-# install backend
-pip install -e .
-
-```
-
-## Run
-
-```bash
-# serve at localhost:22000
-multivisor -c multivisor.conf
-```
-
-Start a browser pointing to [localhost:22000](http://localhost:22000)
-
-## Development mode
-
-You can run the backend using the vite dev server to facilitate your
-development cycle:
-
-First, start multivisor (which listens on 22000 by default):
-
-```bash
-python -m multivisor.server.web -c multivisor.conf
-```
-
-Now, in another console, run the vite dev server (it will
-transfer the requests between the browser and multivisor):
-
-``` bash
-npm run dev
-```
-
-That's it. If you modify `App.vue` for example, you should see the changes
-directly on your browser.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 [pypi-python-versions]: https://img.shields.io/pypi/pyversions/multivisor.svg
