@@ -35,3 +35,24 @@ jobs:
 
       - name: Test
         run: pixi run -e test test
+
+  test-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.76.1
+          environments: frontend
+          cache: true
+
+      - name: Install
+        run: pixi run -e frontend npm ci
+
+      - name: Test
+        run: pixi run -e frontend test-frontend
+
+      - name: Build
+        run: pixi run -e frontend npm run build

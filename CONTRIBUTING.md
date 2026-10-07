@@ -99,6 +99,7 @@ pushes to `develop`:
 
 - `lint`: backend linting
 - `test`: backend tests
+- `test-frontend`: frontend unit tests and production build
 
 ## Packaging
 
