@@ -30,7 +30,7 @@ except ImportError:
         return None
 
 
-from .util import parse_obj, sanitize_url
+from .util import ServerAuthenticationMiddleware, parse_keys, parse_obj, sanitize_url
 from .zerorpc import Context, LostRemote, Server, stream
 
 DEFAULT_BIND = "tcp://*:9002"
@@ -75,7 +75,7 @@ ServerOptions.cleanup_fds = lambda options: None
 
 @sync
 class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
-    def __init__(self, supervisord, bind):
+    def __init__(self, supervisord, bind, keys):
         SupervisorNamespaceRPCInterface.__init__(self, supervisord)
         self._bind = bind
         self._channel = queue.Queue()
@@ -84,6 +84,11 @@ class MultivisorNamespaceRPCInterface(SupervisorNamespaceRPCInterface):
         self._watcher = None
         self._shutting_down = False
         self._log = logging.getLogger("MVRPC")
+        self._keys = parse_keys(keys)
+
+    @property
+    def authentication_enabled(self):
+        return len(self._keys) > 0
 
     def _start(self):
         subscribe(Event, self._handle_event)
@@ -202,6 +207,12 @@ def run_rpc_server(multivisor, bind, future_server):
     try:
         context = Context()
         context.register_middleware(ServerMiddleware())
+        if multivisor.authentication_enabled:
+            context.register_middleware(ServerAuthenticationMiddleware(multivisor._keys))
+        else:
+            multivisor._log.warning(
+                "Authentication not enabled! Please set multivisor_keys config variable"
+            )
         server = Server(multivisor, context=context)
         server._stop_event = stop_event
         server.bind(bind)
@@ -221,13 +232,15 @@ def run_rpc_server(multivisor, bind, future_server):
     stop_event.set()
 
 
-def make_rpc_interface(supervisord, bind=DEFAULT_BIND):
+def make_rpc_interface(supervisord, bind=DEFAULT_BIND, multivisor_keys=""):
     # Uncomment following lines to configure python standard logging
     # log_level = logging.INFO
     # log_fmt = '%(asctime)-15s %(levelname)s %(threadName)-8s %(name)s: %(message)s'
     # logging.basicConfig(level=log_level, format=log_fmt)
 
     url = sanitize_url(bind, protocol="tcp", host="*", port=9002)
-    multivisor = MultivisorNamespaceRPCInterface(supervisord, url["url"])
+    multivisor = MultivisorNamespaceRPCInterface(
+        supervisord, url["url"], keys=multivisor_keys
+    )
     multivisor._start()
     return multivisor
