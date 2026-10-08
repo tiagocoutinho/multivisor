@@ -37,11 +37,9 @@ demo = "supervisord -c examples/full_example/supervisord_baslid001.conf && super
 
 [feature.package.tasks]
 build-package = "python -m build"
-upload-package = "twine upload dist/*.whl"
 
 [feature.package.dependencies]
 python-build = "*"
-twine = "*"
 
 [feature.test.dependencies]
 pytest = "*"
