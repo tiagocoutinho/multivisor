@@ -12,8 +12,7 @@ import pytest
 import requests
 from requests import ConnectionError
 
-from multivisor.multivisor import Multivisor
-from multivisor.multivisor import Supervisor
+from multivisor.multivisor import Multivisor, Supervisor
 from multivisor.server.web import get_parser
 
 

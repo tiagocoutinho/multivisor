@@ -1,8 +1,10 @@
+import contextlib
+from time import sleep
+
 import pytest
 
-from tests.conftest import *
+from tests.conftest import *  # noqa: F401,F403 (fixtures)
 from tests.functions import assert_fields_in_object
-import contextlib
 
 
 @pytest.mark.usefixtures("supervisor_test001")

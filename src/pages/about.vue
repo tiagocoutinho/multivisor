@@ -2,6 +2,7 @@
   <v-container>
     <h1>About</h1>
     A centralized supervisor UI (Web & CLI)
+    <p class="text-medium-emphasis">Version {{ version }}</p>
 
     <h2>Features</h2>
     <ul>
@@ -31,3 +32,7 @@
     </ul>
   </v-container>
 </template>
+
+<script setup>
+const version = __APP_VERSION__;
+</script>

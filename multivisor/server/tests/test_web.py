@@ -1,7 +1,10 @@
+from time import sleep
+
+import pytest
 import requests
 
+from tests.conftest import *  # noqa: F401,F403 (fixtures)
 from tests.functions import assert_fields_in_object
-from tests.conftest import *
 
 
 @pytest.mark.usefixtures("api_base_url")

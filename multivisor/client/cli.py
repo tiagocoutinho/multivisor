@@ -5,7 +5,7 @@ import gevent.monkey
 gevent.monkey.patch_all(thread=False)
 
 from .. import util
-from . import repl, http
+from . import http, repl
 
 
 def parse_args(args=None):

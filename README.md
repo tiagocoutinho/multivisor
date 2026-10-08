@@ -10,7 +10,7 @@
 [![Python Versions][pypi-python-versions]](https://pypi.python.org/pypi/multivisor)
 [![Pypi status][pypi-status]](https://pypi.python.org/pypi/multivisor)
 ![License][license]
-[![Build Status][build]](https://travis-ci.org/guy881/multivisor)
+[![Build Status][build]](https://github.com/tiagocoutinho/multivisor/actions/workflows/ci.yml)
 
 A centralized supervisor UI (Web & CLI)
 
@@ -254,54 +254,11 @@ The frontend is based on [vue](https://vuejs.org/) +
 
 # Development
 
-## Build & Install
-
-```bash
-
-# install frontend
-npm install
-
-# build for production with minification
-npm run build
-
-# install backend
-pip install -e .
-
-```
-
-## Run
-
-```bash
-# serve at localhost:22000
-multivisor -c multivisor.conf
-```
-
-Start a browser pointing to [localhost:22000](http://localhost:22000)
-
-## Development mode
-
-You can run the backend using the vite dev server to facilitate your
-development cycle:
-
-First, start multivisor (which listens on 22000 by default):
-
-```bash
-python -m multivisor.server.web -c multivisor.conf
-```
-
-Now, in another console, run the vite dev server (it will
-transfer the requests between the browser and multivisor):
-
-``` bash
-npm run dev
-```
-
-That's it. If you modify `App.vue` for example, you should see the changes
-directly on your browser.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 [pypi-python-versions]: https://img.shields.io/pypi/pyversions/multivisor.svg
 [pypi-version]: https://img.shields.io/pypi/v/multivisor.svg
 [pypi-status]: https://img.shields.io/pypi/status/multivisor.svg
 [license]: https://img.shields.io/pypi/l/multivisor.svg
-[build]: https://travis-ci.org/guy881/multivisor.svg?branch=develop
+[build]: https://github.com/tiagocoutinho/multivisor/actions/workflows/ci.yml/badge.svg?branch=develop

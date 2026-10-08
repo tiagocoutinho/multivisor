@@ -10,6 +10,7 @@ include = ["multivisor", "multivisor.*"]
 
 [tool.setuptools.package-data]
 "multivisor.server" = ["dist/*", "dist/assets/*"]
+"multivisor.zerorpc" = ["LICENSE", "README.md"]
 
 [project]
 name = "multivisor"
@@ -52,7 +53,8 @@ multivisor-cli = "multivisor.client.cli:main [cli]"
 
 [project.optional-dependencies]
 rpc = [
-    "zerorpc",
+    "pyzmq",
+    "msgpack",
     "supervisor; platform_system=='Linux'",
     "supervisor-win; platform_system=='Windows'",
 ]
@@ -61,7 +63,8 @@ web = [
     "flask_cors",
     "werkzeug",
     "blinker",
-    "zerorpc",
+    "pyzmq",
+    "msgpack",
     "supervisor; platform_system=='Linux'",
     "supervisor-win; platform_system=='Windows'",
 ]
@@ -71,3 +74,18 @@ cli = [
     "prompt_toolkit>=2",
     "blinker",
 ]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["static", "e2e", "docker"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# gevent monkey patching must run before the other imports
+"multivisor/client/cli.py" = ["E402"]
+"multivisor/server/web.py" = ["E402"]
+"tests/conftest.py" = ["E402"]
+# vendored zerorpc re-exports its submodules with star imports
+"multivisor/zerorpc/*" = ["F403"]

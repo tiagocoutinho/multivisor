@@ -11,6 +11,24 @@ import Vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
 // Utilities
 import { defineConfig } from "vite";
 import { fileURLToPath, URL } from "node:url";
+import { execSync } from "node:child_process";
+
+// Version from the latest git tag (same source as setuptools_scm for the
+// Python package). MULTIVISOR_VERSION overrides it, e.g. for builds without
+// git history.
+function appVersion() {
+  if (process.env.MULTIVISOR_VERSION) {
+    return process.env.MULTIVISOR_VERSION;
+  }
+  try {
+    return execSync("git describe --tags --dirty", { stdio: "pipe" })
+      .toString()
+      .trim()
+      .replace(/^v/, "");
+  } catch {
+    return "unknown";
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -52,7 +70,10 @@ export default defineConfig({
       "unplugin-vue-router/data-loaders/basic",
     ],
   },
-  define: { "process.env": {} },
+  define: {
+    "process.env": {},
+    __APP_VERSION__: JSON.stringify(appVersion()),
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -82,5 +103,9 @@ export default defineConfig({
   build: {
     outDir: "multivisor/server/dist",
     emptyOutDir: true,
+  },
+  test: {
+    // e2e/ holds Playwright tests
+    include: ["src/**/*.test.js"],
   },
 });

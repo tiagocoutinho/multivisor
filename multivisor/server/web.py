@@ -1,36 +1,34 @@
-import hashlib
 import functools
 
-import gevent
 from blinker import signal
 from gevent.monkey import patch_all
 
 patch_all(thread=False)
 
-import os
 import logging
+import os
 
-from gevent import queue, sleep
-from gevent.pywsgi import WSGIServer
 from flask import (
     Flask,
-    render_template,
     Response,
-    request,
     json,
     jsonify,
-    session,
+    render_template,
+    request,
     send_from_directory,
+    session,
 )
 from flask_cors import CORS
+from gevent import queue, sleep
+from gevent.pywsgi import WSGIServer
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_simple
 
+from multivisor.multivisor import Multivisor
 from multivisor.signals import SIGNALS
 from multivisor.util import sanitize_url
-from multivisor.multivisor import Multivisor
-from .util import is_login_valid, login_required
 
+from .util import is_login_valid, login_required
 
 log = logging.getLogger("multivisor")
 
@@ -109,7 +107,7 @@ def shutdown_supervisor():
 @login_required(app)
 def restart_process():
     patterns = request.form["uid"].split(",")
-    procs = app.multivisor.restart_processes(*patterns)
+    app.multivisor.restart_processes(*patterns)
     return "OK"
 
 
