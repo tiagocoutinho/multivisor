@@ -150,6 +150,18 @@ line with:
 multivisor -c ./multivisor.conf
 ```
 
+To serve over HTTPS, pass a PEM certificate and key:
+
+```terminal
+$ multivisor -c multivisor.conf --ssl-cert cert.pem --ssl-key key.pem
+```
+
+(`--ssl-key` may be omitted if the key is in the certificate file). The CLI
+accepts `--url https://host:22000`. For the frontend dev server, set
+`MULTIVISOR_SSL_CERT` / `MULTIVISOR_SSL_KEY` (and `MULTIVISOR_API_URL` if the
+backend is HTTPS) before `npm run dev`.
+
+
 Start a browser pointing to [localhost:22000](http://localhost:22000).
 On a mobile device it should look something like the figure on the right.
 

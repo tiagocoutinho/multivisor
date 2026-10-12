@@ -12,6 +12,7 @@ import Vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
 import { defineConfig } from "vite";
 import { fileURLToPath, URL } from "node:url";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 // Version from the latest git tag (same source as setuptools_scm for the
 // Python package). MULTIVISOR_VERSION overrides it, e.g. for builds without
@@ -28,6 +29,17 @@ function appVersion() {
   } catch {
     return "unknown";
   }
+}
+
+// Optional HTTPS for the dev server: set MULTIVISOR_SSL_CERT and
+// MULTIVISOR_SSL_KEY to PEM files. MULTIVISOR_API_URL sets the backend to
+// proxy /api to (e.g. https://localhost:22000).
+function httpsOptions() {
+  const { MULTIVISOR_SSL_CERT: cert, MULTIVISOR_SSL_KEY: key } = process.env;
+  if (!cert || !key) {
+    return undefined;
+  }
+  return { cert: readFileSync(cert), key: readFileSync(key) };
 }
 
 // https://vitejs.dev/config/
@@ -82,9 +94,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    https: httpsOptions(),
     proxy: {
       "/api": {
-        target: "http://localhost:22000",
+        target: process.env.MULTIVISOR_API_URL || "http://localhost:22000",
         changeOrigin: true,
         secure: false,
       },

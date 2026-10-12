@@ -287,6 +287,18 @@ def get_parser(args):
         "--bind", help="[host][:port] (default: *:22000)", default="*:22000"
     )
     parser.add_argument(
+        "--ssl-cert",
+        help="PEM certificate (chain) file. Enables HTTPS",
+        dest="ssl_cert",
+        default=None,
+    )
+    parser.add_argument(
+        "--ssl-key",
+        help="PEM private key file (default: key is read from --ssl-cert)",
+        dest="ssl_key",
+        default=None,
+    )
+    parser.add_argument(
         "-c",
         help="configuration file",
         dest="config_file",
@@ -316,6 +328,16 @@ def main(args=None):
             status=2, message="configuration file does not exist. Bailing out!\n"
         )
 
+    if options.ssl_key and not options.ssl_cert:
+        parser.exit(status=2, message="--ssl-key requires --ssl-cert\n")
+    for path in (options.ssl_cert, options.ssl_key):
+        if path and not os.path.isfile(path):
+            parser.exit(status=2, message="file does not exist: {}\n".format(path))
+    ssl_args = {}
+    if options.ssl_cert:
+        ssl_args = dict(certfile=options.ssl_cert, keyfile=options.ssl_key)
+        app.config["SESSION_COOKIE_SECURE"] = True
+
     bind = sanitize_url(options.bind, host="*", port=22000)["url"]
 
     app.dispatcher = Dispatcher()
@@ -331,8 +353,10 @@ def main(args=None):
         app.secret_key = secret_key
 
     application = DebuggedApplication(app, evalex=True) if app.debug else app
-    http_server = WSGIServer(bind, application=application)
-    logging.info("Start accepting requests")
+    http_server = WSGIServer(bind, application=application, **ssl_args)
+    logging.info(
+        "Start accepting requests (%s)", "https" if ssl_args else "http"
+    )
     try:
         http_server.serve_forever()
     except KeyboardInterrupt:
