@@ -11,11 +11,20 @@ import "vuetify/styles";
 // Composables
 import { createVuetify } from "vuetify";
 import { aliases, mdi } from "vuetify/iconsets/mdi";
+import { en, zhHans } from "vuetify/locale";
 
-import { readThemePreference } from "@/stores/preferences";
+import {
+  readLocalePreference,
+  readThemePreference,
+} from "@/stores/preferences";
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+  locale: {
+    locale: readLocalePreference() === "zh" ? "zhHans" : "en",
+    fallback: "en",
+    messages: { en, zhHans },
+  },
   theme: {
     defaultTheme: readThemePreference(),
     themes: {

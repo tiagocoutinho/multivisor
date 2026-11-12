@@ -10,24 +10,31 @@
       ></v-toolbar-title>
       <template v-slot:append>
         <v-chip-group>
-          <v-chip color="indigo white--text" @click="text = ''">
+          <v-chip
+            color="indigo white--text"
+            :aria-label="t.clearDisplay"
+            :title="`${t.logSize} · ${t.clearDisplay}`"
+            @click="text = ''"
+          >
             {{ formatBytes(localSize) }}
             <v-icon icon="mdi-delete"></v-icon>
           </v-chip>
         </v-chip-group>
         <div class="d-flex align-center flex-grow-0 mx-3">
           <v-switch
-            :label="`Auto scroll ${autoScroll ? 'On' : 'Off'}`"
+            :label="`${t.autoScroll} ${autoScroll ? t.on : t.off}`"
             color="indigo"
             v-model="autoScroll"
             hide-details
             density="compact"
           >
-            <v-tooltip activator="parent" location="bottom">on / off</v-tooltip>
+            <v-tooltip activator="parent" location="bottom">
+              {{ t.on }} / {{ t.off }}
+            </v-tooltip>
           </v-switch>
         </div>
         <v-chip-group>
-          <v-chip class="bg-indigo text-white">
+          <v-chip class="bg-indigo text-white" :title="t.remoteLogSize">
             {{ formatBytes(remoteSize) }}
           </v-chip>
         </v-chip-group>
@@ -37,6 +44,7 @@
           icon
           remoteSize="small"
           @click="maximize = !maximize"
+          :aria-label="maximize ? t.collapse : t.expand"
           class="mr-2"
         >
           <v-icon v-if="maximize">mdi-chevron-down</v-icon>
@@ -72,8 +80,10 @@ import { storeToRefs } from "pinia";
 import { formatBytes } from "@/multivisor";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const text = ref("");
 const remoteSize = ref(0);
@@ -97,8 +107,9 @@ const title = computed(() => {
   if (!visible.value) {
     return "";
   }
-  return `${log.value.stream === "out" ? "O-log of " : "E-log of "}
-  ${log.value.process.name} on ${log.value.process.supervisor}`;
+  const streamLabel =
+    log.value.stream === "out" ? t.value.logOut : t.value.logErr;
+  return `${streamLabel} · ${log.value.process.name} · ${log.value.process.supervisor}`;
 });
 
 const windowSize = computed(() => {

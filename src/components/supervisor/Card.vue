@@ -7,7 +7,7 @@
 
       <v-toolbar-title
         >{{ supervisor.name }}
-        <span v-if="inactive">(offline)</span></v-toolbar-title
+        <span v-if="inactive">({{ t.offline }})</span></v-toolbar-title
       >
       <v-spacer></v-spacer>
 
@@ -17,13 +17,14 @@
             icon
             size="small"
             @click="restartSelectedProcesses()"
+            :aria-label="t.restartSelected"
             v-show="selectedProcesses.length"
             v-bind="props"
           >
             <v-icon>mdi-autorenew</v-icon>
           </v-btn>
         </template>
-        <span>(Re)start selected processes</span>
+        <span>{{ t.restartSelected }}</span>
       </v-tooltip>
       <v-tooltip location="top">
         <template v-slot:activator="{ props }">
@@ -31,13 +32,14 @@
             icon
             size="small"
             @click="stopSelectedProcesses()"
+            :aria-label="t.stopSelected"
             v-show="selectedProcesses.length"
             v-bind="props"
           >
             <v-icon>mdi-stop</v-icon>
           </v-btn>
         </template>
-        <span>Stop selected processes</span>
+        <span>{{ t.stopSelected }}</span>
       </v-tooltip>
       <v-tooltip location="top">
         <template v-slot:activator="{ props }">
@@ -45,13 +47,14 @@
             icon
             size="small"
             @click="clearSelectedProcesses()"
+            :aria-label="t.clearSelection"
             v-show="selectedProcesses.length"
             v-bind="props"
           >
             <v-icon>mdi-checkbox-blank-outline</v-icon>
           </v-btn>
         </template>
-        <span>Clear selection</span>
+        <span>{{ t.clearSelection }}</span>
       </v-tooltip>
       <v-tooltip location="top">
         <template v-slot:activator="{ props }">
@@ -59,29 +62,31 @@
             icon
             size="small"
             @click="selectAllProcesses()"
+            :aria-label="t.selectAll"
             v-show="
-              selectedProcesses.length < Object.keys(supervisor.processes).length
+              selectedProcesses.length <
+              Object.keys(supervisor.processes).length
             "
             v-bind="props"
           >
             <v-icon>mdi-check-all</v-icon>
           </v-btn>
         </template>
-        <span>Select all</span>
+        <span>{{ t.selectAll }}</span>
       </v-tooltip>
 
       <v-menu v-if="!inactive" location="bottom left">
         <template v-slot:activator="{ props }">
-          <v-btn icon v-bind="props">
+          <v-btn icon v-bind="props" :aria-label="t.nodeMenu">
             <v-icon>mdi-dots-vertical</v-icon>
           </v-btn>
         </template>
         <v-list>
           <v-list-item @click="updateSupervisor()">
-            <v-list-item-title>Update</v-list-item-title>
+            <v-list-item-title>{{ t.update }}</v-list-item-title>
           </v-list-item>
           <v-list-item @click="restartSupervisor()">
-            <v-list-item-title>Restart</v-list-item-title>
+            <v-list-item-title>{{ t.restartNode }}</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -93,8 +98,10 @@
 <script setup>
 import SupervisorList from "./List";
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const { supervisor } = defineProps(["supervisor"]);
 

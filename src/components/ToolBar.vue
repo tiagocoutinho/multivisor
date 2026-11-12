@@ -26,9 +26,10 @@
         <v-btn
           v-show="!showSearch"
           icon
+          :aria-label="t.openSearch"
           @click="showSearch = true"
         >
-            <v-icon>mdi-magnify</v-icon>
+          <v-icon>mdi-magnify</v-icon>
         </v-btn>
       </v-fade-transition>
 
@@ -38,22 +39,35 @@
           v-model.trim="search"
           prepend-inner-icon="mdi-magnify"
           density="compact"
-          label="Filter..."
+          :label="t.searchPh"
           variant="solo"
           hide-details
           single-line
           clearable
           autofocus
-          @keydown.esc="search = ''; showSearch = false"
+          @keydown.esc="
+            search = '';
+            showSearch = false;
+          "
           @click:clear="showSearch = false"
-          @blur="search && search.length ? showSearch : showSearch = false"
+          @blur="search && search.length ? showSearch : (showSearch = false)"
           class="search-input"
         ></v-text-field>
       </v-expand-x-transition>
-      <v-tooltip
-        location="bottom"
-        :text="themeActionLabel"
-      >
+      <v-tooltip location="bottom" :text="localeActionLabel">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            :aria-label="localeActionLabel"
+            @click="preferences.toggleLocale()"
+          >
+            <span :lang="preferences.locale === 'zh' ? 'en' : 'zh-CN'">
+              {{ preferences.locale === "zh" ? "EN" : "中文" }}
+            </span>
+          </v-btn>
+        </template>
+      </v-tooltip>
+      <v-tooltip location="bottom" :text="themeActionLabel">
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
@@ -84,9 +98,13 @@ import { LOGIN_PATH } from "@/router/auth";
 
 const store = useAppStore();
 const preferences = usePreferencesStore();
+const { labels: t } = storeToRefs(preferences);
 const router = useRouter();
 const themeActionLabel = computed(() =>
-  preferences.themeName === "dark" ? "切换到浅色主题" : "切换到深色主题",
+  preferences.themeName === "dark" ? t.value.toLight : t.value.toDark,
+);
+const localeActionLabel = computed(() =>
+  preferences.locale === "zh" ? t.value.toEnglish : t.value.toChinese,
 );
 
 const { name, search, isAuthenticated, useAuthentication } = storeToRefs(store);

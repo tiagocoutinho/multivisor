@@ -3,6 +3,9 @@ import { defineStore } from "pinia";
 import * as multivisor from "@/multivisor";
 import * as api from "@/api";
 
+export const MULTIVISOR_CONNECTION_ERROR =
+  "Couldn't connect to multivisor server, make sure it is running";
+
 export const useAppStore = defineStore("app", {
   state: () => ({
     multivisor: multivisor.nullMultivisor,
@@ -172,8 +175,7 @@ export const useAppStore = defineStore("app", {
       api.supervisorAction(uid, "restart");
     },
     setMultivisorError() {
-      this.error =
-        "Couldn't connect to multivisor server, make sure it is running";
+      this.error = MULTIVISOR_CONNECTION_ERROR;
     },
     logout() {
       this.setLogout();

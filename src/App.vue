@@ -16,28 +16,27 @@
       <v-list :items="drawerItems" density="compact" nav>
         <v-list-item
           prepend-icon="mdi-cog"
-          title="Processes"
+          :title="t.navProcesses"
           value="processes"
           router
           to="/process"
         ></v-list-item>
         <v-list-item
           prepend-icon="mdi-account-multiple"
-          title="Groups"
+          :title="t.navGroups"
           value="groups"
           router
           to="/group"
         ></v-list-item>
         <v-list-item
           prepend-icon="mdi-desktop-classic"
-          title="Supervisors"
+          :title="t.navNodes"
           value="supervisors"
           router
           to="/supervisor"
         ></v-list-item>
       </v-list>
     </v-navigation-drawer>
-    <AlertBar></AlertBar>
     <router-view></router-view>
     <NotificationBar></NotificationBar>
     <LogSheet></LogSheet>
@@ -46,12 +45,12 @@
 </template>
 
 <script setup>
-import { onMounted, watch } from "vue";
-import { useTheme } from "vuetify";
+import { computed, onMounted, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { useLocale, useTheme } from "vuetify";
 
 import ToolBar from "@/components/ToolBar";
 import NotificationBar from "@/components/NotificationBar";
-import AlertBar from "@/components/AlertBar";
 
 import LogSheet from "@/components/process/Log";
 import ProcessDetails from "@/components/process/Details";
@@ -63,7 +62,9 @@ const version = __APP_VERSION__;
 
 const store = useAppStore();
 const preferences = usePreferencesStore();
+const { labels: t } = storeToRefs(preferences);
 const theme = useTheme();
+const { current: vuetifyLocale } = useLocale();
 
 watch(
   () => preferences.themeName,
@@ -71,20 +72,29 @@ watch(
   { immediate: true },
 );
 
-const drawerItems = [
+watch(
+  () => preferences.locale,
+  (locale) => {
+    vuetifyLocale.value = locale === "zh" ? "zhHans" : "en";
+    document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  },
+  { immediate: true },
+);
+
+const drawerItems = computed(() => [
   {
-    title: "Processes",
+    title: t.value.navProcesses,
     value: "process",
   },
   {
-    title: "Supervisors",
+    title: t.value.navNodes,
     value: "Supervisor",
   },
   {
-    title: "Groups",
+    title: t.value.navGroups,
     value: "group",
   },
-];
+]);
 
 const drawer = ref(false);
 

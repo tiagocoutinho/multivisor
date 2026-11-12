@@ -13,7 +13,12 @@
     <template v-slot:append>
       <ProcessState :state="process.statename"></ProcessState>
       <v-btn-group density="compact" class="ml-2">
-        <v-btn variant="flat" icon @click="restartProcess(process)">
+        <v-btn
+          variant="flat"
+          icon
+          :aria-label="process.running ? t.restart : t.start"
+          @click="restartProcess(process)"
+        >
           <v-icon color="green">
             <template v-if="process.running">mdi-autorenew</template>
             <template v-else>mdi-play</template>
@@ -24,6 +29,7 @@
           icon
           @click="stopProcess(process)"
           :disabled="!process.running"
+          :aria-label="t.stop"
         >
           <v-icon :color="process.running ? 'red' : 'gray'">mdi-stop</v-icon>
         </v-btn>
@@ -32,6 +38,7 @@
             <v-btn
               variant="flat"
               icon="mdi-dots-vertical"
+              :aria-label="t.moreActions"
               v-bind="props"
             ></v-btn>
           </template>
@@ -39,7 +46,7 @@
             <v-list-item @click="viewDetails(process)">
               <v-list-item-title
                 ><v-icon size="small" class="mr-2">mdi-information</v-icon
-                >Info</v-list-item-title
+                >{{ t.info }}</v-list-item-title
               >
             </v-list-item>
             <v-list-item
@@ -49,7 +56,7 @@
               <v-list-item-title
                 ><v-icon size="small" class="mr-2"
                   >mdi-file-document-alert-outline</v-icon
-                >Log stdout</v-list-item-title
+                >{{ t.logOut }}</v-list-item-title
               >
             </v-list-item>
             <v-list-item
@@ -59,7 +66,7 @@
               <v-list-item-title
                 ><v-icon size="small" class="mr-2"
                   >mdi-file-document-alert-outline</v-icon
-                >Log stderr</v-list-item-title
+                >{{ t.logErr }}</v-list-item-title
               >
             </v-list-item>
           </v-list>
@@ -72,8 +79,10 @@
 <script setup>
 import ProcessState from "./State";
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const { process } = defineProps(["process"]);
 

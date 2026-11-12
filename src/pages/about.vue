@@ -1,38 +1,39 @@
 <template>
   <v-container>
-    <h1>About</h1>
-    A centralized supervisor UI (Web & CLI)
-    <p class="text-medium-emphasis">Version {{ version }}</p>
+    <h1>{{ t.about }}</h1>
+    {{ t.aboutDesc }}
+    <p class="text-medium-emphasis">{{ t.aboutVersion }} {{ version }}</p>
 
-    <h2>Features</h2>
+    <h2>{{ t.aboutContent.features }}</h2>
     <ul>
-      <li>Processes status always up to date</li>
-      <li>Reactivity through asynchronous actions</li>
-      <li>Notifications when state changes</li>
-      <li>Mobile aware, SPA web page</li>
-      <li>Powerful filters</li>
-      <li>Interactive CLI</li>
-      <li>Works on supervisor and supervisor-win</li>
+      <li>{{ t.aboutContent.featureStatus }}</li>
+      <li>{{ t.aboutContent.featureActions }}</li>
+      <li>{{ t.aboutContent.featureNotifications }}</li>
+      <li>{{ t.aboutContent.featureMobile }}</li>
+      <li>{{ t.aboutContent.featureFilters }}</li>
+      <li>{{ t.aboutContent.featureCli }}</li>
+      <li>{{ t.aboutContent.featurePlatforms }}</li>
     </ul>
 
-    <h2>Components</h2>
-    Multivisor is comprised of 3 components:
+    <h2>{{ t.aboutContent.components }}</h2>
+    {{ t.aboutContent.componentIntro }}
     <ul>
       <li>
-        WEB server: gathers information from all supervisors and provides a
-        dashboard like UI to the entire system multivisor
+        {{ t.aboutContent.componentWeb }}
       </li>
       <li>
-        RPC : an RPC extension to supervisor used to communicate between each
-        supervisord and multivisor web server
+        {{ t.aboutContent.componentRpc }}
       </li>
       <li>
-        CLI: an optional CLI which communicates with multivisor web server
+        {{ t.aboutContent.componentCli }}
       </li>
     </ul>
   </v-container>
 </template>
 
 <script setup>
+import { usePreferencesStore } from "@/stores/preferences";
+
+const { labels: t } = storeToRefs(usePreferencesStore());
 const version = __APP_VERSION__;
 </script>

@@ -1,7 +1,7 @@
 <template>
   <v-bottom-sheet inset v-model="visible">
     <v-card>
-      <v-card-title>Last updated {{ lastUpdate }}</v-card-title>
+      <v-card-title>{{ t.updatedAt(lastUpdate) }}</v-card-title>
       <v-list density="compact">
         <template v-for="(item, index) in items">
           <v-list-item
@@ -29,24 +29,26 @@ import { ref, watch, computed } from "vue";
 import { timeAgo } from "@/multivisor";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const startTime = () => {
   return new Date(process.value.start);
 };
 
-const items = [
-  { id: "name", label: "Name", color: "red" },
-  { value: startTime, label: "Started at (last)", color: "red darken-2" },
-  { id: "description", label: "Description", color: "orange" },
-  { id: "host", label: "Host", color: "green" },
-  { id: "supervisor", label: "Supervisor", color: "green darken-2" },
-  { id: "pid", label: "PID", color: "blue" },
-  { id: "exitstatus", label: "Exit status (last)", color: "blue darken-2" },
-  { id: "logfile", label: "Output log file", color: "purple" },
-  { id: "stderr_logfile", label: "Error log file", color: "purple darken-2" },
-];
+const items = computed(() => [
+  { id: "name", label: t.value.colName, color: "red" },
+  { value: startTime, label: t.value.dStart, color: "red darken-2" },
+  { id: "description", label: t.value.dDescription, color: "orange" },
+  { id: "host", label: t.value.dHost, color: "green" },
+  { id: "supervisor", label: t.value.colSupervisor, color: "green darken-2" },
+  { id: "pid", label: t.value.dPid, color: "blue" },
+  { id: "exitstatus", label: t.value.dExit, color: "blue darken-2" },
+  { id: "logfile", label: t.value.dOutLog, color: "purple" },
+  { id: "stderr_logfile", label: t.value.dErrLog, color: "purple darken-2" },
+]);
 
 const { processDetails } = storeToRefs(store);
 
@@ -64,7 +66,7 @@ const visible = computed({
 });
 
 const lastUpdate = computed(() => {
-  return timeAgo(processDetails.value.process.now);
+  return timeAgo(processDetails.value.process.now, t.value.timeAgo);
 });
 
 const showItem = (item) => {

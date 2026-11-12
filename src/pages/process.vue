@@ -8,8 +8,8 @@
         v-model="selectedProcesses"
         hide-actions
         select-all
-        no-results-text="Sorry, no matching processes found"
-        no-data-text="Sorry, there are no processes currently being monitored"
+        :no-results-text="t.noResult"
+        :no-data-text="t.emptyProcesses"
         must-sort
         show-select
         item-key="uid"
@@ -19,7 +19,7 @@
             label
             variant="flat"
             :color="stateColorMap[item.statename]"
-            :text="item.statename"
+            :text="t.stateNames[item.statename]"
             size="small"
           >
           </v-chip>
@@ -31,6 +31,7 @@
               size="small"
               @click="restartProcess(item)"
               class="mx-0 my-1"
+              :aria-label="item.running ? t.restart : t.start"
             >
               <v-icon color="green">
                 <template v-if="item.running">mdi-autorenew</template>
@@ -42,6 +43,7 @@
               size="small"
               @click="stopProcess(item)"
               :disabled="!item.running"
+              :aria-label="t.stop"
               class="mx-0 my-1"
             >
               <v-icon color="red">mdi-stop</v-icon>
@@ -51,6 +53,7 @@
                 <v-btn
                   icon="mdi-dots-vertical"
                   variant="flat"
+                  :aria-label="t.moreActions"
                   v-bind="props"
                 ></v-btn>
               </template>
@@ -58,14 +61,14 @@
                 <v-list-item @click="viewDetails(item)">
                   <v-list-item-title
                     ><v-icon size="small">mdi-information</v-icon>
-                    Info</v-list-item-title
+                    {{ t.info }}</v-list-item-title
                   >
                 </v-list-item>
                 <v-list-item @click="viewLog(item, 'out')" v-if="item.logfile">
                   <v-list-item-title
                     ><v-icon size="small"
                       >mdi-file-document-alert-outline</v-icon
-                    >Log stdout</v-list-item-title
+                    >{{ t.logOut }}</v-list-item-title
                   >
                 </v-list-item>
                 <v-list-item
@@ -75,7 +78,7 @@
                   <v-list-item-title
                     ><v-icon size="small"
                       >mdi-file-document-alert-outline</v-icon
-                    >Log stderr</v-list-item-title
+                    >{{ t.logErr }}</v-list-item-title
                   >
                 </v-list-item>
               </v-list>
@@ -91,8 +94,10 @@
 import { stateColorMap } from "@/multivisor";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const { processes, showGroup, showSupervisor } = defineProps({
   processes: { default: null },
@@ -105,18 +110,18 @@ const headers = computed(() => {
     {
       align: "left",
       sortable: true,
-      title: "Name",
+      title: t.value.colName,
       value: "name",
-      tooltip: "process name",
+      tooltip: t.value.colName,
     },
   ];
   if (showGroup) {
     header.push({
       align: "left",
       sortable: true,
-      title: "Group",
+      title: t.value.colGroup,
       value: "group",
-      tooltip: "process group",
+      tooltip: t.value.colGroup,
       class: "hidden-xs-only",
     });
   }
@@ -124,25 +129,25 @@ const headers = computed(() => {
     header.push({
       align: "left",
       sortable: true,
-      title: "Supervisor",
+      title: t.value.colSupervisor,
       value: "supervisor",
-      tooltip: "supervisor controlling process",
+      tooltip: t.value.colSupervisor,
       class: "hidden-xs-only",
     });
   }
   header.push({
     align: "left",
     sortable: true,
-    title: "State",
+    title: t.value.colState,
     value: "statename",
-    tooltip: "process state",
+    tooltip: t.value.colState,
   });
   header.push({
     align: "left",
     sortable: false,
-    title: "Actions",
+    title: t.value.colActions,
     value: "actions",
-    tooltip: "(re)start/stop/view log",
+    tooltip: t.value.colActions,
     width: "1%",
   });
   return header;

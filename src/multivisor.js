@@ -1,3 +1,5 @@
+import en from "./locales/en";
+
 export const stateColorMap = {
   STOPPED: "red",
   STARTING: "blue",
@@ -25,23 +27,7 @@ export const formatBytes = (bytes, decimals) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };
 
-export const timeAgo = (timestamp) => {
-  var templates = {
-    prefix: "",
-    suffix: " ago",
-    seconds: "less than a minute",
-    minute: "about a minute",
-    minutes: "%d minutes",
-    hour: "about an hour",
-    hours: "about %d hours",
-    day: "a day",
-    days: "%d days",
-    month: "about a month",
-    months: "%d months",
-    year: "about a year",
-    years: "%d years",
-  };
-
+export const timeAgo = (timestamp, templates = en.timeAgo) => {
   var template = function (t, n) {
     return templates[t] && templates[t].replace(/%d/i, Math.abs(Math.round(n)));
   };
