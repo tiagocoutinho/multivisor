@@ -6,6 +6,7 @@
       <v-btn
         icon="mdi-autorenew"
         size="small"
+        :aria-label="t.restartSelected"
         @click="restartSelected()"
         v-show="selectedGroupProcesses.length"
       >
@@ -15,6 +16,7 @@
       <v-btn
         icon="mdi-stop"
         size="small"
+        :aria-label="t.stopSelected"
         @click="stopSelected()"
         v-show="selectedGroupProcesses.length"
       >
@@ -23,6 +25,7 @@
       <v-btn
         icon="mdi-checkbox-blank-outline"
         size="small"
+        :aria-label="t.clearSelection"
         @click="clearSelected()"
         v-show="selectedGroupProcesses.length"
       >
@@ -31,6 +34,7 @@
       <v-btn
         icon="mdi-check-all"
         size="small"
+        :aria-label="t.selectAll"
         @click="selectAll()"
         v-show="selectedGroupProcesses.length < group.processes.length"
       >
@@ -45,9 +49,11 @@
 
 <script setup>
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 import GroupList from "./List";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const { group } = defineProps(["group"]);
 
@@ -62,11 +68,9 @@ const selectedGroupProcesses = computed(() => {
 
 const restartSelected = () => {
   store.restartProcesses(selectedProcesses.value);
-  clearSelected();
 };
 const stopSelected = () => {
   store.stopProcesses(selectedProcesses.value);
-  clearSelected();
 };
 const selectAll = () => {
   let puids = group.processes.reduce((processes, process) => {

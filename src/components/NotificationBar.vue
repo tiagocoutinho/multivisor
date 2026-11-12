@@ -1,10 +1,6 @@
 <template>
-  <v-snackbar
-    :timeout="5000"
-    :color="color"
-    v-model="visible"
-    :text="lastNotification.message"
-  >
+  <v-snackbar :timeout="5000" :color="color" v-model="visible">
+    {{ lastNotification.message }}
   </v-snackbar>
 </template>
 

@@ -7,11 +7,21 @@ export const supervisorAction = (id, action) => {
 export const processAction = (uid, action) => {
   let form = new FormData();
   form.append("uid", uid);
-  fetch("/api/process/" + action, { method: "POST", body: form });
+  return fetch("/api/process/" + action, { method: "POST", body: form });
 };
 
 export const load = () => {
   return fetch("/api/data");
+};
+
+// /api/refresh 会让服务端向各 supervisor 节点发起一次 RPC 刷新并返回最新快照；
+// 事件流异常（如心跳死锁）时依然可用，是前端轮询与健康判定的数据源。
+export const refreshData = (timeoutMs = 10000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch("/api/refresh", { signal: controller.signal }).finally(() => {
+    clearTimeout(timer);
+  });
 };
 
 export const streamTo = (eventHandler) => {
@@ -31,6 +41,13 @@ export const streamTo = (eventHandler) => {
 
 export const auth = () => {
   return fetch("/api/auth");
+};
+
+// /api/admin/reload 让后端丢弃并重建 Supervisor 连接对象（全新 run() 循环 +
+// 全新事件订阅），可解开事件流静默（如心跳死锁）状态。
+// 注意：健康状态下调用会形成新旧两套事件循环并行处理，仅限手动恢复使用。
+export const adminReload = () => {
+  return fetch("/api/admin/reload");
 };
 
 export const login = (form) => {

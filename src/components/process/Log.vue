@@ -1,187 +1,197 @@
 <template>
-  <v-bottom-sheet v-model="visible">
-    <v-toolbar
+  <div class="inspector-log-toolbar">
+    <v-text-field
+      v-model="logSearch"
+      class="inspector-log-search"
+      clearable
       density="compact"
-      :color="log.stream === 'err' ? 'orange' : 'blue'"
+      :disabled="!active"
+      hide-details
+      :label="labels.searchLogs"
+      prepend-inner-icon="mdi-magnify"
+      single-line
+      variant="outlined"
+    ></v-text-field>
+    <v-switch
+      v-model="autoScroll"
+      color="primary"
+      density="compact"
+      :disabled="!active"
+      hide-details
+      :label="labels.autoScroll"
+    ></v-switch>
+    <span class="inspector-log-meta nums">
+      {{ labels.logSize }} {{ localSizeText }} · {{ labels.remoteLogSize }}
+      {{ remoteSizeText }} · {{ visibleLogLines.length }} {{ labels.logLines }}
+    </span>
+    <v-spacer></v-spacer>
+    <v-btn
+      :disabled="!active || !visibleLogLines.length"
+      prepend-icon="mdi-content-copy"
+      size="small"
+      variant="text"
+      @click="copyVisibleLog"
     >
-      <v-toolbar-title
-        :text="title"
-        class="log-toolbar-title"
-      ></v-toolbar-title>
-      <template v-slot:append>
-        <v-chip-group>
-          <v-chip color="indigo white--text" @click="text = ''">
-            {{ formatBytes(localSize) }}
-            <v-icon icon="mdi-delete"></v-icon>
-          </v-chip>
-        </v-chip-group>
-        <div class="d-flex align-center flex-grow-0 mx-3">
-          <v-switch
-            :label="`Auto scroll ${autoScroll ? 'On' : 'Off'}`"
-            color="indigo"
-            v-model="autoScroll"
-            hide-details
-            density="compact"
-          >
-            <v-tooltip activator="parent" location="bottom">on / off</v-tooltip>
-          </v-switch>
-        </div>
-        <v-chip-group>
-          <v-chip class="bg-indigo text-white">
-            {{ formatBytes(remoteSize) }}
-          </v-chip>
-        </v-chip-group>
-        <!-- <span>Remote log size</span>
-      </v-tooltip> -->
-        <v-btn
-          icon
-          remoteSize="small"
-          @click="maximize = !maximize"
-          class="mr-2"
-        >
-          <v-icon v-if="maximize">mdi-chevron-down</v-icon>
-          <v-icon v-else>mdi-chevron-up</v-icon>
-        </v-btn>
-      </template>
-    </v-toolbar>
-    <v-progress-linear
-      :indeterminate="active"
-      height="1"
-      class="my-0"
-      bg-color="white"
-      color="deep-purple"
+      {{ labels.copy }}
+    </v-btn>
+    <v-btn
+      :disabled="!active || (!cleared && !visibleLogLines.length)"
+      prepend-icon="mdi-delete-outline"
+      size="small"
+      variant="text"
+      @click="clearDisplayedLog"
     >
-    </v-progress-linear>
-    <v-card>
-      <v-card-text
-        :style="windowSize"
-        ref="log-content"
-        class="overflow-y-auto bg-black text-white px-2 py-0"
-      >
-        <pre class="log-console">
-          {{ text }}
-        </pre>
-      </v-card-text>
-    </v-card>
-  </v-bottom-sheet>
+      {{ labels.clearDisplay }}
+    </v-btn>
+  </div>
+
+  <div
+    ref="logPaneElement"
+    :aria-label="stream === 'err' ? labels.logErr : labels.logOut"
+    class="inspector-log-pane"
+  >
+    <div v-if="copyMessage" class="inspector-log-error" role="status">
+      {{ copyMessage }}
+    </div>
+    <div
+      v-if="logErrorMessage"
+      class="c-danger inspector-log-error"
+      role="alert"
+    >
+      {{ logErrorMessage }}
+    </div>
+    <pre v-if="visibleLogLines.length">{{ visibleLogLines.join("\n") }}</pre>
+    <div v-else class="inspector-log-empty">{{ emptyMessage }}</div>
+  </div>
 </template>
 
 <script setup>
-import { computed, useTemplateRef, onMounted } from "vue";
-import { storeToRefs } from "pinia";
+import { computed, nextTick, ref, useTemplateRef, watch } from "vue";
+
 import { formatBytes } from "@/multivisor";
+import { useProcessLog } from "@/composables/useProcessLog";
 
-import { useAppStore } from "@/stores/app";
-
-const store = useAppStore();
-
-const text = ref("");
-const remoteSize = ref(0);
-const maximize = ref(false);
-const autoScroll = ref(true);
-const eventSource = ref(null);
-
-const { log } = storeToRefs(store);
-const logContent = useTemplateRef("log-content");
-
-const visible = computed({
-  get() {
-    return log.value.visible;
+const props = defineProps({
+  active: { type: Boolean, default: false },
+  labels: { type: Object, required: true },
+  stream: {
+    type: String,
+    default: "out",
+    validator: (value) => value === "out" || value === "err",
   },
-  set(newValue) {
-    store.setLogVisible(newValue);
-  },
+  uid: { type: String, default: "" },
 });
 
-const title = computed(() => {
-  if (!visible.value) {
-    return "";
+const uid = computed(() => props.uid);
+const stream = computed(() => props.stream);
+const active = computed(() => props.active);
+const {
+  text: logText,
+  remoteSize,
+  localSize,
+  error: logError,
+  autoScroll,
+  clearDisplay,
+} = useProcessLog({ uid, stream, active });
+
+const logPaneElement = useTemplateRef("logPaneElement");
+const logSearch = ref("");
+const cleared = ref(false);
+const copyState = ref("");
+
+const visibleLogLines = computed(() => {
+  const query = (logSearch.value || "").trim().toLowerCase();
+  if (!logText.value) {
+    return [];
   }
-  return `${log.value.stream === "out" ? "O-log of " : "E-log of "}
-  ${log.value.process.name} on ${log.value.process.supervisor}`;
-});
-
-const windowSize = computed(() => {
-  let h = window.innerHeight;
-  return `height: ${maximize.value ? h - 80 : Math.min(h / 3, 300)}px;`;
-});
-
-const localSize = computed(() => {
-  return text.value.length;
-});
-
-const active = computed(() => {
-  return eventSource.value && eventSource.value.readyState < 2;
-});
-
-const appendLogMessage = (data) => {
-  remoteSize.value = data.size;
-  if (data.message) {
-    text.value += data.message;
-    /* At 10Mb, cut log to 9Mb */
-    if (text.length > 1e7) {
-      text.value = text.value.substr(-9000000);
-    }
+  const lines = logText.value.split("\n");
+  if (!query) {
+    return lines;
   }
-};
+  return lines.filter((line) => line.toLowerCase().includes(query));
+});
 
-const scrollToBottom = () => {
-  if (logContent.value) {
-    nextTick(() => {
-      logContent.value.$el.scrollTop = logContent.value.$el.scrollHeight;
-    });
-  } else {
-    // not mounted yet, or the element was unmounted (e.g. by v-if)
+const localSizeText = computed(() => formatBytes(localSize.value));
+const remoteSizeText = computed(() => formatBytes(remoteSize.value));
+const copyMessage = computed(() => {
+  if (copyState.value === "success") {
+    return props.labels.copied;
   }
-};
+  if (copyState.value === "failed") {
+    return props.labels.copyFailed;
+  }
+  return "";
+});
+const logErrorMessage = computed(() => {
+  if (logError.value === "invalid-log-message") {
+    return props.labels.invalidLogMessage;
+  }
+  if (logError.value === "log-stream-failed") {
+    return props.labels.logStreamFailed;
+  }
+  return "";
+});
+const emptyMessage = computed(() => {
+  if (logSearch.value) {
+    return props.labels.noMatchingLogs;
+  }
+  return cleared.value ? props.labels.logCleared : props.labels.notReceivedYet;
+});
 
-const viewLog = () => {
-  if (eventSource.value !== null) {
-    text.value = "";
-    remoteSize.value = 0;
-    eventSource.value.close();
-  }
-  if (!visible.value) {
+async function copyVisibleLog() {
+  if (!navigator.clipboard) {
+    copyState.value = "failed";
     return;
   }
+  try {
+    await navigator.clipboard.writeText(visibleLogLines.value.join("\n"));
+    copyState.value = "success";
+  } catch {
+    copyState.value = "failed";
+  }
+}
 
-  let newEventSource = new EventSource(
-    `/api/process/log/${log.value.stream}/tail/${log.value.process.uid}`,
-  );
-  newEventSource.onmessage = (event) => {
-    let data = JSON.parse(event.data);
-    appendLogMessage(data);
-    if (autoScroll.value) {
-      scrollToBottom();
-    }
-  };
-  newEventSource.onopen = (event) => {
-    console.debug(
-      log.value.stream + " stream opened for " + log.value.process.uid,
-    );
-  };
-  newEventSource.onclose = (event) => {
-    eventSource.value = null;
-  };
-  newEventSource.onerror = (event) => {
-    eventSource.value.close();
-    eventSource.value = null;
-  };
-  eventSource.value = newEventSource;
-};
+function clearDisplayedLog() {
+  clearDisplay();
+  cleared.value = true;
+  copyState.value = "";
+}
 
-onMounted(() => {
-  watch(visible, () => {
-    viewLog();
-  });
+watch(
+  [uid, stream, active],
+  () => {
+    cleared.value = false;
+    copyState.value = "";
+  },
+  { flush: "sync" },
+);
+
+watch(logText, (text) => {
+  if (text) {
+    cleared.value = false;
+  }
 });
+
+watch(
+  [logText, logSearch, autoScroll, active],
+  () => {
+    if (!autoScroll.value) {
+      return;
+    }
+    nextTick(() => {
+      const pane = logPaneElement.value;
+      if (pane) {
+        pane.scrollTop = pane.scrollHeight;
+      }
+    });
+  },
+  { flush: "post" },
+);
 </script>
 
 <style scoped>
-.log-console {
-  font-size: small;
-}
-.log-toolbar-title {
-  font-size: medium;
+.inspector-log-error {
+  font-size: 12px;
+  padding: 4px 0 8px;
 }
 </style>

@@ -1,83 +1,95 @@
 <template>
   <v-app>
-    <ToolBar v-model:drawer="drawer"></ToolBar>
-    <v-navigation-drawer expand-on-hover permanent rail>
-      <v-list>
-        <v-list-item
-          prepend-avatar="@/assets/multivisor.png"
-          :subtitle="`v${version}`"
-          title="Multivisor"
-          router
-          to="/about"
-        ></v-list-item>
-      </v-list>
-      <v-divider></v-divider>
-      <v-list :items="drawerItems" density="compact" nav>
-        <v-list-item
-          prepend-icon="mdi-cog"
-          title="Processes"
-          value="processes"
-          router
-          to="/process"
-        ></v-list-item>
-        <v-list-item
-          prepend-icon="mdi-account-multiple"
-          title="Groups"
-          value="groups"
-          router
-          to="/group"
-        ></v-list-item>
-        <v-list-item
-          prepend-icon="mdi-desktop-classic"
-          title="Supervisors"
-          value="supervisors"
-          router
-          to="/supervisor"
-        ></v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-    <AlertBar></AlertBar>
+    <div class="bg-blobs" aria-hidden="true"></div>
+    <ToolBar @about="aboutVisible = true"></ToolBar>
     <router-view></router-view>
+    <Footer v-if="!isLogin" @about="aboutVisible = true"></Footer>
     <NotificationBar></NotificationBar>
-    <LogSheet></LogSheet>
-    <ProcessDetails></ProcessDetails>
+    <AboutDialog v-model="aboutVisible"></AboutDialog>
+    <ConfirmDialog></ConfirmDialog>
+    <ProcessInspector></ProcessInspector>
   </v-app>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useLocale, useTheme } from "vuetify";
 
 import ToolBar from "@/components/ToolBar";
+import Footer from "@/components/Footer";
+import AboutDialog from "@/components/AboutDialog";
 import NotificationBar from "@/components/NotificationBar";
-import AlertBar from "@/components/AlertBar";
-
-import LogSheet from "@/components/process/Log";
-import ProcessDetails from "@/components/process/Details";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ProcessInspector from "@/components/process/Inspector";
 
 import { useAppStore } from "@/stores/app";
-
-const version = __APP_VERSION__;
+import { usePreferencesStore } from "@/stores/preferences";
+import { useInspectorStore } from "@/stores/inspector";
+import { authRedirect, LOGIN_PATH } from "@/router/auth";
 
 const store = useAppStore();
+const inspector = useInspectorStore();
+const route = useRoute();
+const router = useRouter();
+const preferences = usePreferencesStore();
+const isLogin = computed(() => route.path === LOGIN_PATH);
+const aboutVisible = ref(false);
+const theme = useTheme();
+const { current: vuetifyLocale } = useLocale();
 
-const drawerItems = [
-  {
-    title: "Processes",
-    value: "process",
-  },
-  {
-    title: "Supervisors",
-    value: "Supervisor",
-  },
-  {
-    title: "Groups",
-    value: "group",
-  },
-];
+watch(
+  () => preferences.themeName,
+  (name) => theme.change(name),
+  { immediate: true },
+);
 
-const drawer = ref(false);
+watch(
+  () => preferences.locale,
+  (locale) => {
+    vuetifyLocale.value = locale === "zh" ? "zhHans" : "en";
+    document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  },
+  { immediate: true },
+);
 
-onMounted(() => {
-  store.init();
+watch(
+  () => store.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated !== false) {
+      return;
+    }
+    const redirect = authRedirect(
+      route.path,
+      store.useAuthentication,
+      isAuthenticated,
+    );
+    if (redirect) {
+      router.replace(redirect);
+    }
+  },
+);
+
+watch(
+  () => route.path,
+  () => {
+    inspector.close();
+    store.clearSelected();
+  },
+);
+let unmounted = false;
+
+onMounted(async () => {
+  // 先完成路由认证，避免较晚返回的认证查询覆盖数据接口的 401 状态。
+  await router.isReady();
+  if (!unmounted) {
+    store.init();
+  }
+});
+
+onUnmounted(() => {
+  unmounted = true;
+  inspector.close();
+  store.disposeDataConnection();
 });
 </script>

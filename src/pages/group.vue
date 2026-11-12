@@ -3,8 +3,8 @@
     <v-data-iterator
       item-key="name"
       :items="filteredGroups"
-      no-results-text="Sorry, no matching processes found"
-      no-data-text="Sorry, there are no processes currently being monitored"
+      :no-results-text="t.noResult"
+      :no-data-text="t.emptyProcesses"
     >
       <v-row>
         <v-col
@@ -26,8 +26,10 @@
 import GroupCard from "@/components/group/Card";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const { filteredGroups } = storeToRefs(store);
 </script>

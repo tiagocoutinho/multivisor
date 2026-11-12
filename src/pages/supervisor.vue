@@ -3,8 +3,8 @@
     <v-data-iterator
       item-key="name"
       :items="supervisorsGroups"
-      no-results-text="Sorry, no matching processes found"
-      no-data-text="Sorry, there are no processes currently being monitored"
+      :no-results-text="t.noResult"
+      :no-data-text="t.emptyProcesses"
     >
       <v-row>
         <v-col
@@ -25,8 +25,10 @@
 import SupervisorCard from "@/components/supervisor/Card";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
 
 const supervisorsGroups = computed(() => {
   let supervisors = store.supervisors;

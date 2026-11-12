@@ -1,3 +1,5 @@
+import en from "./locales/en";
+
 export const stateColorMap = {
   STOPPED: "red",
   STARTING: "blue",
@@ -16,6 +18,41 @@ export const notificationColorMap = {
   ERROR: "error",
 };
 
+export const ALERT_STATES = new Set(["FATAL", "BACKOFF", "UNKNOWN"]);
+
+export const stateClassMap = {
+  RUNNING: "c-running",
+  FATAL: "c-danger",
+  BACKOFF: "c-attention",
+  UNKNOWN: "c-attention",
+  STARTING: "c-info",
+  STOPPING: "c-info",
+  STOPPED: "c-neutral",
+  EXITED: "c-neutral",
+};
+
+export const countRunningProcesses = (processes) =>
+  processes.filter((process) => process.statename === "RUNNING").length;
+
+export const countAlertProcesses = (processes) =>
+  processes.filter((process) => ALERT_STATES.has(process.statename)).length;
+
+export const groupProcessesBySupervisor = (processes) => {
+  const groups = new Map();
+  for (const process of processes) {
+    const groupedProcesses = groups.get(process.supervisor);
+    if (groupedProcesses) {
+      groupedProcesses.push(process);
+    } else {
+      groups.set(process.supervisor, [process]);
+    }
+  }
+  return Array.from(groups, ([supervisor, groupedProcesses]) => ({
+    supervisor,
+    processes: groupedProcesses,
+  }));
+};
+
 export const formatBytes = (bytes, decimals) => {
   if (bytes === 0) return "0 b";
   let k = 1024;
@@ -25,23 +62,7 @@ export const formatBytes = (bytes, decimals) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };
 
-export const timeAgo = (timestamp) => {
-  var templates = {
-    prefix: "",
-    suffix: " ago",
-    seconds: "less than a minute",
-    minute: "about a minute",
-    minutes: "%d minutes",
-    hour: "about an hour",
-    hours: "about %d hours",
-    day: "a day",
-    days: "%d days",
-    month: "about a month",
-    months: "%d months",
-    year: "about a year",
-    years: "%d years",
-  };
-
+export const timeAgo = (timestamp, templates = en.timeAgo) => {
   var template = function (t, n) {
     return templates[t] && templates[t].replace(/%d/i, Math.abs(Math.round(n)));
   };
