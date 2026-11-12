@@ -27,7 +27,6 @@
       --mv-bar-bg: rgba(13, 17, 23, 0.55);               /* 顶栏/底栏 */
       --mv-table-bg: #161b22;                            /* 数据区实底 */
       --mv-table-border: #30363d;
-      --mv-table-blur: none;
       --mv-table-shadow: none;
       --mv-overlay-bg: #161b22;                         /* 弹层 */
       --mv-overlay-border: #30363d;
@@ -43,9 +42,6 @@
       --mv-tab-hover: rgba(255, 255, 255, 0.06);
       --mv-focus: #58a6ff;                               /* 聚焦轮廓 */
       --mv-chip-bg: rgba(255, 255, 255, 0.07);           /* 状态 chip 中性底 */
-      --mv-th-bg: rgba(255, 255, 255, 0.04);             /* 表头锚点 */
-      --mv-th-color: rgba(230, 237, 243, 0.62);
-      --mv-th-border: rgba(255, 255, 255, 0.10);
       --mv-fatal-bg: rgba(229, 138, 124, 0.08);          /* FATAL 行 tint（深色版语义色透明版，浓度略高以在暗底可见） */
       --mv-fatal-hover: rgba(229, 138, 124, 0.14);
       --mv-alert-bg: rgba(217, 170, 82, 0.07);           /* 需关注行 tint */
@@ -91,7 +87,6 @@
       --mv-bar-bg: rgba(255, 255, 255, 0.68);
       --mv-table-bg: #ffffff;                           /* 数据区保持稳定底色 */
       --mv-table-border: rgba(31, 35, 40, 0.09);
-      --mv-table-blur: none;
       --mv-table-shadow: 0 1px 3px rgba(31, 35, 40, 0.06);
       --mv-overlay-bg: #ffffff;
       --mv-overlay-border: rgba(31, 35, 40, 0.12);
@@ -107,9 +102,6 @@
       --mv-tab-hover: rgba(31, 35, 40, 0.06);
       --mv-focus: #0969da;
       --mv-chip-bg: rgba(31, 35, 40, 0.055);
-      --mv-th-bg: rgba(31, 35, 40, 0.035);
-      --mv-th-color: rgba(31, 35, 40, 0.66);
-      --mv-th-border: rgba(31, 35, 40, 0.10);
       --mv-fatal-bg: rgba(207, 34, 46, 0.05);
       --mv-fatal-hover: rgba(207, 34, 46, 0.09);
       --mv-alert-bg: rgba(154, 103, 0, 0.045);
@@ -207,38 +199,6 @@
       backdrop-filter: none;
     }
 
-    /* 表格行 hover */
-    .v-data-table .v-data-table__tr:hover > .v-data-table__td { background: var(--mv-row-hover); }
-    /* 行 hover 背景过渡（dense-dashboard Motion：80-120ms）。
-       !important 压制 Vuetify 自带 td 全属性 0.28s 过渡（对行 hover 太黏） */
-    .v-data-table .v-data-table__td { transition: background-color 0.12s ease !important; }
-
-    /* 语义行 tint：FATAL / 需关注行在滚动扫描中自动浮出；正常运行行不染色。
-       需覆盖普通行 hover（同特异性、置于其后取胜），tint 行 hover 保持色相深化 */
-    .v-data-table .v-data-table__tr.row-fatal > .v-data-table__td { background: var(--mv-fatal-bg); }
-    .v-data-table .v-data-table__tr.row-alert > .v-data-table__td { background: var(--mv-alert-bg); }
-    .v-data-table .v-data-table__tr.row-fatal:hover > .v-data-table__td { background: var(--mv-fatal-hover); }
-    .v-data-table .v-data-table__tr.row-alert:hover > .v-data-table__td { background: var(--mv-alert-hover); }
-
-    /* 表头 = 结构锚点：微底色 + 加深文字 + 底边框 */
-    .v-data-table .v-data-table__th {
-      background: var(--mv-th-bg);
-      color: var(--mv-th-color) !important;
-      font-weight: 500;
-      border-bottom: 1px solid var(--mv-th-border) !important;
-    }
-
-    /* 数据区在两个主题下都使用稳定实底，内部表格透明，由卡底承载文字。 */
-    .v-card.table-card {
-      background: var(--mv-table-bg) !important;
-      backdrop-filter: var(--mv-table-blur);
-      -webkit-backdrop-filter: var(--mv-table-blur);
-      border: 1px solid var(--mv-table-border);
-      border-radius: 12px;
-      box-shadow: var(--mv-table-shadow);
-    }
-    .v-data-table { background: transparent !important; }
-
     /* 状态 chip：中性微底 + 状态色圆点（currentColor 跟随文字色）+ 状态色文字 ——
        dense-dashboard "status dots use semantic color; backgrounds stay neutral" */
     .st-chip { background: var(--mv-chip-bg) !important; }
@@ -256,7 +216,6 @@
       background: var(--mv-btn-hover-bg);
       transition: background-color 0.15s ease;
     }
-    .v-data-table__td .v-btn .v-icon { font-size: 16px !important; }
     .v-btn--variant-tonal:not(.v-btn--disabled):hover,
     .v-btn--variant-text:not(.v-btn--disabled):hover {
       filter: var(--mv-btn-hover-filter);
@@ -303,12 +262,6 @@
     /* 顶栏 tabs：贴底下划线指示条 */
     .v-app-bar .v-tabs .v-tab { text-transform: none; letter-spacing: 0.01em; }
     .v-app-bar .v-tabs__slider { height: 2px; }
-
-    /* 选中行：品牌 tint + 2px 左边框 */
-    .v-data-table .v-data-table__tr--selected {
-      background: var(--mv-sel-bg) !important;
-      box-shadow: inset 2px 0 0 0 var(--mv-sel-bar);
-    }
 
     /* 节点卡：hover 边框强调 + 阴影/上浮（阴影量随主题变量，深色为 none） */
     .node-card {
@@ -368,7 +321,7 @@
 
     /* 主题切换软过渡：仅容器级背景/前景色 0.25s（行级 0.12s 不受影响；
        渐变（光斑）不可过渡，切换瞬时跳变，视觉可接受） */
-    .v-application, .v-card, .v-app-bar, .v-footer, .v-data-table, .table-card, .bg-transparent {
+    .v-application, .v-card, .v-app-bar, .v-footer, .proc-card, .bg-transparent {
       transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
     }
 
@@ -388,7 +341,9 @@
     }
     .health-strip-label { font-size: 13px; color: var(--mv-c-neutral); }
     .health-strip .v-btn { letter-spacing: 0; text-transform: none; }
-    .node-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    /* auto-fill 而非 auto-fit：空轨道保留、不折叠，少节点时卡片只占自己的列，
+       不会 1fr 吃满整行（单节点平铺整行的缺陷）；与 .process-grid 轨道行为一致 */
+    .node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
     .node-grid .node-card { min-width: 0; }
     .node-card .v-card-item { min-height: 64px; padding: 12px 16px 8px; }
     .node-card .v-card-title { font-size: 15px; overflow-wrap: anywhere; white-space: normal; }
@@ -439,26 +394,39 @@
     .process-actions .v-btn { text-transform: none; letter-spacing: 0; }
     .process-actions .v-btn--icon { width: 32px; height: 32px; }
     .process-actions .v-icon { font-size: 17px !important; }
-    .table-card .v-data-table__td { height: 44px !important; }
-    .table-card .v-data-table__td, .table-card .v-data-table__th { font-size: 13px; }
-    .v-data-table .v-data-table__tr.row-selected > .v-data-table__td { background: var(--mv-sel-bg); }
-    .v-data-table .v-data-table__tr.row-inspected > .v-data-table__td { box-shadow: inset 0 -1px 0 var(--mv-sel-bar); }
-    .table-bottom-note { padding: 10px 16px; border-top: 1px solid var(--mv-table-border); }
-    .node-context { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 16px; }
-    .node-context .v-breadcrumbs { min-width: 0; padding: 0; }
-    .node-context .v-breadcrumbs-item { overflow-wrap: anywhere; }
-    .node-context-actions { display: flex; gap: 8px; margin-left: auto; }
-    .mobile-process-list { display: grid; gap: 10px; }
-    .mobile-process {
-      padding: 14px; background: var(--mv-table-bg); border: 1px solid var(--mv-table-border);
-      border-radius: 8px; min-width: 0;
+    /* 节点下钻头（v2.4）：长节点名换行保护 + 在线状态不被压缩 */
+    .node-heading h2 { overflow-wrap: anywhere; }
+    .node-heading .node-connection { flex: none; }
+    /* 进程卡片网格（v2.4）：桌面/窄屏统一一套卡片，auto-fill 自适应列数 */
+    .process-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .process-grid > .mobile-empty { grid-column: 1 / -1; }
+    .proc-card {
+      display: flex; flex-direction: column; min-width: 0;
+      padding: 12px 14px; border-radius: 12px;
+      background: var(--mv-table-bg); border: 1px solid var(--mv-table-border);
+      box-shadow: var(--mv-table-shadow);
+      transition: background-color 0.12s ease, border-color 0.15s ease;
     }
-    .mobile-process.row-selected { background: var(--mv-sel-bg); border-color: var(--mv-sel-bar); }
-    .mobile-process-top { display: flex; align-items: center; gap: 8px; }
-    .mobile-process-top .v-checkbox-btn { flex: none; width: 28px; }
-    .mobile-process-name { flex: 1; min-width: 0; font-size: 14px; }
-    .mobile-process-meta { font-size: 12px; color: var(--mv-c-neutral); overflow-wrap: anywhere; margin: 6px 0 10px 36px; }
-    .mobile-process-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-left: 36px; }
+    .proc-card-top { display: flex; align-items: center; gap: 8px; }
+    .proc-card-top .v-checkbox-btn { flex: none; width: 28px; }
+    .proc-card-name { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 500; }
+    .proc-card-top .st-chip { flex: none; }
+    .proc-card-meta { font-size: 12px; color: var(--mv-c-neutral); overflow-wrap: anywhere; margin-top: 6px; }
+    .proc-card-stats { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--mv-c-neutral); margin-top: 4px; }
+    .proc-card-footer {
+      display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+      border-top: 1px solid var(--mv-table-border); margin-top: 12px; padding-top: 10px;
+    }
+    /* 语义卡片 tint：FATAL / 需关注卡在网格扫描中自动浮出（沿用 v2.3 行 tint 语言）；
+       普通卡 hover 先声明，tint 卡规则置后取胜，tint 卡 hover 色相深化 */
+    .proc-card:hover { background: var(--mv-row-hover); }
+    .proc-card.is-fatal { background: var(--mv-fatal-bg); }
+    .proc-card.is-alert { background: var(--mv-alert-bg); }
+    .proc-card.is-fatal:hover { background: var(--mv-fatal-hover); }
+    .proc-card.is-alert:hover { background: var(--mv-alert-hover); }
+    /* 选中卡：品牌 tint + 2px 左边框（!important 覆盖状态 tint）；正在查看的卡：品牌边框 */
+    .proc-card.row-selected { background: var(--mv-sel-bg) !important; box-shadow: inset 2px 0 0 0 var(--mv-sel-bar); }
+    .proc-card.row-inspected { border-color: var(--mv-sel-bar); }
     .mobile-empty { text-align: center; padding: 32px 16px; }
     .operation-result {
       margin-top: 16px; padding: 12px 16px; border: 1px solid var(--mv-table-border);
@@ -530,6 +498,7 @@
       .health-strip-label { width: 100%; padding: 2px 8px; }
       .health-strip .v-btn { padding: 0 8px; font-size: 12px; }
       .node-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .process-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
       .filter-toolbar { gap: 10px; }
       .toolbar-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
       .toolbar-filters .process-search { grid-column: 1 / -1; min-width: 0; }
@@ -537,9 +506,6 @@
       .selection-bar { flex-wrap: wrap; flex-basis: 100%; }
       .selection-copy { flex-basis: 100%; }
       .selection-bar .v-btn { font-size: 11px; padding: 0 8px; }
-      .node-context { gap: 8px; }
-      .node-context .v-breadcrumbs { width: 100%; font-size: 13px; }
-      .node-context-actions { margin-left: 0; }
       .inspector-header { padding: 2px 12px 8px; gap: 8px; }
       .inspector-header > .st-chip { display: none; }
       .inspector-navigation { gap: 0; }

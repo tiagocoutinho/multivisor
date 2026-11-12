@@ -74,6 +74,8 @@ const zh = {
   online: "在线",
   offline: "离线",
   statAlerts: "需关注",
+  cardUptime: "运行",
+  cardExit: "退出码",
   enterDetail: "查看进程",
   logout: "退出登录",
   loggedIn: "已登录",

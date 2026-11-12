@@ -1,67 +1,74 @@
 <template>
   <v-container fluid class="pa-4">
     <div v-if="supervisor" class="node-detail">
-      <div class="node-context">
-        <v-breadcrumbs :items="breadcrumbItems">
-          <template #divider>
-            <v-icon size="15">mdi-chevron-right</v-icon>
-          </template>
-          <template #item="{ item }">
-            <v-breadcrumbs-item
-              :disabled="item.disabled"
-              @click="item.disabled ? undefined : goHome()"
-            >
-              {{ item.title }}
-            </v-breadcrumbs-item>
-          </template>
-        </v-breadcrumbs>
-        <span
-          class="node-connection"
-          :class="supervisor.running ? 'c-running' : 'c-attention'"
-        >
-          <v-icon size="8">mdi-circle</v-icon>
-          {{ supervisor.running ? labels.online : labels.offline }}
-        </span>
-        <span v-if="supervisor.url" class="text-caption mono c-neutral">
-          {{ supervisor.url }}
-        </span>
-        <div class="node-context-actions">
-          <v-btn
-            size="small"
-            variant="text"
-            prepend-icon="mdi-update"
-            :disabled="!canControlNode"
-            :loading="store.pendingSupervisorNames.includes(nodeName)"
-            @click="requestNodeAction('update')"
-          >
-            {{ labels.update }}
-          </v-btn>
-          <v-btn
-            size="small"
-            variant="tonal"
-            prepend-icon="mdi-restart"
-            :disabled="!canControlNode"
-            :loading="store.pendingSupervisorNames.includes(nodeName)"
-            @click="requestNodeAction('restart')"
-          >
-            {{ labels.restartNode }}
-          </v-btn>
-        </div>
-        <span v-if="!supervisor.running" class="text-caption c-attention">
-          {{ labels.nodeOfflineHint }}
-        </span>
-      </div>
-
       <ProcessView
         :key="nodeName"
         ref="workbench"
-        :title="labels.nodeProcesses"
         :processes="nodeProcesses"
         :scope-key="nodeName"
         :node-name="nodeName"
         :data-state="store.dataStatus"
         :labels="labels"
-      ></ProcessView>
+      >
+        <!-- v2.4 下钻头：返回 + 节点名即标题一行，替代"面包屑 + 通用标题"两行，
+             去掉与主导航重复的"节点总览" -->
+        <template #heading="{ countLabel, runningCount }">
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            :aria-label="labels.backToNodes"
+            :title="labels.backToNodes"
+            @click="goHome"
+          >
+            <v-icon size="20">mdi-chevron-left</v-icon>
+          </v-btn>
+          <h2 class="mono">{{ nodeName }}</h2>
+          <span
+            class="node-connection"
+            :class="supervisor.running ? 'c-running' : 'c-attention'"
+          >
+            <v-icon size="8">mdi-circle</v-icon>
+            {{ supervisor.running ? labels.online : labels.offline }}
+          </span>
+          <span v-if="supervisor.url" class="text-caption mono c-neutral">
+            {{ supervisor.url }}
+          </span>
+          <span class="stat-inline">
+            {{ countLabel }} ·
+            <span class="c-running"
+              >{{ runningCount }} {{ labels.runningShort }}</span
+            >
+          </span>
+          <span v-if="!supervisor.running" class="text-caption c-attention">
+            {{ labels.nodeOfflineHint }}
+          </span>
+          <div class="page-heading-actions">
+            <template v-if="supervisor.running">
+              <v-btn
+                size="small"
+                variant="text"
+                prepend-icon="mdi-update"
+                :disabled="!canControlNode"
+                :loading="store.pendingSupervisorNames.includes(nodeName)"
+                @click="requestNodeAction('update')"
+              >
+                {{ labels.update }}
+              </v-btn>
+              <v-btn
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-restart"
+                :disabled="!canControlNode"
+                :loading="store.pendingSupervisorNames.includes(nodeName)"
+                @click="requestNodeAction('restart')"
+              >
+                {{ labels.restartNode }}
+              </v-btn>
+            </template>
+          </div>
+        </template>
+      </ProcessView>
     </div>
 
     <div v-else-if="store.dataStatus === 'ready'">
@@ -114,11 +121,6 @@ const supervisor = computed(() =>
 const nodeProcesses = computed(() =>
   store.processes.filter((process) => process.supervisor === nodeName.value),
 );
-
-const breadcrumbItems = computed(() => [
-  { title: labels.value.navNodes, disabled: false },
-  { title: nodeName.value, disabled: true },
-]);
 
 const workbench = ref(null);
 

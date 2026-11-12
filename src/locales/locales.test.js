@@ -158,6 +158,8 @@ const interfaceKeys = [
   "remoteLogSize",
   "logSize",
   "updatedAt",
+  "cardUptime",
+  "cardExit",
   "reviveStream",
   "reviveStreamTitle",
   "reviveStreamText",

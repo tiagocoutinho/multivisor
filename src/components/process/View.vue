@@ -1,24 +1,30 @@
 <template>
   <div class="process-workspace">
-    <div class="page-heading">
-      <h2>{{ title }}</h2>
-      <span class="stat-inline">
-        {{ filteredProcesses.length }} / {{ processes.length }}
-        {{ labels.procsUnit }} ·
-        <span class="c-running"
-          >{{ runningCount }} {{ labels.runningShort }}</span
-        >
-        <template v-if="alertCount">
-          ·
-          <button
-            type="button"
-            class="process-name c-attention"
-            @click="quickFilter = 'alerts'"
+    <div class="page-heading" :class="{ 'node-heading': nodeName }">
+      <!-- 作用域插槽：节点下钻页用"返回 + 节点名即标题"单行覆盖默认标题行（v2.4） -->
+      <slot
+        name="heading"
+        :count-label="countLabel"
+        :running-count="runningCount"
+      >
+        <h2 v-if="title">{{ title }}</h2>
+        <span class="stat-inline">
+          {{ countLabel }} ·
+          <span class="c-running"
+            >{{ runningCount }} {{ labels.runningShort }}</span
           >
-            {{ alertCount }} {{ labels.statAlerts }}
-          </button>
-        </template>
-      </span>
+          <template v-if="alertCount">
+            ·
+            <button
+              type="button"
+              class="process-name c-attention"
+              @click="quickFilter = 'alerts'"
+            >
+              {{ alertCount }} {{ labels.statAlerts }}
+            </button>
+          </template>
+        </span>
+      </slot>
     </div>
 
     <div class="filter-toolbar">
@@ -199,7 +205,6 @@
       :supervisors-pending="store.pendingSupervisorNames.length > 0"
       @inspect="openInspector"
       @action="requestAction"
-      @update:current-uids="currentUids = $event"
       @clear-filters="clearFilters"
     ></ProcessTable>
   </div>
@@ -207,7 +212,6 @@
 
 <script setup>
 import { computed, ref, watch } from "vue";
-import { useDisplay } from "vuetify";
 
 import { countAlertProcesses, countRunningProcesses } from "@/multivisor";
 import { useProcessView } from "@/composables/useProcessView";
@@ -217,7 +221,7 @@ import { useInspectorStore } from "@/stores/inspector";
 import ProcessTable from "./Table.vue";
 
 const props = defineProps({
-  title: { type: String, required: true },
+  title: { type: String, default: "" },
   processes: { type: Array, required: true },
   scopeKey: { type: String, required: true },
   nodeName: { type: String, default: undefined },
@@ -252,14 +256,16 @@ const {
 } = view;
 
 const showSelectionList = ref(false);
-const currentUids = ref([]);
 const seenAcceptedResults = new WeakSet();
-
-const breakpoint = useDisplay();
-const isNarrow = computed(() => breakpoint.width.value <= 640);
 
 const runningCount = computed(() => countRunningProcesses(props.processes));
 const alertCount = computed(() => countAlertProcesses(props.processes));
+// v2.4 计数文案：未筛选只报总数，筛选后才显示 "x / y"，避免空筛选下 "16 / 16" 的生硬表达
+const countLabel = computed(() =>
+  filteredProcesses.value.length === props.processes.length
+    ? `${props.processes.length} ${props.labels.procsUnit}`
+    : `${filteredProcesses.value.length} / ${props.processes.length} ${props.labels.procsUnit}`,
+);
 const nodeRunning = computed(() =>
   props.nodeName
     ? (store.supervisors.find((node) => node.name === props.nodeName)
@@ -350,14 +356,10 @@ function clearView() {
   clearFilters();
 }
 
-watch(
-  [filteredProcesses, isNarrow, currentUids],
-  ([processes, narrow, visibleUids]) => {
-    inspector.setOrder(
-      narrow ? processes.map((process) => process.uid) : visibleUids,
-    );
-  },
-);
+// 卡片网格无分页：工作区"上一个/下一个"导航顺序 = 当前筛选结果全集
+watch(filteredProcesses, (processes) => {
+  inspector.setOrder(processes.map((process) => process.uid));
+});
 
 watch(
   () => store.operationResults,

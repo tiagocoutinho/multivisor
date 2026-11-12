@@ -77,6 +77,8 @@ const en = {
   online: "online",
   offline: "offline",
   statAlerts: "attention",
+  cardUptime: "uptime",
+  cardExit: "exit",
   enterDetail: "View processes",
   logout: "Log out",
   loggedIn: "Logged in",
