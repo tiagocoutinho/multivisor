@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { markRaw } from "vue";
 
 import * as multivisor from "@/multivisor";
 import * as api from "@/api";
@@ -24,6 +25,14 @@ export const useAppStore = defineStore("app", {
     },
     isAuthenticated: undefined,
     useAuthentication: undefined,
+    dataStatus: "idle",
+    connected: false,
+    refreshing: false,
+    lastDataUpdate: null,
+    loadError: "",
+    _dataConnection: null,
+    _dataRequest: null,
+    _dataGeneration: 0,
   }),
   getters: {
     name(state) {
@@ -124,20 +133,28 @@ export const useAppStore = defineStore("app", {
   },
   actions: {
     async init() {
-      const response = await api.load();
-      if (response.status === 401) {
+      if (this._dataConnection) {
         return;
-      } else if (response.status === 504) {
-        // server down
-        this.setMultivisorError();
-      } else {
-        const res = await response.json();
-        this.updateMultivisor(res);
       }
+      const generation = this._dataGeneration;
+      await this.refresh();
+      if (
+        generation !== this._dataGeneration ||
+        this.dataStatus !== "ready" ||
+        this._dataConnection
+      ) {
+        return;
+      }
+
+      let opened = false;
+      let connection;
       const eventHandler = (event) => {
+        if (this._dataConnection !== connection) {
+          return;
+        }
         if (event === "error" || event === "close") {
+          this.connected = false;
           this.setMultivisorError();
-          this.multivisor = multivisor.nullMultivisor;
         } else if (event.event === "process_changed") {
           this.updateProcess(event.payload);
         } else if (event.event === "supervisor_changed") {
@@ -146,7 +163,95 @@ export const useAppStore = defineStore("app", {
           this.newNotification(event.payload);
         }
       };
-      api.streamTo(eventHandler);
+      connection = markRaw(api.streamTo(eventHandler));
+      this._dataConnection = connection;
+      connection.onopen = () => {
+        if (this._dataConnection !== connection) {
+          return;
+        }
+        const reconnected = opened && !this.connected;
+        opened = true;
+        this.connected = true;
+        if (!this.loadError && this.error === MULTIVISOR_CONNECTION_ERROR) {
+          this.setError("");
+        }
+        if (reconnected) {
+          this.refresh();
+        }
+      };
+    },
+    refresh() {
+      if (this._dataRequest) {
+        return this._dataRequest;
+      }
+      const generation = this._dataGeneration;
+      if (this.lastDataUpdate === null) {
+        this.dataStatus = "loading";
+      } else {
+        this.refreshing = true;
+      }
+      this.loadError = "";
+
+      const request = (async () => {
+        try {
+          const response = await api.load();
+          if (generation !== this._dataGeneration) {
+            return;
+          }
+          if (response.status === 401) {
+            this.handleUnauthorized();
+            return;
+          }
+          if (!response.ok) {
+            throw new Error(MULTIVISOR_CONNECTION_ERROR);
+          }
+          const snapshot = await response.json();
+          if (generation !== this._dataGeneration) {
+            return;
+          }
+          this.updateMultivisor(snapshot);
+          this.dataStatus = "ready";
+          if (
+            this.error === MULTIVISOR_CONNECTION_ERROR &&
+            (!this._dataConnection || this.connected)
+          ) {
+            this.setError("");
+          }
+        } catch {
+          if (generation !== this._dataGeneration) {
+            return;
+          }
+          if (this.lastDataUpdate === null) {
+            this.dataStatus = "error";
+          }
+          this.loadError = MULTIVISOR_CONNECTION_ERROR;
+          this.setMultivisorError();
+        } finally {
+          if (generation === this._dataGeneration) {
+            this.refreshing = false;
+            this._dataRequest = null;
+          }
+        }
+      })();
+      this._dataRequest = request;
+      return request;
+    },
+    disposeDataConnection() {
+      const connection = this._dataConnection;
+      this._dataConnection = null;
+      // 快照请求可能早于事件连接开始；退出后也不能应用其晚到结果。
+      this._dataGeneration += 1;
+      this._dataRequest = null;
+      this.connected = false;
+      this.refreshing = false;
+      if (this.dataStatus === "loading") {
+        this.dataStatus = "idle";
+      }
+      connection?.close();
+    },
+    handleUnauthorized() {
+      this.disposeDataConnection();
+      this.setLogout();
     },
     restartProcesses(uids) {
       api.processAction(uids, "restart");
@@ -178,19 +283,22 @@ export const useAppStore = defineStore("app", {
       this.error = MULTIVISOR_CONNECTION_ERROR;
     },
     logout() {
-      this.setLogout();
+      this.handleUnauthorized();
       api.logout();
     },
     // Mutations
     updateMultivisor(multivisor) {
       this.multivisor = multivisor;
+      this.lastDataUpdate = Date.now();
     },
     updateProcess(process) {
       let supervisor = this.multivisor.supervisors[process.supervisor];
       supervisor.processes[process.uid] = process;
+      this.lastDataUpdate = Date.now();
     },
     updateSupervisor(supervisor) {
       this.multivisor.supervisors[supervisor.name] = supervisor;
+      this.lastDataUpdate = Date.now();
     },
     newNotification(notification) {
       this.notifications.push(notification);

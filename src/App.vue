@@ -37,7 +37,27 @@
         ></v-list-item>
       </v-list>
     </v-navigation-drawer>
-    <router-view></router-view>
+    <router-view
+      v-if="route.path === LOGIN_PATH || store.dataStatus === 'ready'"
+    ></router-view>
+    <v-main v-else class="d-flex align-center justify-center">
+      <div
+        v-if="store.dataStatus === 'error'"
+        class="text-center pa-6"
+        role="alert"
+      >
+        <h2 class="text-h6 mb-2">{{ t.loadFailed }}</h2>
+        <p class="mb-4">{{ t.connectionFailed }}</p>
+        <v-btn color="primary" @click="store.init()">{{ t.retry }}</v-btn>
+      </div>
+      <v-progress-circular
+        v-else
+        color="primary"
+        indeterminate
+        role="status"
+        :aria-label="t.refresh"
+      ></v-progress-circular>
+    </v-main>
     <NotificationBar></NotificationBar>
     <LogSheet></LogSheet>
     <ProcessDetails></ProcessDetails>
@@ -45,8 +65,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router";
 import { useLocale, useTheme } from "vuetify";
 
 import ToolBar from "@/components/ToolBar";
@@ -57,10 +78,13 @@ import ProcessDetails from "@/components/process/Details";
 
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
+import { authRedirect, LOGIN_PATH } from "@/router/auth";
 
 const version = __APP_VERSION__;
 
 const store = useAppStore();
+const route = useRoute();
+const router = useRouter();
 const preferences = usePreferencesStore();
 const { labels: t } = storeToRefs(preferences);
 const theme = useTheme();
@@ -81,6 +105,23 @@ watch(
   { immediate: true },
 );
 
+watch(
+  () => store.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated !== false) {
+      return;
+    }
+    const redirect = authRedirect(
+      route.path,
+      store.useAuthentication,
+      isAuthenticated,
+    );
+    if (redirect) {
+      router.replace(redirect);
+    }
+  },
+);
+
 const drawerItems = computed(() => [
   {
     title: t.value.navProcesses,
@@ -97,8 +138,18 @@ const drawerItems = computed(() => [
 ]);
 
 const drawer = ref(false);
+let unmounted = false;
 
-onMounted(() => {
-  store.init();
+onMounted(async () => {
+  // 先完成路由认证，避免较晚返回的认证查询覆盖数据接口的 401 状态。
+  await router.isReady();
+  if (!unmounted) {
+    store.init();
+  }
+});
+
+onUnmounted(() => {
+  unmounted = true;
+  store.disposeDataConnection();
 });
 </script>
