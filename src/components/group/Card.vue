@@ -68,11 +68,9 @@ const selectedGroupProcesses = computed(() => {
 
 const restartSelected = () => {
   store.restartProcesses(selectedProcesses.value);
-  clearSelected();
 };
 const stopSelected = () => {
   store.stopProcesses(selectedProcesses.value);
-  clearSelected();
 };
 const selectAll = () => {
   let puids = group.processes.reduce((processes, process) => {

@@ -1,92 +1,40 @@
 <template>
   <v-app>
     <div class="bg-blobs" aria-hidden="true"></div>
-    <ToolBar v-model:drawer="drawer"></ToolBar>
-    <v-navigation-drawer expand-on-hover permanent rail>
-      <v-list>
-        <v-list-item
-          prepend-avatar="@/assets/multivisor.png"
-          :subtitle="`v${version}`"
-          title="Multivisor"
-          router
-          to="/about"
-        ></v-list-item>
-      </v-list>
-      <v-divider></v-divider>
-      <v-list :items="drawerItems" density="compact" nav>
-        <v-list-item
-          prepend-icon="mdi-cog"
-          :title="t.navProcesses"
-          value="processes"
-          router
-          to="/process"
-        ></v-list-item>
-        <v-list-item
-          prepend-icon="mdi-account-multiple"
-          :title="t.navGroups"
-          value="groups"
-          router
-          to="/group"
-        ></v-list-item>
-        <v-list-item
-          prepend-icon="mdi-desktop-classic"
-          :title="t.navNodes"
-          value="supervisors"
-          router
-          to="/supervisor"
-        ></v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-    <router-view
-      v-if="route.path === LOGIN_PATH || store.dataStatus === 'ready'"
-    ></router-view>
-    <v-main v-else class="d-flex align-center justify-center">
-      <div
-        v-if="store.dataStatus === 'error'"
-        class="text-center pa-6"
-        role="alert"
-      >
-        <h2 class="text-h6 mb-2">{{ t.loadFailed }}</h2>
-        <p class="mb-4">{{ t.connectionFailed }}</p>
-        <v-btn color="primary" @click="store.init()">{{ t.retry }}</v-btn>
-      </div>
-      <v-progress-circular
-        v-else
-        color="primary"
-        indeterminate
-        role="status"
-        :aria-label="t.refresh"
-      ></v-progress-circular>
-    </v-main>
+    <ToolBar @about="aboutVisible = true"></ToolBar>
+    <router-view></router-view>
+    <Footer v-if="!isLogin" @about="aboutVisible = true"></Footer>
     <NotificationBar></NotificationBar>
-    <LogSheet></LogSheet>
-    <ProcessDetails></ProcessDetails>
+    <AboutDialog v-model="aboutVisible"></AboutDialog>
+    <ConfirmDialog></ConfirmDialog>
+    <ProcessInspector></ProcessInspector>
   </v-app>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, watch } from "vue";
-import { storeToRefs } from "pinia";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useLocale, useTheme } from "vuetify";
 
 import ToolBar from "@/components/ToolBar";
+import Footer from "@/components/Footer";
+import AboutDialog from "@/components/AboutDialog";
 import NotificationBar from "@/components/NotificationBar";
-
-import LogSheet from "@/components/process/Log";
-import ProcessDetails from "@/components/process/Details";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ProcessInspector from "@/components/process/Inspector";
 
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
+import { useInspectorStore } from "@/stores/inspector";
 import { authRedirect, LOGIN_PATH } from "@/router/auth";
 
-const version = __APP_VERSION__;
-
 const store = useAppStore();
+const inspector = useInspectorStore();
 const route = useRoute();
 const router = useRouter();
 const preferences = usePreferencesStore();
-const { labels: t } = storeToRefs(preferences);
+const isLogin = computed(() => route.path === LOGIN_PATH);
+const aboutVisible = ref(false);
 const theme = useTheme();
 const { current: vuetifyLocale } = useLocale();
 
@@ -122,22 +70,13 @@ watch(
   },
 );
 
-const drawerItems = computed(() => [
-  {
-    title: t.value.navProcesses,
-    value: "process",
+watch(
+  () => route.path,
+  () => {
+    inspector.close();
+    store.clearSelected();
   },
-  {
-    title: t.value.navNodes,
-    value: "Supervisor",
-  },
-  {
-    title: t.value.navGroups,
-    value: "group",
-  },
-]);
-
-const drawer = ref(false);
+);
 let unmounted = false;
 
 onMounted(async () => {
@@ -150,6 +89,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   unmounted = true;
+  inspector.close();
   store.disposeDataConnection();
 });
 </script>

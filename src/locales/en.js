@@ -11,6 +11,26 @@ const en = {
   nodeUnreachable: "Node unreachable",
   lastKnownData: "Last received data",
   noAttentionNodes: "No nodes need attention",
+  noOfflineNodes: "No nodes are offline",
+  emptyNodes: "No nodes are currently being monitored",
+  nodeNotFound: "This node does not exist or is no longer monitored",
+  backToNodes: "Back to nodes",
+  user: "User",
+  notReceivedYet: "No data received",
+  processUnavailable:
+    "This process no longer exists or is currently unavailable",
+  invalidLogMessage: "The received log message has an invalid format",
+  logStreamFailed: "The log connection was interrupted",
+  invalidCredentials: "Invalid username or password",
+  loginFailedNetwork:
+    "Could not connect to the login service. Check your connection and try again.",
+  loginFailed: "Login request failed. Please try again later.",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
+  operationSending: "Submitting request…",
+  operationNotSubmitted: "Not submitted",
+  confirmNodeUpdateDesc: (name) =>
+    `Request ${name} to reread and apply its process configuration. The server configuration determines which processes are affected.`,
   selectionSummary: (n, nodes) => `${n} selected across ${nodes} nodes`,
   reviewSelection: "Review selection",
   selectionUnavailable:

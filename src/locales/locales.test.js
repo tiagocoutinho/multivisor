@@ -192,7 +192,31 @@ const timeAgoKeys = [
   "years",
 ];
 
-const additionalRootKeys = [...interfaceKeys, "aboutContent", "timeAgo"];
+const migratedInterfaceKeys = [
+  "noOfflineNodes",
+  "emptyNodes",
+  "nodeNotFound",
+  "backToNodes",
+  "user",
+  "notReceivedYet",
+  "processUnavailable",
+  "invalidLogMessage",
+  "logStreamFailed",
+  "invalidCredentials",
+  "loginFailedNetwork",
+  "loginFailed",
+  "showPassword",
+  "hidePassword",
+  "operationSending",
+  "operationNotSubmitted",
+  "confirmNodeUpdateDesc",
+];
+const additionalRootKeys = [
+  ...interfaceKeys,
+  ...migratedInterfaceKeys,
+  "aboutContent",
+  "timeAgo",
+];
 
 const statusCodes = [
   "STOPPED",
@@ -229,6 +253,7 @@ const functionArities = {
   quickAllN: 1,
   quickAlertsN: 1,
   updatedAt: 1,
+  confirmNodeUpdateDesc: 1,
 };
 
 describe("aboutContent", () => {
@@ -323,6 +348,8 @@ describe("locales", () => {
 
     expect(zh.confirmNodeRestartDesc("node-a")).toContain("node-a");
     expect(en.confirmNodeRestartDesc("node-a")).toContain("node-a");
+    expect(zh.confirmNodeUpdateDesc("node-a")).toContain("node-a");
+    expect(en.confirmNodeUpdateDesc("node-a")).toContain("node-a");
     expect(zh.selectProcess("api")).toContain("api");
     expect(en.selectProcess("api")).toContain("api");
     expect(zh.quickAllN(12)).toContain("12");

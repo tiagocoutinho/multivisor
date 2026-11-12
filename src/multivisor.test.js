@@ -2,7 +2,14 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import en from "./locales/en";
 import zh from "./locales/zh";
-import { timeAgo } from "./multivisor";
+import {
+  ALERT_STATES,
+  countAlertProcesses,
+  countRunningProcesses,
+  groupProcessesBySupervisor,
+  stateClassMap,
+  timeAgo,
+} from "./multivisor";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -37,5 +44,71 @@ describe("相对时间本地化", () => {
     const timestamp = Date.now() / 1000 - 300;
 
     expect(timeAgo(timestamp)).toBe("5 minutes ago");
+  });
+});
+
+describe("进程纯计算", () => {
+  const processes = [
+    {
+      uid: "a:r",
+      name: "alpha",
+      group: "core",
+      supervisor: "node-a",
+      statename: "RUNNING",
+      running: true,
+    },
+    {
+      uid: "a:f",
+      name: "beta",
+      group: "core",
+      supervisor: "node-a",
+      statename: "FATAL",
+      running: false,
+    },
+    {
+      uid: "b:b",
+      name: "gamma",
+      group: "edge",
+      supervisor: "node-b",
+      statename: "BACKOFF",
+      running: true,
+    },
+    {
+      uid: "b:s",
+      name: "delta",
+      group: "edge",
+      supervisor: "node-b",
+      statename: "STOPPED",
+      running: false,
+    },
+  ];
+
+  test("导出状态集合与状态样式映射", () => {
+    expect(ALERT_STATES).toEqual(new Set(["FATAL", "BACKOFF", "UNKNOWN"]));
+    expect(stateClassMap).toEqual({
+      RUNNING: "c-running",
+      FATAL: "c-danger",
+      BACKOFF: "c-attention",
+      UNKNOWN: "c-attention",
+      STARTING: "c-info",
+      STOPPING: "c-info",
+      STOPPED: "c-neutral",
+      EXITED: "c-neutral",
+    });
+  });
+
+  test("严格统计运行和需关注进程", () => {
+    expect(countRunningProcesses(processes)).toBe(1);
+    expect(countAlertProcesses(processes)).toBe(2);
+    expect(countRunningProcesses([])).toBe(0);
+    expect(countAlertProcesses([])).toBe(0);
+  });
+
+  test("按节点保持首次出现顺序分组", () => {
+    expect(groupProcessesBySupervisor(processes)).toEqual([
+      { supervisor: "node-a", processes: [processes[0], processes[1]] },
+      { supervisor: "node-b", processes: [processes[2], processes[3]] },
+    ]);
+    expect(groupProcessesBySupervisor([])).toEqual([]);
   });
 });

@@ -51,8 +51,8 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/process': RouteRecordInfo<
-      '/process',
+    'processes': RouteRecordInfo<
+      'processes',
       '/process',
       Record<never, never>,
       Record<never, never>,
@@ -63,6 +63,13 @@ declare module 'vue-router/auto-routes' {
       '/supervisor',
       Record<never, never>,
       Record<never, never>,
+      | never
+    >,
+    'supervisor-detail': RouteRecordInfo<
+      'supervisor-detail',
+      '/supervisor/:name',
+      { name: ParamValue<true> },
+      { name: ParamValue<false> },
       | never
     >,
   }
@@ -104,13 +111,19 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/process.vue': {
       routes:
-        | '/process'
+        | 'processes'
       views:
         | never
     }
     'src/pages/supervisor.vue': {
       routes:
         | '/supervisor'
+      views:
+        | never
+    }
+    'src/pages/supervisor.[name].vue': {
+      routes:
+        | 'supervisor-detail'
       views:
         | never
     }

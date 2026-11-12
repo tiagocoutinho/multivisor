@@ -7,7 +7,7 @@ export const supervisorAction = (id, action) => {
 export const processAction = (uid, action) => {
   let form = new FormData();
   form.append("uid", uid);
-  fetch("/api/process/" + action, { method: "POST", body: form });
+  return fetch("/api/process/" + action, { method: "POST", body: form });
 };
 
 export const load = () => {

@@ -3,6 +3,7 @@ import { markRaw } from "vue";
 
 import * as multivisor from "@/multivisor";
 import * as api from "@/api";
+import { useInspectorStore } from "@/stores/inspector";
 
 export const MULTIVISOR_CONNECTION_ERROR =
   "Couldn't connect to multivisor server, make sure it is running";
@@ -14,15 +15,6 @@ export const useAppStore = defineStore("app", {
     notifications: [],
     selectedProcesses: [],
     search: "",
-    log: {
-      process: null,
-      visible: false,
-      stream: "out",
-    },
-    processDetails: {
-      process: multivisor.nullProcess,
-      visible: false,
-    },
     isAuthenticated: undefined,
     useAuthentication: undefined,
     dataStatus: "idle",
@@ -33,6 +25,11 @@ export const useAppStore = defineStore("app", {
     _dataConnection: null,
     _dataRequest: null,
     _dataGeneration: 0,
+    pendingProcessUids: [],
+    pendingSupervisorNames: [],
+    operationResults: [],
+    confirmation: null,
+    confirming: false,
   }),
   getters: {
     name(state) {
@@ -129,6 +126,60 @@ export const useAppStore = defineStore("app", {
     },
     nbGroups(state) {
       return this.groups.length;
+    },
+    // 旧页面仍依赖 log/processDetails；真实可见状态只保存在 inspector。
+    log() {
+      const inspector = useInspectorStore();
+      const process =
+        inspector.visible && inspector.tab !== "details"
+          ? this.process(inspector.uid)
+          : null;
+      return {
+        process,
+        stream: inspector.tab,
+        visible: inspector.visible && inspector.tab !== "details",
+      };
+    },
+    processDetails() {
+      const inspector = useInspectorStore();
+      return {
+        process:
+          inspector.visible && inspector.tab === "details"
+            ? this.process(inspector.uid)
+            : multivisor.nullProcess,
+        visible: inspector.visible && inspector.tab === "details",
+      };
+    },
+    confirmationUnavailable(state) {
+      const current = state.confirmation;
+      if (!current) return false;
+      if (
+        state.confirming ||
+        state.pendingProcessUids.length ||
+        state.pendingSupervisorNames.length ||
+        !state.connected ||
+        state.dataStatus !== "ready" ||
+        (state.useAuthentication && !state.isAuthenticated)
+      ) {
+        return true;
+      }
+      if (current.kind === "supervisor") {
+        const supervisor = state.multivisor.supervisors[current.name];
+        return (
+          !supervisor?.running ||
+          !["update", "restart"].includes(current.action)
+        );
+      }
+      return current.uids.some((uid) => {
+        const process = this.process(uid);
+        return (
+          !process ||
+          !state.multivisor.supervisors[process.supervisor]?.running ||
+          !["start", "stop", "restart"].includes(current.action) ||
+          (current.action === "start" && process.running) ||
+          (current.action === "stop" && !process.running)
+        );
+      });
     },
   },
   actions: {
@@ -250,14 +301,189 @@ export const useAppStore = defineStore("app", {
       connection?.close();
     },
     handleUnauthorized() {
+      useInspectorStore().close();
+      this.confirmation = null;
+      this.operationResults = [];
       this.disposeDataConnection();
       this.setLogout();
     },
+    async runProcessAction(uids, action) {
+      if (this.confirming) {
+        return [];
+      }
+      this.confirming = true;
+      const requestedUids = [...new Set(uids)];
+      const generation = this._dataGeneration;
+      this.operationResults = requestedUids.map((uid) =>
+        this.makeProcessResult(uid, action, "not-submitted"),
+      );
+      const results = this.operationResults;
+      try {
+        for (const result of results) {
+          const { uid } = result;
+          if (
+            generation !== this._dataGeneration ||
+            !this.connected ||
+            this.dataStatus !== "ready" ||
+            (this.useAuthentication && !this.isAuthenticated) ||
+            !["start", "stop", "restart"].includes(action)
+          ) {
+            continue;
+          }
+          const process = this.process(uid);
+          const supervisor = this.multivisor.supervisors[process?.supervisor];
+          if (
+            !process ||
+            !supervisor?.running ||
+            (action === "start" && process.running) ||
+            (action === "stop" && !process.running)
+          ) {
+            continue;
+          }
+          result.requestState = "sending";
+          this.pendingProcessUids.push(uid);
+          try {
+            const response = await api.processAction(uid, action);
+            result.httpStatus = response.status;
+            result.requestState = response.ok ? "accepted" : "failed";
+            if (generation === this._dataGeneration) {
+              if (response.ok) this.removeSelectedProcesses([uid]);
+              if (response.status === 401) this.handleUnauthorized();
+            }
+          } catch {
+            result.requestState = "failed";
+          } finally {
+            const pendingIndex = this.pendingProcessUids.indexOf(uid);
+            if (pendingIndex !== -1) {
+              this.pendingProcessUids.splice(pendingIndex, 1);
+            }
+          }
+          if (result.httpStatus === 401) break;
+        }
+      } finally {
+        this.confirming = false;
+      }
+      return results;
+    },
+    async runSupervisorAction(name, action) {
+      if (this.confirming) {
+        return [];
+      }
+      this.confirming = true;
+      this.operationResults = [
+        {
+          uid: undefined,
+          name,
+          supervisor: name,
+          kind: "supervisor",
+          action,
+          requestState: "not-submitted",
+          httpStatus: undefined,
+        },
+      ];
+      const result = this.operationResults[0];
+      const generation = this._dataGeneration;
+      try {
+        const supervisor = this.multivisor.supervisors[name];
+        if (
+          !this.connected ||
+          this.dataStatus !== "ready" ||
+          (this.useAuthentication && !this.isAuthenticated) ||
+          !supervisor?.running ||
+          !["update", "restart"].includes(action)
+        ) {
+          result.requestState = "not-submitted";
+        } else {
+          result.requestState = "sending";
+          this.pendingSupervisorNames.push(name);
+          try {
+            const response = await api.supervisorAction(name, action);
+            result.httpStatus = response.status;
+            result.requestState = response.ok ? "accepted" : "failed";
+            if (
+              response.status === 401 &&
+              generation === this._dataGeneration
+            ) {
+              this.handleUnauthorized();
+            }
+          } catch {
+            result.requestState = "failed";
+          } finally {
+            const pendingIndex = this.pendingSupervisorNames.indexOf(name);
+            if (pendingIndex !== -1) {
+              this.pendingSupervisorNames.splice(pendingIndex, 1);
+            }
+          }
+        }
+      } finally {
+        this.confirming = false;
+      }
+      return [result];
+    },
+    makeProcessResult(uid, action, requestState) {
+      const process = this.process(uid);
+      return {
+        uid,
+        name: process?.name || uid,
+        supervisor: process?.supervisor || "",
+        kind: "process",
+        action,
+        requestState,
+        httpStatus: undefined,
+      };
+    },
+    requestProcessAction(uids, action) {
+      if (this.confirming || !uids.length) return;
+      this.confirmation = { kind: "process", uids: [...new Set(uids)], action };
+    },
+    requestSupervisorAction(name, action) {
+      if (this.confirming) return;
+      this.confirmation = { kind: "supervisor", name, action };
+    },
+    cancelConfirmation() {
+      if (!this.confirming) {
+        this.confirmation = null;
+      }
+    },
+    async confirmOperation() {
+      const current = this.confirmation;
+      if (!current || this.confirming) {
+        return;
+      }
+      if (this.confirmationUnavailable) {
+        this.confirmation = null;
+        this.operationResults =
+          current.kind === "process"
+            ? current.uids.map((uid) =>
+                this.makeProcessResult(uid, current.action, "not-submitted"),
+              )
+            : [
+                {
+                  ...this.makeProcessResult(
+                    undefined,
+                    current.action,
+                    "not-submitted",
+                  ),
+                  uid: undefined,
+                  name: current.name,
+                  supervisor: current.name,
+                  kind: "supervisor",
+                },
+              ];
+        return;
+      }
+      const executed =
+        current.kind === "process"
+          ? await this.runProcessAction(current.uids, current.action)
+          : await this.runSupervisorAction(current.name, current.action);
+      this.confirmation = null;
+      return executed;
+    },
     restartProcesses(uids) {
-      api.processAction(uids, "restart");
+      this.requestProcessAction(uids, "restart");
     },
     stopProcesses(uid) {
-      api.processAction(uid, "stop");
+      this.requestProcessAction(uid, "stop");
     },
     selectAll() {
       this.setSelectedProcesses([...this.filteredProcessUIDs]);
@@ -266,18 +492,20 @@ export const useAppStore = defineStore("app", {
       this.setSelectedProcesses([]);
     },
     restartSelected() {
-      this.restartProcesses(this.selectedProcesses);
-      this.clearSelected();
+      if (this.selectedProcesses.length) {
+        this.requestProcessAction(this.selectedProcesses, "restart");
+      }
     },
     stopSelected() {
-      this.stopProcesses(this.selectedProcesses);
-      this.clearSelected();
+      if (this.selectedProcesses.length) {
+        this.requestProcessAction(this.selectedProcesses, "stop");
+      }
     },
     requestSupervisorUpdate(uid) {
-      api.supervisorAction(uid, "update");
+      this.requestSupervisorAction(uid, "update");
     },
     restartSupervisor(uid) {
-      api.supervisorAction(uid, "restart");
+      this.requestSupervisorAction(uid, "restart");
     },
     setMultivisorError() {
       this.error = MULTIVISOR_CONNECTION_ERROR;
@@ -304,10 +532,17 @@ export const useAppStore = defineStore("app", {
       this.notifications.push(notification);
     },
     setLogVisible(visible) {
-      this.log.visible = visible;
+      const inspector = useInspectorStore();
+      if (!visible && inspector.tab !== "details") {
+        inspector.close();
+      }
     },
     setLog(log) {
-      this.log = log;
+      if (log.visible === false) {
+        useInspectorStore().close();
+        return;
+      }
+      useInspectorStore().open(log.process.uid, log.stream);
     },
     setSelectedProcesses(selectedProcesses) {
       this.selectedProcesses = selectedProcesses;
@@ -326,10 +561,17 @@ export const useAppStore = defineStore("app", {
       this.search = search;
     },
     setProcessDetailsVisible(visible) {
-      this.processDetails.visible = visible;
+      const inspector = useInspectorStore();
+      if (!visible && inspector.tab === "details") {
+        inspector.close();
+      }
     },
     setProcessDetails(details) {
-      this.processDetails = details;
+      if (details.visible === false) {
+        useInspectorStore().close();
+        return;
+      }
+      useInspectorStore().open(details.process.uid, "details");
     },
     setIsAuthenticated(isAuthenticated) {
       this.isAuthenticated = isAuthenticated;

@@ -130,11 +130,9 @@ const restartSupervisor = () => {
 };
 const restartSelectedProcesses = () => {
   store.restartProcesses(selectedProcesses.value);
-  clearSelectedProcesses();
 };
 const stopSelectedProcesses = () => {
   store.stopProcesses(selectedProcesses.value);
-  clearSelectedProcesses();
 };
 const selectAllProcesses = () => {
   let puids = [];

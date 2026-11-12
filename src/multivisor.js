@@ -18,6 +18,41 @@ export const notificationColorMap = {
   ERROR: "error",
 };
 
+export const ALERT_STATES = new Set(["FATAL", "BACKOFF", "UNKNOWN"]);
+
+export const stateClassMap = {
+  RUNNING: "c-running",
+  FATAL: "c-danger",
+  BACKOFF: "c-attention",
+  UNKNOWN: "c-attention",
+  STARTING: "c-info",
+  STOPPING: "c-info",
+  STOPPED: "c-neutral",
+  EXITED: "c-neutral",
+};
+
+export const countRunningProcesses = (processes) =>
+  processes.filter((process) => process.statename === "RUNNING").length;
+
+export const countAlertProcesses = (processes) =>
+  processes.filter((process) => ALERT_STATES.has(process.statename)).length;
+
+export const groupProcessesBySupervisor = (processes) => {
+  const groups = new Map();
+  for (const process of processes) {
+    const groupedProcesses = groups.get(process.supervisor);
+    if (groupedProcesses) {
+      groupedProcesses.push(process);
+    } else {
+      groups.set(process.supervisor, [process]);
+    }
+  }
+  return Array.from(groups, ([supervisor, groupedProcesses]) => ({
+    supervisor,
+    processes: groupedProcesses,
+  }));
+};
+
 export const formatBytes = (bytes, decimals) => {
   if (bytes === 0) return "0 b";
   let k = 1024;
