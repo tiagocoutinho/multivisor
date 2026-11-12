@@ -3,7 +3,6 @@
     label
     variant="flat"
     :color="stateColorMap[state]"
-    text-color="white"
     :small="small"
   >
     {{ t.stateNames[state] }}
