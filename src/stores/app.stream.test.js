@@ -2,10 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 import * as api from "@/api";
-import { MULTIVISOR_CONNECTION_ERROR, useAppStore } from "@/stores/app";
+import {
+  MULTIVISOR_CONNECTION_ERROR,
+  POLL_INTERVAL_MS,
+  POLL_TIMEOUT_MS,
+  useAppStore,
+} from "@/stores/app";
 
 vi.mock("@/api", () => ({
   load: vi.fn(),
+  refreshData: vi.fn(),
   streamTo: vi.fn(),
   logout: vi.fn(),
 }));
@@ -49,9 +55,26 @@ function open(stream) {
   stream.onopen();
 }
 
+// 测试环境默认 node：用可控的 document 替身驱动 visibilitychange 分支。
+function stubDocument() {
+  const listeners = new Set();
+  const doc = {
+    hidden: false,
+    addEventListener: (type, handler) => listeners.add(handler),
+    removeEventListener: (type, handler) => listeners.delete(handler),
+    dispatchVisibilityChange() {
+      listeners.forEach((handler) => handler());
+    },
+    listenerCount: () => listeners.size,
+  };
+  vi.stubGlobal("document", doc);
+  return doc;
+}
+
 describe("应用数据与事件连接的生命周期", () => {
   let store;
   let streams;
+  let doc;
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -60,7 +83,9 @@ describe("应用数据与事件连接的生命周期", () => {
     setActivePinia(createPinia());
     store = useAppStore();
     streams = [];
+    doc = stubDocument();
     api.load.mockResolvedValue(response());
+    api.refreshData.mockResolvedValue(response());
     api.streamTo.mockImplementation((receive) => {
       const stream = { receive, onopen: null, close: vi.fn() };
       streams.push(stream);
@@ -70,10 +95,11 @@ describe("应用数据与事件连接的生命周期", () => {
 
   afterEach(() => {
     store.disposeDataConnection?.();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
-  it("先应用首份快照，再由流的 open 事件确认连接，不重复请求数据", async () => {
+  it("先应用首份快照即确认服务可达，事件流 open 不重复请求数据", async () => {
     expect(store.dataStatus).toBe("idle");
     expect(store.connected).toBe(false);
     expect(store.lastDataUpdate).toBeNull();
@@ -91,7 +117,7 @@ describe("应用数据与事件连接的生命周期", () => {
     expect(store.multivisor).toEqual(snapshot());
     expect(store.dataStatus).toBe("ready");
     expect(store.lastDataUpdate).toBe(1000);
-    expect(store.connected).toBe(false);
+    expect(store.connected).toBe(true);
     expect(api.streamTo).toHaveBeenCalledTimes(1);
 
     open(streams[0]);
@@ -211,7 +237,7 @@ describe("应用数据与事件连接的生命周期", () => {
   );
 
   it.each(["error", "close"])(
-    "%s 只标记断连，保留快照及真实更新时间",
+    "%s 不改判连接状态，保留快照及真实更新时间",
     async (event) => {
       await store.init();
       open(streams[0]);
@@ -219,16 +245,16 @@ describe("应用数据与事件连接的生命周期", () => {
 
       streams[0].receive(event);
 
-      expect(store.connected).toBe(false);
+      expect(store.connected).toBe(true);
       expect(store.multivisor).toEqual(snapshot());
       expect(store.dataStatus).toBe("ready");
       expect(store.lastDataUpdate).toBe(1000);
-      expect(store.error).toBe(MULTIVISOR_CONNECTION_ERROR);
+      expect(store.error).toBe("");
       expect(streams[0].close).not.toHaveBeenCalled();
     },
   );
 
-  it("每次断连后重新 open 补取一次快照，连续 open 不重复刷新", async () => {
+  it("事件流断开后重新 open 补取一次快照，连续 open 不重复刷新", async () => {
     await store.init();
     const stream = streams[0];
     open(stream);
@@ -272,30 +298,31 @@ describe("应用数据与事件连接的生命周期", () => {
       expect(store.refreshing).toBe(false);
       expect(store.loadError).toBe(MULTIVISOR_CONNECTION_ERROR);
       expect(store.error).toBe(MULTIVISOR_CONNECTION_ERROR);
-      expect(store.connected).toBe(true);
+      expect(store.connected).toBe(false);
 
       await store.refresh();
 
       expect(store.lastDataUpdate).toBe(2000);
       expect(store.loadError).toBe("");
       expect(store.error).toBe("");
+      expect(store.connected).toBe(true);
       expect(streams).toHaveLength(1);
     },
   );
 
-  it("断连时手动取得快照也不伪造连接恢复", async () => {
+  it("轮询判定的断连可被手动快照成功恢复", async () => {
     await store.init();
     open(streams[0]);
-    streams[0].receive("error");
+    api.refreshData.mockResolvedValueOnce({ ok: false, status: 502 });
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(store.connected).toBe(false);
+    expect(store.error).toBe(MULTIVISOR_CONNECTION_ERROR);
     vi.setSystemTime(2000);
 
     await store.refresh();
 
     expect(store.lastDataUpdate).toBe(2000);
-    expect(store.connected).toBe(false);
-    expect(store.error).toBe(MULTIVISOR_CONNECTION_ERROR);
-    open(streams[0]);
-    await store.refresh();
+    expect(store.connected).toBe(true);
     expect(store.error).toBe("");
   });
 
@@ -478,5 +505,124 @@ describe("应用数据与事件连接的生命周期", () => {
     expect(store.refreshing).toBe(false);
     expect(streams).toHaveLength(2);
     expect(streams[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  it("轮询定时拉取新快照，保持连接判定为可用", async () => {
+    await store.init();
+    expect(api.refreshData).not.toHaveBeenCalled();
+
+    api.refreshData.mockResolvedValueOnce(response(snapshot("polled")));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(api.refreshData).toHaveBeenCalledTimes(1);
+    expect(api.refreshData).toHaveBeenCalledWith(POLL_TIMEOUT_MS);
+    expect(store.multivisor.name).toBe("polled");
+    expect(store.lastDataUpdate).toBe(31000);
+    expect(store.connected).toBe(true);
+    expect(streams).toHaveLength(1);
+
+    api.refreshData.mockResolvedValueOnce(response(snapshot("polled-again")));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(api.refreshData).toHaveBeenCalledTimes(2);
+    expect(store.multivisor.name).toBe("polled-again");
+  });
+
+  it("轮询失败标记断连并告警，恢复后自动痊愈", async () => {
+    await store.init();
+    open(streams[0]);
+
+    api.refreshData.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(store.connected).toBe(false);
+    expect(store.error).toBe(MULTIVISOR_CONNECTION_ERROR);
+    expect(store.dataStatus).toBe("ready");
+    expect(store.multivisor).toEqual(snapshot());
+
+    api.refreshData.mockResolvedValueOnce(response(snapshot("recovered")));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(store.connected).toBe(true);
+    expect(store.error).toBe("");
+    expect(store.multivisor.name).toBe("recovered");
+  });
+
+  it("事件流静默（心跳死锁形态）时轮询保持数据新鲜、操作不被禁用", async () => {
+    await store.init();
+    open(streams[0]);
+
+    // 死锁形态：SSE 连接保持但不推送任何事件（无 error/close），仅靠轮询。
+    api.refreshData.mockResolvedValueOnce(response(snapshot("fresh")));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(store.connected).toBe(true);
+    expect(store.multivisor.name).toBe("fresh");
+    store.requestProcessAction(["node:worker"], "restart");
+    expect(store.confirmationUnavailable).toBe(false);
+    store.cancelConfirmation();
+  });
+
+  it("首载失败后轮询自动恢复数据并补建事件流", async () => {
+    api.load.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await store.init();
+    expect(store.dataStatus).toBe("error");
+    expect(api.streamTo).not.toHaveBeenCalled();
+
+    api.refreshData.mockResolvedValueOnce(response(snapshot("recovered")));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(store.dataStatus).toBe("ready");
+    expect(store.connected).toBe(true);
+    expect(store.error).toBe("");
+    expect(api.streamTo).toHaveBeenCalledTimes(1);
+    open(streams[0]);
+    expect(store.connected).toBe(true);
+  });
+
+  it("轮询收到 401 时按未认证处理并停止轮询", async () => {
+    store.setUseAuthentication(true);
+    store.setIsAuthenticated(true);
+    await store.init();
+    open(streams[0]);
+
+    api.refreshData.mockResolvedValueOnce({ ok: false, status: 401 });
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(store.isAuthenticated).toBe(false);
+    expect(store.connected).toBe(false);
+    expect(streams[0].close).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2);
+    expect(api.refreshData).toHaveBeenCalledTimes(1);
+  });
+
+  it("页面隐藏时跳过轮询，回到可见立即补一次", async () => {
+    await store.init();
+
+    doc.hidden = true;
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(api.refreshData).not.toHaveBeenCalled();
+
+    doc.hidden = false;
+    doc.dispatchVisibilityChange();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.refreshData).toHaveBeenCalledTimes(1);
+    expect(store.connected).toBe(true);
+
+    // 可见性补拉不破坏正常轮询周期。
+    api.refreshData.mockResolvedValueOnce(response(snapshot("next")));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(store.multivisor.name).toBe("next");
+  });
+
+  it("释放连接停止轮询并移除可见性监听", async () => {
+    await store.init();
+    expect(doc.listenerCount()).toBe(1);
+
+    store.disposeDataConnection();
+
+    expect(doc.listenerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2);
+    expect(api.refreshData).not.toHaveBeenCalled();
   });
 });

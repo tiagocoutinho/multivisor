@@ -8,6 +8,12 @@ import { useInspectorStore } from "@/stores/inspector";
 export const MULTIVISOR_CONNECTION_ERROR =
   "Couldn't connect to multivisor server, make sure it is running";
 
+// 后台轮询周期与单次请求超时（毫秒）。
+// connected 由轮询成败判定（服务端 API 是否可达），事件流只做实时性增强；
+// 这样事件流静默（如后端心跳死锁）时数据依然新鲜、操作依然可用。
+export const POLL_INTERVAL_MS = 30000;
+export const POLL_TIMEOUT_MS = 10000;
+
 export const useAppStore = defineStore("app", {
   state: () => ({
     multivisor: multivisor.nullMultivisor,
@@ -25,6 +31,8 @@ export const useAppStore = defineStore("app", {
     _dataConnection: null,
     _dataRequest: null,
     _dataGeneration: 0,
+    _pollTimer: null,
+    _visibilityHandler: null,
     pendingProcessUids: [],
     pendingSupervisorNames: [],
     operationResults: [],
@@ -189,24 +197,32 @@ export const useAppStore = defineStore("app", {
       }
       const generation = this._dataGeneration;
       await this.refresh();
-      if (
-        generation !== this._dataGeneration ||
-        this.dataStatus !== "ready" ||
-        this._dataConnection
-      ) {
+      if (generation !== this._dataGeneration || this._dataConnection) {
         return;
       }
-
-      let opened = false;
+      // 轮询是连接状态与数据新鲜度的判定来源，首载成败都启动：
+      // 首载失败时由轮询自动重试恢复，不再依赖用户手动刷新页面。
+      this._startPolling();
+      if (this.dataStatus === "ready") {
+        this._connectStream();
+      }
+    },
+    _connectStream() {
+      // 事件流只承担实时性增强：业务事件即时更新数据即可；
+      // 断开与重连由浏览器 EventSource 自愈，连接状态一律由轮询判定，
+      // 避免事件流静默（如后端心跳死锁）被误判为服务不可用。
+      let missedEvents = false;
       let connection;
       const eventHandler = (event) => {
         if (this._dataConnection !== connection) {
           return;
         }
         if (event === "error" || event === "close") {
-          this.connected = false;
-          this.setMultivisorError();
-        } else if (event.event === "process_changed") {
+          // 只记录发生过断开，供重连后补取快照；不改判连接状态。
+          missedEvents = true;
+          return;
+        }
+        if (event.event === "process_changed") {
           this.updateProcess(event.payload);
         } else if (event.event === "supervisor_changed") {
           this.updateSupervisor(event.payload);
@@ -220,13 +236,9 @@ export const useAppStore = defineStore("app", {
         if (this._dataConnection !== connection) {
           return;
         }
-        const reconnected = opened && !this.connected;
-        opened = true;
-        this.connected = true;
-        if (!this.loadError && this.error === MULTIVISOR_CONNECTION_ERROR) {
-          this.setError("");
-        }
-        if (reconnected) {
+        // 断开后重新 open：补一次快照，弥补断开期间丢失的事件。
+        if (missedEvents) {
+          missedEvents = false;
           this.refresh();
         }
       };
@@ -262,10 +274,9 @@ export const useAppStore = defineStore("app", {
           }
           this.updateMultivisor(snapshot);
           this.dataStatus = "ready";
-          if (
-            this.error === MULTIVISOR_CONNECTION_ERROR &&
-            (!this._dataConnection || this.connected)
-          ) {
+          // HTTP 成功即证明服务端可达（connected 由服务端往返成败判定）。
+          this.connected = true;
+          if (this.error === MULTIVISOR_CONNECTION_ERROR) {
             this.setError("");
           }
         } catch {
@@ -275,6 +286,7 @@ export const useAppStore = defineStore("app", {
           if (this.lastDataUpdate === null) {
             this.dataStatus = "error";
           }
+          this.connected = false;
           this.loadError = MULTIVISOR_CONNECTION_ERROR;
           this.setMultivisorError();
         } finally {
@@ -293,12 +305,112 @@ export const useAppStore = defineStore("app", {
       // 快照请求可能早于事件连接开始；退出后也不能应用其晚到结果。
       this._dataGeneration += 1;
       this._dataRequest = null;
+      this._stopPolling();
       this.connected = false;
       this.refreshing = false;
       if (this.dataStatus === "loading") {
         this.dataStatus = "idle";
       }
       connection?.close();
+    },
+    _startPolling() {
+      if (this._pollTimer === null) {
+        this._schedulePoll();
+      }
+      if (!this._visibilityHandler) {
+        const handler = () => {
+          // 页签隐藏期间轮询空转；回到可见立即补一次，不等下个周期。
+          if (!document.hidden && this._pollTimer !== null) {
+            this._pollServer(this._dataGeneration);
+          }
+        };
+        this._visibilityHandler = markRaw(handler);
+        document.addEventListener("visibilitychange", handler);
+      }
+    },
+    _schedulePoll() {
+      if (this._pollTimer !== null) {
+        return;
+      }
+      // 包一层对象再 markRaw：浏览器的定时器句柄是数字，直接 markRaw 会抛错。
+      const handle = {};
+      handle.id = setTimeout(() => {
+        if (this._pollTimer === handle) {
+          this._pollTimer = null;
+          this._pollTick();
+        }
+      }, POLL_INTERVAL_MS);
+      this._pollTimer = markRaw(handle);
+    },
+    _stopPolling() {
+      if (this._pollTimer !== null) {
+        clearTimeout(this._pollTimer.id);
+        this._pollTimer = null;
+      }
+      if (this._visibilityHandler) {
+        document.removeEventListener(
+          "visibilitychange",
+          this._visibilityHandler,
+        );
+        this._visibilityHandler = null;
+      }
+    },
+    async _pollTick() {
+      const generation = this._dataGeneration;
+      try {
+        if (!document.hidden) {
+          await this._pollServer(generation);
+        }
+      } finally {
+        // 链式调度：上一轮结束后才排下一轮，天然避免请求重叠。
+        if (generation === this._dataGeneration) {
+          this._schedulePoll();
+        }
+      }
+    },
+    async _pollServer(generation) {
+      let response = null;
+      try {
+        response = await api.refreshData(POLL_TIMEOUT_MS);
+      } catch {
+        // 超时或网络失败：视为服务不可达。
+      }
+      if (generation !== this._dataGeneration) {
+        return;
+      }
+      if (response && response.status === 401) {
+        this.handleUnauthorized();
+        return;
+      }
+      if (!response || !response.ok) {
+        this.connected = false;
+        this.setMultivisorError();
+        return;
+      }
+      let snapshot = null;
+      try {
+        snapshot = await response.json();
+      } catch {
+        // 响应体异常同样视为不可达。
+      }
+      if (generation !== this._dataGeneration) {
+        return;
+      }
+      if (snapshot === null) {
+        this.connected = false;
+        this.setMultivisorError();
+        return;
+      }
+      this.updateMultivisor(snapshot);
+      this.dataStatus = "ready";
+      this.connected = true;
+      if (this.error === MULTIVISOR_CONNECTION_ERROR) {
+        this.setError("");
+      }
+      // 首载失败后由轮询恢复时，补建事件流。
+      if (!this._dataConnection) {
+        this._connectStream();
+      }
     },
     handleUnauthorized() {
       useInspectorStore().close();
