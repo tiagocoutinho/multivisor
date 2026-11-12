@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <div class="bg-blobs" aria-hidden="true"></div>
     <ToolBar v-model:drawer="drawer"></ToolBar>
     <v-navigation-drawer expand-on-hover permanent rail>
       <v-list>
@@ -45,7 +46,8 @@
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, watch } from "vue";
+import { useTheme } from "vuetify";
 
 import ToolBar from "@/components/ToolBar";
 import NotificationBar from "@/components/NotificationBar";
@@ -55,10 +57,19 @@ import LogSheet from "@/components/process/Log";
 import ProcessDetails from "@/components/process/Details";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 
 const version = __APP_VERSION__;
 
 const store = useAppStore();
+const preferences = usePreferencesStore();
+const theme = useTheme();
+
+watch(
+  () => preferences.themeName,
+  (name) => theme.change(name),
+  { immediate: true },
+);
 
 const drawerItems = [
   {

@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar blue :elevation="2" class="bg-primary">
+  <v-app-bar :elevation="2">
     <!-- <template v-slot:prepend>
       <v-menu offset="15" v-show="isAuthenticated && useAuthentication">
         <template slot="activator">
@@ -50,20 +50,44 @@
           class="search-input"
         ></v-text-field>
       </v-expand-x-transition>
+      <v-tooltip
+        location="bottom"
+        :text="themeActionLabel"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon
+            :aria-label="themeActionLabel"
+            @click="preferences.toggleTheme()"
+          >
+            <v-icon>{{
+              preferences.themeName === "dark"
+                ? "mdi-weather-sunny"
+                : "mdi-weather-night"
+            }}</v-icon>
+          </v-btn>
+        </template>
+      </v-tooltip>
     </template>
   </v-app-bar>
 </template>
 
 <script setup>
-//import { computed } from 'vue'
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 
 import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
 import { LOGIN_PATH } from "@/router/auth";
 
 const store = useAppStore();
+const preferences = usePreferencesStore();
 const router = useRouter();
+const themeActionLabel = computed(() =>
+  preferences.themeName === "dark" ? "切换到浅色主题" : "切换到深色主题",
+);
 
 const { name, search, isAuthenticated, useAuthentication } = storeToRefs(store);
 

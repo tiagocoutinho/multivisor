@@ -13,8 +13,9 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.1.0",
+    "@fontsource/ibm-plex-sans": "5.1.0",
     "@mdi/font": "7.4.47",
-    "roboto-fontface": "*",
     "vue": "^3.5.42",
     "vuetify": "^3.13.2"
   },
@@ -44,7 +45,6 @@
     "vite-plugin-vue-devtools": "^7.7.2",
     "vite-plugin-vue-layouts-next": "^0.0.8",
     "vite-plugin-vuetify": "^2.1.1",
-    "vite-plugin-webfont-dl": "^3.11.1",
     "vitest": "^5.0.3",
     "vue-router": "^4.5.0"
   },
