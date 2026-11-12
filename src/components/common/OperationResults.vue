@@ -1,52 +1,121 @@
 <template>
-  <section
-    v-if="operationResults.length"
-    class="operation-result mx-4 mb-4"
-    :aria-label="labels.operationResults"
-    aria-live="polite"
+  <!-- 操作结果反馈：右下角轻量 snackbar（替代页面内全宽面板）。
+       提交进行中不倒计时；全部结算后自动关闭——全成功约 6s，
+       有失败 10s 并列出失败项；点击"关闭"立即清除。 -->
+  <v-snackbar
+    :model-value="visible"
+    location="bottom right"
+    :offset="46"
+    :timeout="-1"
+    :color="snackbarColor"
+    @update:model-value="onToggle"
   >
-    <div class="operation-result-header">
-      <span class="font-weight-medium">{{ labels.operationResults }}</span>
+    <div class="op-snackbar-body">
+      <div class="op-summary">{{ summaryText }}</div>
+      <div v-if="failureResults.length" class="op-failures" role="list">
+        <div
+          v-for="result in failureResults"
+          :key="`${result.kind}:${result.action}:${result.uid || result.name}`"
+          class="op-failure-item mono"
+          role="listitem"
+        >
+          {{ result.name }}
+          <span class="opacity-70">{{ actionText(result) }}</span>
+        </div>
+      </div>
+    </div>
+    <template #actions>
       <v-btn
-        size="small"
         variant="text"
-        :aria-label="labels.dismissResults"
         :disabled="store.confirming"
-        @click="store.operationResults = []"
+        @click="dismiss"
       >
         {{ labels.close }}
       </v-btn>
-    </div>
-    <div
-      v-for="result in operationResults"
-      :key="`${result.kind}:${result.action}:${result.uid || result.name}`"
-      class="operation-result-item"
-    >
-      <span class="mono">{{ result.name }}</span>
-      <span v-if="result.kind === 'process'" class="opacity-70 mono">{{
-        result.supervisor
-      }}</span>
-      <span class="opacity-70">{{ actionText(result) }}</span>
-      <span v-if="result.httpStatus !== undefined" class="mono text-caption"
-        >HTTP {{ result.httpStatus }}</span
-      >
-      <span class="operation-result-status" :class="resultClass(result)">
-        {{ statusText(result) }}
-      </span>
-    </div>
-  </section>
+    </template>
+  </v-snackbar>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
 
+// 全成功 / 有失败两种停留时长（毫秒）
+const AUTO_CLOSE_OK_MS = 6000;
+const AUTO_CLOSE_FAIL_MS = 10000;
+
 const store = useAppStore();
 const { labels } = storeToRefs(usePreferencesStore());
 
-const operationResults = computed(() => store.operationResults);
+const visible = ref(false);
+let closeTimer = null;
+
+const failureResults = computed(() =>
+  store.operationResults.filter(
+    (result) => result.requestState === "failed",
+  ),
+);
+const acceptedCount = computed(
+  () =>
+    store.operationResults.filter(
+      (result) => result.requestState === "accepted",
+    ).length,
+);
+
+const summaryText = computed(() =>
+  failureResults.value.length
+    ? labels.value.operationSummary(
+        acceptedCount.value,
+        failureResults.value.length,
+      )
+    : labels.value.operationSummaryDone(store.operationResults.length),
+);
+
+const snackbarColor = computed(() =>
+  failureResults.value.length ? "error" : undefined,
+);
+
+watch(
+  () => store.operationResults,
+  (results) => {
+    clearTimeout(closeTimer);
+    if (!results.length) {
+      visible.value = false;
+      return;
+    }
+    visible.value = true;
+    // 渐进结算期间（sending → accepted/failed）不倒计时，全部结算后才开始
+    if (results.some((result) => result.requestState === "sending")) {
+      return;
+    }
+    closeTimer = setTimeout(
+      dismiss,
+      failureResults.value.length ? AUTO_CLOSE_FAIL_MS : AUTO_CLOSE_OK_MS,
+    );
+  },
+  { deep: true },
+);
+
+onUnmounted(() => clearTimeout(closeTimer));
+
+function onToggle(value) {
+  if (value) {
+    visible.value = true;
+    return;
+  }
+  dismiss();
+}
+
+function dismiss() {
+  clearTimeout(closeTimer);
+  visible.value = false;
+  // confirming 期间结果仍在渐进更新，不能清（与原面板关闭按钮的禁用语义一致）
+  if (!store.confirming) {
+    store.operationResults = [];
+  }
+}
 
 function actionText(result) {
   if (result.kind === "supervisor") {
@@ -56,67 +125,22 @@ function actionText(result) {
   }
   return labels.value[result.action];
 }
-
-function resultClass(result) {
-  if (result.requestState === "accepted") {
-    return "c-running";
-  }
-  if (result.requestState === "failed") {
-    return "c-danger";
-  }
-  return "c-info";
-}
-
-function statusText(result) {
-  if (result.requestState === "sending") {
-    return labels.value.operationSending;
-  }
-  if (result.requestState === "accepted") {
-    return labels.value.operationDone(result.action);
-  }
-  if (result.requestState === "failed") {
-    return labels.value.operationFailed;
-  }
-  return labels.value.operationNotSubmitted;
-}
 </script>
 
 <style scoped>
-.operation-result {
-  margin-top: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--mv-table-border);
-  border-radius: 8px;
-  background: var(--mv-table-bg);
+.op-snackbar-body {
+  max-width: 420px;
+}
+.op-summary {
   font-size: 13px;
 }
-
-.operation-result-header {
+.op-failures {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.operation-result-item {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  padding: 8px 0;
-  border-top: 1px solid var(--mv-table-border);
-}
-
-.operation-result-item:first-of-type {
-  margin-top: 8px;
-  border-top: none;
-}
-
-.operation-result-item .mono {
-  overflow-wrap: anywhere;
-}
-
-.operation-result-status {
-  margin-left: auto;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  max-height: 30vh;
+  overflow-y: auto;
+  font-size: 12px;
 }
 </style>

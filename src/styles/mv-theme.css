@@ -428,15 +428,6 @@
     .proc-card.row-selected { background: var(--mv-sel-bg) !important; box-shadow: inset 2px 0 0 0 var(--mv-sel-bar); }
     .proc-card.row-inspected { border-color: var(--mv-sel-bar); }
     .mobile-empty { text-align: center; padding: 32px 16px; }
-    .operation-result {
-      margin-top: 16px; padding: 12px 16px; border: 1px solid var(--mv-table-border);
-      border-radius: 8px; background: var(--mv-table-bg); font-size: 13px;
-    }
-    .operation-result-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .operation-result-item { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; padding: 8px 0; border-top: 1px solid var(--mv-table-border); }
-    .operation-result-item:first-of-type { margin-top: 8px; }
-    .operation-result-item .mono { overflow-wrap: anywhere; }
-    .operation-result-status { margin-left: auto; }
     .has-inspector { padding-bottom: calc(var(--inspector-height) + 54px) !important; }
     .inspector-panel {
       position: fixed; left: 0; right: 0; bottom: 34px; z-index: 20;

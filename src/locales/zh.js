@@ -59,6 +59,7 @@ const zh = {
   operationDone: (kind) => "请求已提交",
   operationSummary: (ok, failed) =>
     `${ok} 个请求提交成功，${failed} 个请求提交失败`,
+  operationSummaryDone: (n) => `已提交 ${n} 个请求`,
   confirmStartTitle: (n) => `确认启动 ${n} 个进程？`,
   confirmStartN: (n) => `启动 ${n} 个进程`,
   navNodes: "节点总览",

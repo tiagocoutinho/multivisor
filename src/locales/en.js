@@ -62,6 +62,7 @@ const en = {
   operationDone: (kind) => "Request submitted",
   operationSummary: (ok, failed) =>
     `${ok} request submissions succeeded, ${failed} request submission failed`,
+  operationSummaryDone: (n) => `${n} request(s) submitted`,
   confirmStartTitle: (n) => `Start ${n} processes?`,
   confirmStartN: (n) => `Start ${n} processes`,
   navNodes: "Nodes",

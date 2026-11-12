@@ -43,12 +43,10 @@
             :text="stateName(process.statename)"
           ></v-chip>
         </div>
-        <div class="proc-card-meta">
-          <template v-if="showGroup">{{ process.group }}</template>
-          <template v-if="showGroup && useSupervisorColumn"> · </template>
-          <span v-if="useSupervisorColumn" class="mono">{{
-            process.supervisor
-          }}</span>
+        <!-- 小标题只显示节点名：group 与节点名通常同名（重复冗余）；
+             下钻页大标题已是节点名，卡片不再重复 -->
+        <div v-if="useSupervisorColumn" class="proc-card-meta">
+          <span class="mono">{{ process.supervisor }}</span>
         </div>
         <div class="proc-card-stats mono">
           <span v-if="process.pid">PID {{ process.pid }}</span>
@@ -108,7 +106,6 @@ const props = defineProps({
   selectedUids: { type: Array, required: true },
   labels: { type: Object, required: true },
   nodeName: { type: String, default: undefined },
-  showGroup: { type: Boolean, default: true },
   showSupervisor: { type: Boolean, default: undefined },
   dataState: { type: String, default: "ready" },
   hasSourceProcesses: { type: Boolean, default: true },

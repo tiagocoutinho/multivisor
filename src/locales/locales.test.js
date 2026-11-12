@@ -160,6 +160,7 @@ const interfaceKeys = [
   "updatedAt",
   "cardUptime",
   "cardExit",
+  "operationSummaryDone",
   "reviveStream",
   "reviveStreamTitle",
   "reviveStreamText",
@@ -245,6 +246,7 @@ const functionArities = {
   selectProcess: 1,
   operationDone: 1,
   operationSummary: 2,
+  operationSummaryDone: 1,
   confirmStartTitle: 1,
   confirmStartN: 1,
   selectedCount: 1,
@@ -348,6 +350,8 @@ describe("locales", () => {
     expect(en.operationSummary(4, 1)).toBe(
       "4 request submissions succeeded, 1 request submission failed",
     );
+    expect(zh.operationSummaryDone(16)).toBe("已提交 16 个请求");
+    expect(en.operationSummaryDone(16)).toContain("16");
 
     expect(zh.updatedAt("12:00")).toBe("最近更新：12:00");
     expect(en.updatedAt("12:00")).toBe("Last updated 12:00");
