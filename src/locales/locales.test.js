@@ -158,6 +158,10 @@ const interfaceKeys = [
   "remoteLogSize",
   "logSize",
   "updatedAt",
+  "reviveStream",
+  "reviveStreamTitle",
+  "reviveStreamText",
+  "reviveConfirm",
 ];
 
 const aboutContentKeys = [

@@ -43,6 +43,13 @@ export const auth = () => {
   return fetch("/api/auth");
 };
 
+// /api/admin/reload 让后端丢弃并重建 Supervisor 连接对象（全新 run() 循环 +
+// 全新事件订阅），可解开事件流静默（如心跳死锁）状态。
+// 注意：健康状态下调用会形成新旧两套事件循环并行处理，仅限手动恢复使用。
+export const adminReload = () => {
+  return fetch("/api/admin/reload");
+};
+
 export const login = (form) => {
   return fetch("/api/login", { method: "POST", body: form });
 };

@@ -18,13 +18,49 @@
       >
       <span class="connection-label">{{ connectionLabel }}</span>
     </span>
+    <v-dialog v-model="reviveVisible" max-width="440">
+      <template #activator="{ props: activatorProps }">
+        <v-tooltip :text="t.reviveStream" location="top">
+          <template #activator="{ props: tipProps }">
+            <v-btn
+              v-bind="{ ...activatorProps, ...tipProps }"
+              size="x-small"
+              variant="text"
+              class="px-2"
+              :disabled="reviving"
+              @click="reviveVisible = true"
+            >
+              <v-icon size="14">mdi-heart-pulse</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+      </template>
+      <v-card>
+        <v-card-title class="text-body-1">{{
+          t.reviveStreamTitle
+        }}</v-card-title>
+        <v-card-text class="text-body-2">{{ t.reviveStreamText }}</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="reviveVisible = false">{{
+            t.close
+          }}</v-btn>
+          <v-btn
+            variant="tonal"
+            :loading="reviving"
+            @click="confirmRevive"
+            >{{ t.reviveConfirm }}</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <span class="opacity-60 mx-2" aria-hidden="true">·</span>
     <span class="opacity-70 nums footer-update">{{ updateLabel }}</span>
   </v-footer>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useAppStore } from "@/stores/app";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -33,6 +69,18 @@ defineEmits(["about"]);
 const store = useAppStore();
 const preferences = usePreferencesStore();
 const { labels: t } = storeToRefs(preferences);
+const reviveVisible = ref(false);
+const reviving = ref(false);
+
+async function confirmRevive() {
+  reviving.value = true;
+  try {
+    await store.reviveEventStream();
+  } finally {
+    reviving.value = false;
+    reviveVisible.value = false;
+  }
+}
 const connectionLabel = computed(() =>
   store.connected ? t.value.connected : t.value.disconnected,
 );

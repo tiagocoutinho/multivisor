@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 import * as api from "@/api";
-import { useAppStore } from "@/stores/app";
+import {
+  MULTIVISOR_CONNECTION_ERROR,
+  useAppStore,
+} from "@/stores/app";
 import { useInspectorStore } from "@/stores/inspector";
 
 vi.mock("@/api", () => ({
   processAction: vi.fn(),
   supervisorAction: vi.fn(),
+  adminReload: vi.fn(),
+  load: vi.fn(),
   logout: vi.fn(),
 }));
 
@@ -410,5 +415,48 @@ describe("真实操作提交与集中确认", () => {
     expect(store.operationResults).toEqual([]);
     expect(store.pendingProcessUids).toEqual([]);
     expect(store.confirming).toBe(false);
+  });
+});
+
+describe("手动复活事件流", () => {
+  it("重建成功后立即补拉一次快照", async () => {
+    const store = readyStore(["a"]);
+    api.adminReload.mockResolvedValue({ ok: true, status: 200 });
+    api.load.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => snapshot(["a", "b"]),
+    });
+
+    await expect(store.reviveEventStream()).resolves.toBe(true);
+
+    expect(api.adminReload).toHaveBeenCalledTimes(1);
+    expect(api.load).toHaveBeenCalledTimes(1);
+    expect(store.error).toBe("");
+  });
+
+  it.each([
+    ["HTTP 500", () => api.adminReload.mockResolvedValue({ ok: false, status: 500 })],
+    ["网络失败", () => api.adminReload.mockRejectedValue(new TypeError("Failed to fetch"))],
+  ])("%s 时不刷新数据并标记连接错误", async (_, setup) => {
+    const store = readyStore(["a"]);
+    setup();
+
+    await expect(store.reviveEventStream()).resolves.toBe(false);
+
+    expect(api.load).not.toHaveBeenCalled();
+    expect(store.error).toBe(MULTIVISOR_CONNECTION_ERROR);
+  });
+
+  it("收到 401 时按未认证处理", async () => {
+    const store = readyStore(["a"]);
+    store.setUseAuthentication(true);
+    store.setIsAuthenticated(true);
+    api.adminReload.mockResolvedValue({ ok: false, status: 401 });
+
+    await expect(store.reviveEventStream()).resolves.toBe(false);
+
+    expect(store.isAuthenticated).toBe(false);
+    expect(api.load).not.toHaveBeenCalled();
   });
 });

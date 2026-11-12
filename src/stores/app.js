@@ -626,6 +626,32 @@ export const useAppStore = defineStore("app", {
       this.handleUnauthorized();
       api.logout();
     },
+    async reviveEventStream() {
+      // 手动复活事件流：后端 /api/admin/reload 重建 Supervisor 连接对象
+      // （新 run() 循环 + 新事件订阅）；卡死的旧循环成为无害僵尸。
+      // 健康状态下调用会产生重复事件处理，因此仅由用户显式触发。
+      const generation = this._dataGeneration;
+      let response = null;
+      try {
+        response = await api.adminReload();
+      } catch {
+        // 网络失败：视为服务不可达。
+      }
+      if (generation !== this._dataGeneration) {
+        return false;
+      }
+      if (response && response.status === 401) {
+        this.handleUnauthorized();
+        return false;
+      }
+      if (!response || !response.ok) {
+        this.setMultivisorError();
+        return false;
+      }
+      // 新循环的首个事件可能尚未经 SSE 到达；立即补拉一次快照。
+      await this.refresh();
+      return true;
+    },
     // Mutations
     updateMultivisor(multivisor) {
       this.multivisor = multivisor;

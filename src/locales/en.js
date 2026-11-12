@@ -163,6 +163,11 @@ const en = {
   remoteLogSize: "Remote log size",
   logSize: "Current log size",
   updatedAt: (value) => `Last updated ${value}`,
+  reviveStream: "Rebuild event stream",
+  reviveStreamTitle: "Rebuild event stream",
+  reviveStreamText:
+    "The backend will recreate its connections to all nodes; the fresh event subscription takes effect within a couple of seconds. Use only when updates are clearly lagging or the connection looks broken — using it on a healthy system causes duplicate event handling.",
+  reviveConfirm: "Rebuild",
   stateNames: {
     STOPPED: "STOPPED",
     STARTING: "STARTING",

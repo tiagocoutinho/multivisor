@@ -159,6 +159,11 @@ const zh = {
   remoteLogSize: "远程日志大小",
   logSize: "当前日志大小",
   updatedAt: (value) => `最近更新：${value}`,
+  reviveStream: "重建事件流",
+  reviveStreamTitle: "重建事件流连接",
+  reviveStreamText:
+    "后端将重建与各节点的连接，新事件订阅立即生效（约 1~2 秒）。仅在状态更新明显滞后或连接异常时使用；正常运行时使用会造成重复的事件处理。",
+  reviveConfirm: "重建",
   stateNames: {
     STOPPED: "已停止",
     STARTING: "启动中",
