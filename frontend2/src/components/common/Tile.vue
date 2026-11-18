@@ -1,0 +1,131 @@
+<template lang="html">
+  <v-list-item>
+    <template v-slot:prepend>
+      <v-checkbox-btn
+        hide-details
+        v-model="selectedProcesses"
+        :value="process.uid"
+      ></v-checkbox-btn>
+    </template>
+
+    <v-list-item-title>{{ process.name }}</v-list-item-title>
+
+    <template v-slot:append>
+      <ProcessState :state="process.statename"></ProcessState>
+      <v-btn-group density="compact" class="ml-2">
+        <v-btn
+          variant="flat"
+          icon
+          :aria-label="process.running ? t.restart : t.start"
+          @click="restartProcess(process)"
+        >
+          <v-icon color="green">
+            <template v-if="process.running">mdi-autorenew</template>
+            <template v-else>mdi-play</template>
+          </v-icon>
+        </v-btn>
+        <v-btn
+          variant="flat"
+          icon
+          @click="stopProcess(process)"
+          :disabled="!process.running"
+          :aria-label="t.stop"
+        >
+          <v-icon :color="process.running ? 'red' : 'gray'">mdi-stop</v-icon>
+        </v-btn>
+        <v-menu open-on-click>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              variant="flat"
+              icon="mdi-dots-vertical"
+              :aria-label="t.moreActions"
+              v-bind="props"
+            ></v-btn>
+          </template>
+          <v-list>
+            <v-list-item @click="viewDetails(process)">
+              <v-list-item-title
+                ><v-icon size="small" class="mr-2">mdi-information</v-icon
+                >{{ t.info }}</v-list-item-title
+              >
+            </v-list-item>
+            <v-list-item
+              @click="viewLog(process, 'out')"
+              v-if="process.logfile"
+            >
+              <v-list-item-title
+                ><v-icon size="small" class="mr-2"
+                  >mdi-file-document-alert-outline</v-icon
+                >{{ t.logOut }}</v-list-item-title
+              >
+            </v-list-item>
+            <v-list-item
+              @click="viewLog(process, 'err')"
+              v-if="process.stderr_logfile"
+            >
+              <v-list-item-title
+                ><v-icon size="small" class="mr-2"
+                  >mdi-file-document-alert-outline</v-icon
+                >{{ t.logErr }}</v-list-item-title
+              >
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </v-btn-group>
+    </template>
+  </v-list-item>
+</template>
+
+<script setup>
+import ProcessState from "./State";
+import { useAppStore } from "@/stores/app";
+import { usePreferencesStore } from "@/stores/preferences";
+
+const store = useAppStore();
+const { labels: t } = storeToRefs(usePreferencesStore());
+
+const { process } = defineProps(["process"]);
+
+const selectedProcesses = computed({
+  get() {
+    return store.selectedProcesses;
+  },
+  set(newValue) {
+    store.setSelectedProcesses(newValue);
+  },
+});
+
+const restartProcess = (process) => {
+  store.restartProcesses([process.uid]);
+};
+
+const stopProcess = (process) => {
+  store.stopProcesses([process.uid]);
+};
+
+const viewLog = (process, stream) => {
+  store.setLog({
+    process,
+    stream,
+    visible: true,
+  });
+};
+
+const viewDetails = (process) => {
+  store.setProcessDetails({
+    process,
+    visible: true,
+  });
+};
+</script>
+
+<style scoped>
+:deep(.v-btn--disabled.v-btn--variant-elevated .v-btn__overlay),
+:deep(.v-btn--disabled.v-btn--variant-flat .v-btn__overlay) {
+  opacity: 0;
+}
+
+:deep(.v-list-item__content) {
+  min-width: fit-content;
+}
+</style>
