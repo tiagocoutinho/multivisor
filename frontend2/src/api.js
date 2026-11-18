@@ -1,0 +1,63 @@
+export const supervisorAction = (id, action) => {
+  let form = new FormData();
+  form.append("supervisor", id);
+  return fetch("/api/supervisor/" + action, { method: "POST", body: form });
+};
+
+export const processAction = (uid, action) => {
+  let form = new FormData();
+  form.append("uid", uid);
+  // 后端 7.1.0 没有 /api/process/start 路由（POST 会落入 catch-all 返回 405）；
+  // restart 对已停止进程等价于 start（后端 Process.restart 先判 running 再 stop+start），
+  // 因此前端把 start 映射为 restart 提交。
+  const endpoint = action === "start" ? "restart" : action;
+  return fetch("/api/process/" + endpoint, { method: "POST", body: form });
+};
+
+export const load = () => {
+  return fetch("/api/data");
+};
+
+// /api/refresh 会让服务端向各 supervisor 节点发起一次 RPC 刷新并返回最新快照；
+// 事件流异常（如心跳死锁）时依然可用，是前端轮询与健康判定的数据源。
+export const refreshData = (timeoutMs = 10000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch("/api/refresh", { signal: controller.signal }).finally(() => {
+    clearTimeout(timer);
+  });
+};
+
+export const streamTo = (eventHandler) => {
+  let eventSource = new EventSource("/api/stream");
+  eventSource.onmessage = (event) => {
+    let data = JSON.parse(event.data);
+    eventHandler(data);
+  };
+  eventSource.onerror = () => {
+    eventHandler("error");
+  };
+  eventSource.onclose = () => {
+    eventHandler("close");
+  };
+  return eventSource;
+};
+
+export const auth = () => {
+  return fetch("/api/auth");
+};
+
+// /api/admin/reload 让后端丢弃并重建 Supervisor 连接对象（全新 run() 循环 +
+// 全新事件订阅），可解开事件流静默（如心跳死锁）状态。
+// 注意：健康状态下调用会形成新旧两套事件循环并行处理，仅限手动恢复使用。
+export const adminReload = () => {
+  return fetch("/api/admin/reload");
+};
+
+export const login = (form) => {
+  return fetch("/api/login", { method: "POST", body: form });
+};
+
+export const logout = () => {
+  return fetch("/api/logout", { method: "POST" });
+};
